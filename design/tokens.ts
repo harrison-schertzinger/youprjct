@@ -6,8 +6,19 @@ export const tokens = {
     text: '#0B0B0B',      // near-black text
     muted: '#6B6B6B',     // secondary text
     border: '#E8E8E6',    // subtle borders
-    tint: '#0B0B0B',      // primary accent (we can change later)
+    tint: '#2F6BFF',      // primary accent
+    action: '#059669',    // gamified action (rich emerald)
     danger: '#D92D20',
+
+    // Calendar day states
+    calendar: {
+      inactive: '#E5E5E5',        // soft grey for days before joining
+      win: '#D1FAE5',             // soft green fill
+      winBorder: '#10B981',       // green border
+      loss1: '#FEE2E2',           // soft red (1-2 day loss)
+      loss2: '#FECACA',           // medium red (3-4 day streak)
+      loss3: '#FCA5A5',           // darker red (5+ day streak)
+    },
   },
 
   spacing: {
