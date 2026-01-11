@@ -16,11 +16,16 @@ type Props = {
    * Use this to show visual indicators on days with recorded data.
    */
   dayActivities?: Record<string, DayActivity>;
+  /**
+   * Map of date keys (YYYY-MM-DD) to daily outcomes.
+   * Shows colored dots: black for 'win', light gray for 'loss'.
+   */
+  outcomeDays?: Record<string, 'win' | 'loss'>;
 };
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first UI
 
-export function MonthGrid({ selectedDay, onSelectDay, dayActivities = {} }: Props) {
+export function MonthGrid({ selectedDay, onSelectDay, dayActivities = {}, outcomeDays = {} }: Props) {
   // Generate dynamic month data based on current date
   const monthData = useMemo(() => getCurrentMonthData(), []);
 
@@ -45,8 +50,19 @@ export function MonthGrid({ selectedDay, onSelectDay, dayActivities = {} }: Prop
           const day = cell.value;
           const dateKey = formatDateKey(cell.date);
           const activity = dayActivities[dateKey];
+          const outcome = outcomeDays[dateKey];
           const hasActivity = activity?.hasWinLoss || activity?.hasCompletedRoutines;
           const isSelected = day === selectedDay;
+
+          // Determine indicator color based on outcome
+          let indicatorColor: string | undefined;
+          if (outcome === 'win') {
+            indicatorColor = tokens.colors.text; // black for win
+          } else if (outcome === 'loss') {
+            indicatorColor = tokens.colors.muted; // light gray for loss
+          } else if (hasActivity) {
+            indicatorColor = tokens.colors.text; // fallback to existing behavior
+          }
 
           return (
             <View key={`d-${day}`} style={styles.cell}>
@@ -66,8 +82,8 @@ export function MonthGrid({ selectedDay, onSelectDay, dayActivities = {} }: Prop
                 >
                   {day}
                 </Text>
-                {hasActivity && !isSelected && (
-                  <View style={[styles.indicator, { backgroundColor: tokens.colors.text }]} />
+                {indicatorColor && !isSelected && (
+                  <View style={[styles.indicator, { backgroundColor: indicatorColor }]} />
                 )}
               </Pressable>
             </View>

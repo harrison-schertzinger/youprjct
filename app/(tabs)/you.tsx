@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
@@ -9,6 +9,8 @@ import { tokens } from '@/design/tokens';
 import { WinTheDayHeader } from '@/components/dashboard/WinTheDayHeader';
 import { WinLossSlider } from '@/components/dashboard/WinLossSlider';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
+import { formatDateKey } from '@/utils/calendar';
+import { getOutcomes, setOutcome, type OutcomeValue } from '@/lib/dailyOutcomes';
 
 
 export default function YouScreen() {
@@ -17,9 +19,17 @@ const [tasks, setTasks] = useState([false, false, false, false]);
 const [evening, setEvening] = useState([false, false]);
 
 const [selectedDay, setSelectedDay] = useState(10);
-const [winLossByDay, setWinLossByDay] = useState<Record<number, 'win' | 'loss' | null>>({
-  10: 'win',
-});
+const [outcomes, setOutcomes] = useState<Record<string, OutcomeValue>>({});
+
+// Load outcomes from storage on mount
+useEffect(() => {
+  getOutcomes().then(setOutcomes);
+}, []);
+
+// Get current date key for selected day
+const now = new Date();
+const selectedDate = new Date(now.getFullYear(), now.getMonth(), selectedDay);
+const selectedDateKey = formatDateKey(selectedDate);
 
   return (
     <ScreenContainer>
@@ -28,7 +38,7 @@ const [winLossByDay, setWinLossByDay] = useState<Record<number, 'win' | 'loss' |
 
         {/* Calendar Card (placeholder structure) */}
        <Card>
-  <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} />
+  <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} outcomeDays={outcomes} />
 </Card>
 
         {/* Streak Row Card */}
@@ -50,9 +60,12 @@ const [winLossByDay, setWinLossByDay] = useState<Record<number, 'win' | 'loss' |
         </Card>
 <View style={{ marginTop: 12 }}>
   <WinLossSlider
-    value={winLossByDay[selectedDay] ?? null}
+    value={outcomes[selectedDateKey] ?? null}
     onChange={(v) => {
-      setWinLossByDay((prev) => ({ ...prev, [selectedDay]: v }));
+      if (v !== null) {
+        setOutcome(selectedDateKey, v);
+        setOutcomes((prev) => ({ ...prev, [selectedDateKey]: v }));
+      }
     }}
   />
 </View>
