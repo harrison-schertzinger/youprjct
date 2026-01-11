@@ -1,37 +1,34 @@
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { tokens } from '@/design/tokens';
+import { getCurrentMonthData, formatDateKey } from '@/utils/calendar';
+
+type DayActivity = {
+  hasWinLoss?: boolean;
+  hasCompletedRoutines?: boolean;
+};
 
 type Props = {
   selectedDay: number;
   onSelectDay: (day: number) => void;
+  /**
+   * Map of date keys (YYYY-MM-DD) to activity indicators.
+   * Use this to show visual indicators on days with recorded data.
+   */
+  dayActivities?: Record<string, DayActivity>;
 };
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']; // Monday-first UI
 
-export function MonthGrid({ selectedDay, onSelectDay }: Props) {
-  // For now: show January with 31 days (matches your mock).
-  // Later we’ll make it dynamic by month/year.
-  const monthName = 'January';
-  const daysInMonth = 31;
-
-  // January mock: assume Jan 1 falls on Thursday (Mon-first index = 3)
-  // If your month differs, we’ll make this dynamic next.
-  const firstDayOfWeekMonFirst = 3; // 0=Mon ... 6=Sun
-
-  const cells = useMemo(() => {
-    const arr: Array<{ type: 'blank' } | { type: 'day'; value: number }> = [];
-    for (let i = 0; i < firstDayOfWeekMonFirst; i++) arr.push({ type: 'blank' });
-    for (let d = 1; d <= daysInMonth; d++) arr.push({ type: 'day', value: d });
-
-    // pad to complete final week (multiple of 7)
-    while (arr.length % 7 !== 0) arr.push({ type: 'blank' });
-    return arr;
-  }, []);
+export function MonthGrid({ selectedDay, onSelectDay, dayActivities = {} }: Props) {
+  // Generate dynamic month data based on current date
+  const monthData = useMemo(() => getCurrentMonthData(), []);
 
   return (
     <View>
-      <Text style={[tokens.typography.h2, { color: tokens.colors.text }]}>{monthName}</Text>
+      <Text style={[tokens.typography.h2, { color: tokens.colors.text }]}>
+        {monthData.monthName}
+      </Text>
 
       <View style={styles.weekdays}>
         {WEEKDAYS.map((w, idx) => (
@@ -42,10 +39,13 @@ export function MonthGrid({ selectedDay, onSelectDay }: Props) {
       </View>
 
       <View style={styles.grid}>
-        {cells.map((cell, idx) => {
+        {monthData.cells.map((cell, idx) => {
           if (cell.type === 'blank') return <View key={`b-${idx}`} style={styles.cell} />;
 
           const day = cell.value;
+          const dateKey = formatDateKey(cell.date);
+          const activity = dayActivities[dateKey];
+          const hasActivity = activity?.hasWinLoss || activity?.hasCompletedRoutines;
           const isSelected = day === selectedDay;
 
           return (
@@ -61,11 +61,14 @@ export function MonthGrid({ selectedDay, onSelectDay }: Props) {
                   style={[
                     styles.dayText,
                     { color: tokens.colors.text },
-                    isSelected && { color: tokens.colors.background },
+                    isSelected && { color: tokens.colors.bg },
                   ]}
                 >
                   {day}
                 </Text>
+                {hasActivity && !isSelected && (
+                  <View style={[styles.indicator, { backgroundColor: tokens.colors.text }]} />
+                )}
               </Pressable>
             </View>
           );
@@ -104,9 +107,17 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   dayText: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  indicator: {
+    position: 'absolute',
+    bottom: 8,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
 });
