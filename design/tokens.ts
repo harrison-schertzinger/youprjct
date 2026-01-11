@@ -6,7 +6,8 @@ export const tokens = {
     text: '#0B0B0B',      // near-black text
     muted: '#6B6B6B',     // secondary text
     border: '#E8E8E6',    // subtle borders
-    tint: '#0B0B0B',      // primary accent (we can change later)
+    tint: '#2F6BFF',      // primary accent blue
+    action: '#059669',    // gamified action emerald
     danger: '#D92D20',
   },
 
