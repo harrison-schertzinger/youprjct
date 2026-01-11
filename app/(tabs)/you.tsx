@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
@@ -7,36 +7,72 @@ import { ListRow } from '@/components/ui/ListRow';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { tokens } from '@/design/tokens';
 import { WinTheDayHeader } from '@/components/dashboard/WinTheDayHeader';
-import { WinLossSlider } from '@/components/dashboard/WinLossSlider';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
+import {
+  loadWins,
+  markDayAsWin,
+  getTotalDaysWon,
+  getThisWeekStats,
+  getDayOutcome,
+} from '@/lib/dailyOutcomes';
+import { formatDateKey } from '@/utils/calendar';
 
 
 export default function YouScreen() {
   const [morning, setMorning] = useState([false, false, false]);
-const [tasks, setTasks] = useState([false, false, false, false]);
-const [evening, setEvening] = useState([false, false]);
+  const [tasks, setTasks] = useState([false, false, false, false]);
+  const [evening, setEvening] = useState([false, false]);
 
-const [selectedDay, setSelectedDay] = useState(10);
-const [winLossByDay, setWinLossByDay] = useState<Record<number, 'win' | 'loss' | null>>({
-  10: 'win',
-});
+  const [selectedDay, setSelectedDay] = useState(new Date().getDate());
+  const [wins, setWins] = useState<Record<string, 'win'>>({});
+
+  // Load wins from AsyncStorage on mount
+  useEffect(() => {
+    loadWins().then(setWins);
+  }, []);
+
+  // Compute stats from wins
+  const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
+  const { winsThisWeek, totalDaysThisWeek } = useMemo(
+    () => getThisWeekStats(wins),
+    [wins]
+  );
+
+  // Get selected date
+  const selectedDate = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), selectedDay);
+  }, [selectedDay]);
+
+  // Check if selected day is won
+  const isSelectedDayWon = useMemo(
+    () => getDayOutcome(selectedDate, wins) === 'win',
+    [selectedDate, wins]
+  );
+
+  // Handle "I Won the Day" button press
+  const handleWinTheDay = async () => {
+    await markDayAsWin(selectedDate);
+    const updatedWins = await loadWins();
+    setWins(updatedWins);
+  };
 
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <WinTheDayHeader />
 
-        {/* Calendar Card (placeholder structure) */}
-       <Card>
-  <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} />
-</Card>
+        {/* Calendar Card */}
+        <Card>
+          <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} />
+        </Card>
 
         {/* Streak Row Card */}
         <Card style={{ marginTop: tokens.spacing.md }}>
           <View style={styles.streakRow}>
             <View>
               <Text style={styles.streakLabel}>Days Won</Text>
-              <Text style={styles.streakValue}>7</Text>
+              <Text style={styles.streakValue}>{totalDaysWon}</Text>
             </View>
             <View>
               <Text style={styles.streakLabel}>Consistency</Text>
@@ -44,18 +80,20 @@ const [winLossByDay, setWinLossByDay] = useState<Record<number, 'win' | 'loss' |
             </View>
             <View>
               <Text style={styles.streakLabel}>This Week</Text>
-              <Text style={styles.streakValue}>5/7</Text>
+              <Text style={styles.streakValue}>
+                {winsThisWeek}/{totalDaysThisWeek}
+              </Text>
             </View>
           </View>
+
+          {/* I Won the Day Button */}
+          <View style={{ marginTop: tokens.spacing.md }}>
+            <PrimaryButton
+              label={isSelectedDayWon ? '✓ Day Won' : 'I Won the Day'}
+              onPress={handleWinTheDay}
+            />
+          </View>
         </Card>
-<View style={{ marginTop: 12 }}>
-  <WinLossSlider
-    value={winLossByDay[selectedDay] ?? null}
-    onChange={(v) => {
-      setWinLossByDay((prev) => ({ ...prev, [selectedDay]: v }));
-    }}
-  />
-</View>
 
         <SectionHeader title="Daily Routines" />
 
