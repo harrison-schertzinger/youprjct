@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ListRow } from '@/components/ui/ListRow';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
 import {
@@ -15,58 +16,176 @@ import {
   getDayOutcome,
 } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
+import {
+  Routine,
+  loadMorningRoutines,
+  addMorningRoutine,
+  deleteMorningRoutine,
+  loadEveningRoutines,
+  addEveningRoutine,
+  deleteEveningRoutine,
+  loadCompletedRoutines,
+  toggleRoutineCompletion,
+} from '@/lib/routines';
+import {
+  DailyTask,
+  loadDailyTasks,
+  addDailyTask,
+  deleteDailyTask,
+  toggleDailyTaskCompletion,
+} from '@/lib/dailyTasks';
+import { Goal, loadGoals } from '@/lib/goals';
+
+type ModalType = 'morning' | 'evening' | 'task' | null;
 
 export default function YouScreen() {
-  const [morning, setMorning] = useState([false, false, false]);
-  const [tasks, setTasks] = useState([false, false, false, false]);
-  const [evening, setEvening] = useState([false, false]);
-
+  // Calendar & wins
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
   const [wins, setWins] = useState<Record<string, 'win'>>({});
-
-  // App streak (days on app)
   const [firstOpenedAt, setFirstOpenedAt] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Load wins
-    loadWins().then(setWins);
+  // Routines
+  const [morningRoutines, setMorningRoutines] = useState<Routine[]>([]);
+  const [eveningRoutines, setEveningRoutines] = useState<Routine[]>([]);
+  const [morningCompleted, setMorningCompleted] = useState<Set<string>>(new Set());
+  const [eveningCompleted, setEveningCompleted] = useState<Set<string>>(new Set());
 
-    // Set first opened date (once)
-    getOrSetFirstOpenedAt().then(setFirstOpenedAt);
+  // Daily tasks
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+
+  // Goals (for task dropdown)
+  const [goals, setGoals] = useState<Goal[]>([]);
+
+  // Modal state
+  const [modalType, setModalType] = useState<ModalType>(null);
+
+  // Load all data on mount
+  useEffect(() => {
+    const loadAllData = async () => {
+      // Wins & streak
+      const [winsData, firstOpened] = await Promise.all([
+        loadWins(),
+        getOrSetFirstOpenedAt(),
+      ]);
+      setWins(winsData);
+      setFirstOpenedAt(firstOpened);
+
+      // Routines
+      const [morning, evening, morningDone, eveningDone] = await Promise.all([
+        loadMorningRoutines(),
+        loadEveningRoutines(),
+        loadCompletedRoutines('morning'),
+        loadCompletedRoutines('evening'),
+      ]);
+      setMorningRoutines(morning);
+      setEveningRoutines(evening);
+      setMorningCompleted(morningDone);
+      setEveningCompleted(eveningDone);
+
+      // Daily tasks & goals
+      const [tasks, goalsData] = await Promise.all([
+        loadDailyTasks(),
+        loadGoals(),
+      ]);
+      setDailyTasks(tasks);
+      setGoals(goalsData);
+    };
+
+    loadAllData();
   }, []);
 
+  // Computed values
   const appStreakDays = useMemo(() => {
     if (!firstOpenedAt) return 1;
-    return daysSince(firstOpenedAt) + 1; // inclusive
+    return daysSince(firstOpenedAt) + 1;
   }, [firstOpenedAt]);
 
-  // Selected date object (current month/year)
   const selectedDate = useMemo(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), selectedDay);
   }, [selectedDay]);
 
-  // Is selected day won?
   const isSelectedDayWon = useMemo(
     () => getDayOutcome(selectedDate, wins) === 'win',
     [selectedDate, wins]
   );
 
-  // Compute stats from wins
   const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
   const { winsThisWeek, totalDaysThisWeek } = useMemo(() => getThisWeekStats(wins), [wins]);
 
-  // Handle "I Won Today"
+  // Handlers
   const handleWinTheDay = async () => {
     await markDayAsWin(selectedDate);
     const updatedWins = await loadWins();
     setWins(updatedWins);
   };
 
+  // Morning handlers
+  const handleAddMorning = useCallback(async (title: string, label?: string) => {
+    const newRoutine = await addMorningRoutine(title, label);
+    setMorningRoutines(prev => [...prev, newRoutine]);
+  }, []);
+
+  const handleDeleteMorning = useCallback(async (id: string) => {
+    await deleteMorningRoutine(id);
+    setMorningRoutines(prev => prev.filter(r => r.id !== id));
+  }, []);
+
+  const handleToggleMorning = useCallback(async (id: string) => {
+    const updated = await toggleRoutineCompletion('morning', id);
+    setMorningCompleted(updated);
+  }, []);
+
+  // Evening handlers
+  const handleAddEvening = useCallback(async (title: string, label?: string) => {
+    const newRoutine = await addEveningRoutine(title, label);
+    setEveningRoutines(prev => [...prev, newRoutine]);
+  }, []);
+
+  const handleDeleteEvening = useCallback(async (id: string) => {
+    await deleteEveningRoutine(id);
+    setEveningRoutines(prev => prev.filter(r => r.id !== id));
+  }, []);
+
+  const handleToggleEvening = useCallback(async (id: string) => {
+    const updated = await toggleRoutineCompletion('evening', id);
+    setEveningCompleted(updated);
+  }, []);
+
+  // Task handlers
+  const handleAddTask = useCallback(async (title: string, _label?: string, goal?: Goal) => {
+    const newTask = await addDailyTask(title, goal?.id, goal?.name);
+    setDailyTasks(prev => [...prev, newTask]);
+  }, []);
+
+  const handleDeleteTask = useCallback(async (id: string) => {
+    await deleteDailyTask(id);
+    setDailyTasks(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const handleToggleTask = useCallback(async (id: string) => {
+    const updated = await toggleDailyTaskCompletion(id);
+    setDailyTasks(updated);
+  }, []);
+
+  // Modal submit handler
+  const handleModalSubmit = useCallback(
+    (title: string, label?: string, goal?: Goal) => {
+      if (modalType === 'morning') {
+        handleAddMorning(title, label);
+      } else if (modalType === 'evening') {
+        handleAddEvening(title, label);
+      } else if (modalType === 'task') {
+        handleAddTask(title, label, goal);
+      }
+    },
+    [modalType, handleAddMorning, handleAddEvening, handleAddTask]
+  );
+
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header (Whoop-like: title left, streak right) */}
+        {/* Header */}
         <View style={styles.topHeader}>
           <View>
             <Text style={styles.headerTitle}>Today</Text>
@@ -107,7 +226,12 @@ export default function YouScreen() {
 
         {/* Calendar Card */}
         <Card style={{ marginTop: tokens.spacing.md }}>
-          <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} firstOpenedAt={firstOpenedAt} />
+          <MonthGrid
+            selectedDay={selectedDay}
+            onSelectDay={setSelectedDay}
+            wins={wins}
+            firstOpenedAt={firstOpenedAt}
+          />
         </Card>
 
         {/* Day Won Tile */}
@@ -123,93 +247,108 @@ export default function YouScreen() {
 
         {/* Morning */}
         <Card style={{ position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => {}}>
+          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('morning')}>
             <Text style={styles.addBtnText}>+</Text>
           </Pressable>
           <Text style={styles.blockTitle}>Morning</Text>
           <View style={styles.divider} />
 
-          <ListRow
-            title="Prayer"
-            checked={morning[0]}
-            onToggle={() => setMorning([!morning[0], morning[1], morning[2]])}
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Read"
-            checked={morning[1]}
-            onToggle={() => setMorning([morning[0], !morning[1], morning[2]])}
-            rightChipText="10 min"
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Plan the day"
-            checked={morning[2]}
-            onToggle={() => setMorning([morning[0], morning[1], !morning[2]])}
-            onDelete={() => {}}
-          />
+          {morningRoutines.length === 0 ? (
+            <Text style={styles.placeholder}>Add your first morning routine...</Text>
+          ) : (
+            morningRoutines.map(routine => (
+              <ListRow
+                key={routine.id}
+                title={routine.title}
+                checked={morningCompleted.has(routine.id)}
+                onToggle={() => handleToggleMorning(routine.id)}
+                rightChipText={routine.label}
+                onDelete={() => handleDeleteMorning(routine.id)}
+              />
+            ))
+          )}
         </Card>
 
         {/* Tasks */}
         <Card style={{ marginTop: tokens.spacing.md, position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => {}}>
+          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('task')}>
             <Text style={styles.addBtnText}>+</Text>
           </Pressable>
           <Text style={styles.blockTitle}>Today's Tasks</Text>
           <View style={styles.divider} />
 
-          <ListRow
-            title="First deep work block"
-            checked={tasks[0]}
-            onToggle={() => setTasks([!tasks[0], tasks[1], tasks[2], tasks[3]])}
-            rightChipText="Goal: Build YouPrjct"
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Train"
-            checked={tasks[1]}
-            onToggle={() => setTasks([tasks[0], !tasks[1], tasks[2], tasks[3]])}
-            rightChipText="Body"
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Nutrition"
-            checked={tasks[2]}
-            onToggle={() => setTasks([tasks[0], tasks[1], !tasks[2], tasks[3]])}
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Reach out to 1 person"
-            checked={tasks[3]}
-            onToggle={() => setTasks([tasks[0], tasks[1], tasks[2], !tasks[3]])}
-            onDelete={() => {}}
-          />
+          {dailyTasks.length === 0 ? (
+            <Text style={styles.placeholder}>Add a task to get started...</Text>
+          ) : (
+            dailyTasks.map(task => (
+              <ListRow
+                key={task.id}
+                title={task.title}
+                checked={task.completed}
+                onToggle={() => handleToggleTask(task.id)}
+                rightChipText={task.goalName}
+                onDelete={() => handleDeleteTask(task.id)}
+              />
+            ))
+          )}
         </Card>
 
         {/* Evening */}
         <Card style={{ marginTop: tokens.spacing.md, position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => {}}>
+          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('evening')}>
             <Text style={styles.addBtnText}>+</Text>
           </Pressable>
           <Text style={styles.blockTitle}>Evening</Text>
           <View style={styles.divider} />
 
-          <ListRow
-            title="Reflection"
-            checked={evening[0]}
-            onToggle={() => setEvening([!evening[0], evening[1]])}
-            onDelete={() => {}}
-          />
-          <ListRow
-            title="Plan tomorrow"
-            checked={evening[1]}
-            onToggle={() => setEvening([evening[0], !evening[1]])}
-            onDelete={() => {}}
-          />
+          {eveningRoutines.length === 0 ? (
+            <Text style={styles.placeholder}>Add your first evening routine...</Text>
+          ) : (
+            eveningRoutines.map(routine => (
+              <ListRow
+                key={routine.id}
+                title={routine.title}
+                checked={eveningCompleted.has(routine.id)}
+                onToggle={() => handleToggleEvening(routine.id)}
+                rightChipText={routine.label}
+                onDelete={() => handleDeleteEvening(routine.id)}
+              />
+            ))
+          )}
         </Card>
 
         <View style={{ height: tokens.spacing.xl }} />
       </ScrollView>
+
+      {/* Add Item Modals */}
+      <AddItemModal
+        visible={modalType === 'morning'}
+        onClose={() => setModalType(null)}
+        onSubmit={handleModalSubmit}
+        title="Add Morning Routine"
+        placeholder="e.g., Meditation, Exercise..."
+        showLabelInput
+        labelPlaceholder="Duration or note (optional)"
+      />
+
+      <AddItemModal
+        visible={modalType === 'evening'}
+        onClose={() => setModalType(null)}
+        onSubmit={handleModalSubmit}
+        title="Add Evening Routine"
+        placeholder="e.g., Journal, Read..."
+        showLabelInput
+        labelPlaceholder="Duration or note (optional)"
+      />
+
+      <AddItemModal
+        visible={modalType === 'task'}
+        onClose={() => setModalType(null)}
+        onSubmit={handleModalSubmit}
+        title="Add Task"
+        placeholder="e.g., Complete project, Call client..."
+        goals={goals}
+      />
     </ScreenContainer>
   );
 }
@@ -316,5 +455,11 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.border,
     marginTop: tokens.spacing.md,
     marginBottom: tokens.spacing.sm,
+  },
+  placeholder: {
+    fontSize: 15,
+    fontStyle: 'italic',
+    color: tokens.colors.muted,
+    paddingVertical: tokens.spacing.md,
   },
 });
