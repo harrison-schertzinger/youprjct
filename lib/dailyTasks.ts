@@ -19,9 +19,14 @@ function getTasksKey(): string {
 }
 
 export async function loadDailyTasks(): Promise<DailyTask[]> {
-  const raw = await AsyncStorage.getItem(getTasksKey());
-  if (!raw) return [];
-  return JSON.parse(raw);
+  try {
+    const raw = await AsyncStorage.getItem(getTasksKey());
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error('Failed to load daily tasks:', error);
+    return [];
+  }
 }
 
 export async function addDailyTask(title: string, goalId?: string, goalName?: string): Promise<DailyTask> {

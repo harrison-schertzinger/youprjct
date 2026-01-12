@@ -21,9 +21,14 @@ function getCompletionKey(type: 'morning' | 'evening'): string {
 
 // Morning Routines
 export async function loadMorningRoutines(): Promise<Routine[]> {
-  const raw = await AsyncStorage.getItem(MORNING_KEY);
-  if (!raw) return [];
-  return JSON.parse(raw);
+  try {
+    const raw = await AsyncStorage.getItem(MORNING_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error('Failed to load morning routines:', error);
+    return [];
+  }
 }
 
 export async function addMorningRoutine(title: string, label?: string): Promise<Routine> {
@@ -46,9 +51,14 @@ export async function deleteMorningRoutine(id: string): Promise<void> {
 
 // Evening Routines
 export async function loadEveningRoutines(): Promise<Routine[]> {
-  const raw = await AsyncStorage.getItem(EVENING_KEY);
-  if (!raw) return [];
-  return JSON.parse(raw);
+  try {
+    const raw = await AsyncStorage.getItem(EVENING_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error('Failed to load evening routines:', error);
+    return [];
+  }
 }
 
 export async function addEveningRoutine(title: string, label?: string): Promise<Routine> {
@@ -71,9 +81,14 @@ export async function deleteEveningRoutine(id: string): Promise<void> {
 
 // Daily Completion Tracking
 export async function loadCompletedRoutines(type: 'morning' | 'evening'): Promise<Set<string>> {
-  const raw = await AsyncStorage.getItem(getCompletionKey(type));
-  if (!raw) return new Set();
-  return new Set(JSON.parse(raw));
+  try {
+    const raw = await AsyncStorage.getItem(getCompletionKey(type));
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw));
+  } catch (error) {
+    console.error(`Failed to load ${type} completion status:`, error);
+    return new Set();
+  }
 }
 
 export async function toggleRoutineCompletion(type: 'morning' | 'evening', routineId: string): Promise<Set<string>> {

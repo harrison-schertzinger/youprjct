@@ -6,13 +6,22 @@ const GOALS_KEY = '@youprjct:goals';
 export type { Goal, GoalType };
 
 export async function loadGoals(): Promise<Goal[]> {
-  const raw = await AsyncStorage.getItem(GOALS_KEY);
-  if (!raw) return [];
-  return JSON.parse(raw);
+  try {
+    const raw = await AsyncStorage.getItem(GOALS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error('Failed to load goals:', error);
+    return [];
+  }
 }
 
 export async function saveGoals(goals: Goal[]): Promise<void> {
-  await AsyncStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  try {
+    await AsyncStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  } catch (error) {
+    console.error('Failed to save goals:', error);
+  }
 }
 
 export async function addGoal(title: string, goalType: GoalType = 'other'): Promise<Goal> {
