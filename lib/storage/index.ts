@@ -27,7 +27,7 @@ export async function setSchemaVersion(version: number): Promise<void> {
 
 // ========== Typed Storage Helpers ==========
 
-export async function getItem<T>(key: StorageKey): Promise<T | null> {
+export async function getItem<T>(key: StorageKey | string): Promise<T | null> {
   try {
     const json = await AsyncStorage.getItem(key);
     return json ? JSON.parse(json) : null;
@@ -37,7 +37,7 @@ export async function getItem<T>(key: StorageKey): Promise<T | null> {
   }
 }
 
-export async function setItem<T>(key: StorageKey, value: T): Promise<void> {
+export async function setItem<T>(key: StorageKey | string, value: T): Promise<void> {
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
@@ -45,7 +45,7 @@ export async function setItem<T>(key: StorageKey, value: T): Promise<void> {
   }
 }
 
-export async function removeItem(key: StorageKey): Promise<void> {
+export async function removeItem(key: StorageKey | string): Promise<void> {
   try {
     await AsyncStorage.removeItem(key);
   } catch (error) {

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -77,45 +78,48 @@ export default function YouScreen() {
   const [trainingToday, setTrainingToday] = useState(0);
   const [trainingWeek, setTrainingWeek] = useState(0);
 
-  useEffect(() => {
-    const loadAllData = async () => {
-      const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
-      setWins(winsData);
-      setFirstOpenedAt(firstOpened);
+  // Reload data every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadAllData = async () => {
+        const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
+        setWins(winsData);
+        setFirstOpenedAt(firstOpened);
 
-      const [morning, evening, morningDone, eveningDone] = await Promise.all([
-        loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
-      ]);
-      setMorningRoutines(morning);
-      setEveningRoutines(evening);
-      setMorningCompleted(morningDone);
-      setEveningCompleted(eveningDone);
+        const [morning, evening, morningDone, eveningDone] = await Promise.all([
+          loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
+        ]);
+        setMorningRoutines(morning);
+        setEveningRoutines(evening);
+        setMorningCompleted(morningDone);
+        setEveningCompleted(eveningDone);
 
-      const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
-      setDailyTasks(tasks);
-      setGoals(goalsData);
+        const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
+        setDailyTasks(tasks);
+        setGoals(goalsData);
 
-      // Load Personal Mastery Dashboard data
-      const profileData = await getProfile();
-      setProfile(profileData);
+        // Load Personal Mastery Dashboard data
+        const profileData = await getProfile();
+        setProfile(profileData);
 
-      const todayISO = getTodayISO();
-      const weekStartISO = getWeekStartISO();
+        const todayISO = getTodayISO();
+        const weekStartISO = getWeekStartISO();
 
-      const [rToday, rWeek, tToday, tWeek] = await Promise.all([
-        getTotalsByTypeForDate('reading', todayISO),
-        getTotalsByTypeForWeek('reading', weekStartISO),
-        getTotalsByTypeForDate('workout', todayISO),
-        getTotalsByTypeForWeek('workout', weekStartISO),
-      ]);
+        const [rToday, rWeek, tToday, tWeek] = await Promise.all([
+          getTotalsByTypeForDate('reading', todayISO),
+          getTotalsByTypeForWeek('reading', weekStartISO),
+          getTotalsByTypeForDate('workout', todayISO),
+          getTotalsByTypeForWeek('workout', weekStartISO),
+        ]);
 
-      setReadingToday(rToday);
-      setReadingWeek(rWeek);
-      setTrainingToday(tToday);
-      setTrainingWeek(tWeek);
-    };
-    loadAllData();
-  }, []);
+        setReadingToday(rToday);
+        setReadingWeek(rWeek);
+        setTrainingToday(tToday);
+        setTrainingWeek(tWeek);
+      };
+      loadAllData();
+    }, [])
+  );
 
   const appStreakDays = useMemo(() => firstOpenedAt ? daysSince(firstOpenedAt) + 1 : 1, [firstOpenedAt]);
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
