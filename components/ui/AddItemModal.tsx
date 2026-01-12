@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: tokens.spacing.md, gap: tokens.spacing.sm },
   cancelBtn: { paddingVertical: 12, paddingHorizontal: tokens.spacing.lg, borderRadius: tokens.radius.sm },
   cancelText: { fontSize: 16, fontWeight: '600', color: tokens.colors.muted },
-  submitBtn: { paddingVertical: 12, paddingHorizontal: tokens.spacing.lg, borderRadius: tokens.radius.sm, backgroundColor: '#059669' },
+  submitBtn: { paddingVertical: 12, paddingHorizontal: tokens.spacing.lg, borderRadius: tokens.radius.sm, backgroundColor: tokens.colors.tint },
   submitDisabled: { opacity: 0.5 },
   submitText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 });
