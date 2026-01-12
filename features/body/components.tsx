@@ -19,6 +19,8 @@ import type {
   Result,
   ScoreValue,
 } from './types';
+import type { LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
+import type { Exercise, ScoreType, SortDirection } from '@/lib/training/types';
 
 // ============================================
 // PROFILE VIEW COMPONENTS
@@ -508,6 +510,225 @@ export function LeaderboardModal({
 }
 
 // ============================================
+// WORKOUT SESSION COMPONENTS
+// ============================================
+
+export type TimerState = 'idle' | 'running' | 'paused';
+
+type CompactSessionTimerProps = {
+  state: TimerState;
+  duration: number;
+  onStart: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+};
+
+export function CompactSessionTimer({
+  state,
+  duration,
+  onStart,
+  onPause,
+  onResume,
+  onFinish,
+}: CompactSessionTimerProps) {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const renderButtons = () => {
+    switch (state) {
+      case 'idle':
+        return (
+          <Pressable style={styles.compactTimerButton} onPress={onStart}>
+            <Text style={styles.compactTimerButtonText}>Start</Text>
+          </Pressable>
+        );
+      case 'running':
+        return (
+          <View style={styles.compactTimerButtonRow}>
+            <Pressable
+              style={[styles.compactTimerButton, styles.compactTimerButtonSecondary]}
+              onPress={onPause}
+            >
+              <Text style={styles.compactTimerButtonTextSecondary}>Pause</Text>
+            </Pressable>
+            <Pressable style={styles.compactTimerButton} onPress={onFinish}>
+              <Text style={styles.compactTimerButtonText}>Finish</Text>
+            </Pressable>
+          </View>
+        );
+      case 'paused':
+        return (
+          <View style={styles.compactTimerButtonRow}>
+            <Pressable
+              style={[styles.compactTimerButton, styles.compactTimerButtonSecondary]}
+              onPress={onResume}
+            >
+              <Text style={styles.compactTimerButtonTextSecondary}>Resume</Text>
+            </Pressable>
+            <Pressable style={styles.compactTimerButton} onPress={onFinish}>
+              <Text style={styles.compactTimerButtonText}>Finish</Text>
+            </Pressable>
+          </View>
+        );
+    }
+  };
+
+  return (
+    <View style={styles.compactTimer}>
+      <View style={styles.compactTimerLeft}>
+        <Text style={styles.compactTimerLabel}>Session</Text>
+        <Text style={styles.compactTimerDuration}>{formatTime(duration)}</Text>
+      </View>
+      {renderButtons()}
+    </View>
+  );
+}
+
+type ExpandableMovementTileProps = {
+  exerciseTitle: string;
+  targetText?: string;
+  notes?: string;
+  scoreType: ScoreType;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onLogResult: () => void;
+  onViewResults: () => void;
+};
+
+export function ExpandableMovementTile({
+  exerciseTitle,
+  targetText,
+  notes,
+  scoreType,
+  isExpanded,
+  onToggle,
+  onLogResult,
+  onViewResults,
+}: ExpandableMovementTileProps) {
+  const getScoreTypeLabel = (type: ScoreType): string => {
+    switch (type) {
+      case 'weight':
+        return 'Weight';
+      case 'reps':
+        return 'Reps';
+      case 'time':
+        return 'Time';
+      default:
+        return '';
+    }
+  };
+
+  return (
+    <Card style={styles.expandableTile}>
+      <Pressable style={styles.expandableTileHeader} onPress={onToggle}>
+        <View style={styles.expandableTileHeaderContent}>
+          <Text style={styles.expandableTileTitle}>{exerciseTitle}</Text>
+          <Text style={styles.expandableTileSubtitle}>{getScoreTypeLabel(scoreType)}</Text>
+        </View>
+        <Text style={styles.expandableTileChevron}>{isExpanded ? '−' : '+'}</Text>
+      </Pressable>
+
+      {isExpanded && (
+        <View style={styles.expandableTileBody}>
+          {targetText && (
+            <View style={styles.expandableTileDetail}>
+              <Text style={styles.expandableTileDetailLabel}>Target</Text>
+              <Text style={styles.expandableTileDetailValue}>{targetText}</Text>
+            </View>
+          )}
+          {notes && (
+            <View style={styles.expandableTileDetail}>
+              <Text style={styles.expandableTileDetailLabel}>Notes</Text>
+              <Text style={styles.expandableTileDetailValue}>{notes}</Text>
+            </View>
+          )}
+          <View style={styles.expandableTileActions}>
+            <Pressable style={styles.expandableTileActionButton} onPress={onLogResult}>
+              <Text style={styles.expandableTileActionButtonText}>Log Result</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.expandableTileActionButton, styles.expandableTileActionButtonSecondary]}
+              onPress={onViewResults}
+            >
+              <Text style={styles.expandableTileActionButtonTextSecondary}>Results</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </Card>
+  );
+}
+
+type ExerciseLeaderboardModalProps = {
+  visible: boolean;
+  exerciseTitle: string;
+  scoreType: ScoreType;
+  sortDirection: SortDirection;
+  entries: LeaderboardEntry[];
+  onClose: () => void;
+};
+
+export function ExerciseLeaderboardModal({
+  visible,
+  exerciseTitle,
+  scoreType,
+  sortDirection,
+  entries,
+  onClose,
+}: ExerciseLeaderboardModalProps) {
+  const formatValue = (value: number): string => {
+    if (scoreType === 'time') {
+      const mins = Math.floor(value / 60);
+      const secs = value % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    } else if (scoreType === 'weight') {
+      return `${value} lbs`;
+    } else {
+      return `${value} reps`;
+    }
+  };
+
+  const formatDate = (dateISO: string): string => {
+    const date = new Date(dateISO);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <Modal visible={visible} onClose={onClose} title={exerciseTitle}>
+      <View style={styles.exerciseLeaderboardContainer}>
+        {entries.length === 0 ? (
+          <Text style={styles.emptyLeaderboard}>No results logged yet</Text>
+        ) : (
+          entries.map((entry) => (
+            <View key={entry.id} style={styles.exerciseLeaderboardRow}>
+              <View style={styles.exerciseLeaderboardRank}>
+                <Text style={styles.exerciseLeaderboardRankText}>{entry.rank}</Text>
+              </View>
+              <View style={styles.exerciseLeaderboardInfo}>
+                <Text style={styles.exerciseLeaderboardName}>{entry.displayName}</Text>
+                <Text style={styles.exerciseLeaderboardDate}>{formatDate(entry.dateISO)}</Text>
+              </View>
+              <View style={styles.exerciseLeaderboardValueContainer}>
+                <Text style={styles.exerciseLeaderboardValue}>{formatValue(entry.value)}</Text>
+                {entry.isPR && (
+                  <View style={styles.prBadge}>
+                    <Text style={styles.prBadgeText}>PR</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+    </Modal>
+  );
+}
+
+// ============================================
 // STYLES
 // ============================================
 
@@ -835,5 +1056,183 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     textAlign: 'center',
     paddingVertical: tokens.spacing.xl,
+  },
+
+  // Compact Session Timer
+  compactTimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: tokens.colors.card,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.lg,
+    marginBottom: tokens.spacing.lg,
+  },
+  compactTimerLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: tokens.spacing.sm,
+  },
+  compactTimerLabel: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+  },
+  compactTimerDuration: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+  },
+  compactTimerButtonRow: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
+  compactTimerButton: {
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    backgroundColor: tokens.colors.tint,
+    borderRadius: tokens.radius.sm,
+    minWidth: 70,
+    alignItems: 'center',
+  },
+  compactTimerButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  compactTimerButtonText: {
+    ...tokens.typography.small,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  compactTimerButtonTextSecondary: {
+    ...tokens.typography.small,
+    color: tokens.colors.text,
+    fontWeight: '600',
+  },
+
+  // Expandable Movement Tile
+  expandableTile: {
+    marginBottom: tokens.spacing.sm,
+    overflow: 'hidden',
+  },
+  expandableTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  expandableTileHeaderContent: {
+    flex: 1,
+  },
+  expandableTileTitle: {
+    ...tokens.typography.body,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  expandableTileSubtitle: {
+    ...tokens.typography.tiny,
+    color: tokens.colors.muted,
+    marginTop: 2,
+  },
+  expandableTileChevron: {
+    fontSize: 20,
+    color: tokens.colors.muted,
+    fontWeight: '600',
+    width: 24,
+    textAlign: 'center',
+  },
+  expandableTileBody: {
+    marginTop: tokens.spacing.md,
+    paddingTop: tokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: tokens.colors.border,
+  },
+  expandableTileDetail: {
+    marginBottom: tokens.spacing.sm,
+  },
+  expandableTileDetailLabel: {
+    ...tokens.typography.tiny,
+    color: tokens.colors.muted,
+    marginBottom: 2,
+  },
+  expandableTileDetailValue: {
+    ...tokens.typography.small,
+    color: tokens.colors.text,
+  },
+  expandableTileActions: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+    marginTop: tokens.spacing.md,
+  },
+  expandableTileActionButton: {
+    flex: 1,
+    paddingVertical: tokens.spacing.sm,
+    backgroundColor: tokens.colors.tint,
+    borderRadius: tokens.radius.sm,
+    alignItems: 'center',
+  },
+  expandableTileActionButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  expandableTileActionButtonText: {
+    ...tokens.typography.small,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  expandableTileActionButtonTextSecondary: {
+    ...tokens.typography.small,
+    color: tokens.colors.text,
+    fontWeight: '600',
+  },
+
+  // Exercise Leaderboard Modal
+  exerciseLeaderboardContainer: {
+    gap: tokens.spacing.xs,
+  },
+  exerciseLeaderboardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.border,
+  },
+  exerciseLeaderboardRank: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: tokens.colors.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: tokens.spacing.md,
+  },
+  exerciseLeaderboardRankText: {
+    ...tokens.typography.small,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  exerciseLeaderboardInfo: {
+    flex: 1,
+  },
+  exerciseLeaderboardName: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+  },
+  exerciseLeaderboardDate: {
+    ...tokens.typography.tiny,
+    color: tokens.colors.muted,
+    marginTop: 2,
+  },
+  exerciseLeaderboardValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  exerciseLeaderboardValue: {
+    ...tokens.typography.body,
+    fontWeight: '700',
+    color: tokens.colors.text,
   },
 });

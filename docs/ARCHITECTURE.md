@@ -57,7 +57,8 @@ We use a typed repository layer to abstract data access and prepare for future S
 2. **ResultsRepo** (`lib/repositories/ResultsRepo.ts`)
    - Manages logged performance results and PRs
    - `logResult(exerciseId, trackId, dateISO, value)` — Log a performance result
-   - `getResultsForExercise(exerciseId, options)` — Get leaderboard data
+   - `getResultsForExercise(exerciseId, options)` — Get results history
+   - `getLeaderboardForExercise(exerciseId, sortDirection, limit)` — Get ranked leaderboard entries with displayName
    - `getUserPRs()` — Get personal records for major movements
 
 3. **ActivityRepo** (`lib/repositories/ActivityRepo.ts`)
@@ -79,6 +80,29 @@ We use a typed repository layer to abstract data access and prepare for future S
 - **Date-based programming:** Training organized by `trackId` + `dateISO` for clean day/week queries
 - **Time tracking foundation:** ActivitySession model supports "You" dashboard metrics (reading time, workout time)
 - **Schema versioning:** Ready for future migrations with schema version tracking
+
+### Workout Session Timer (PR#3)
+
+The workout session screen (`app/workout-session.tsx`) implements a persistent timer:
+
+**Timer States:** `idle` | `running` | `paused`
+
+**Persistence Pattern:**
+- Timer state persisted to AsyncStorage on every tick and state change
+- Storage key format: `@workout:session:timer:{workoutId}:{dateISO}`
+- Persisted data: `elapsedSeconds`, `timerState`, `lastTickISO`
+- On restore: if timer was `running`, calculates elapsed time since `lastTickISO`
+
+**Timer Flow:**
+1. **Start** — Begin timer, persist `running` state
+2. **Pause** — Stop interval, persist `paused` state with current elapsed
+3. **Resume** — Restart interval from persisted elapsed
+4. **Finish** — Log `ActivitySession` of type `workout`, clear persisted state
+
+**Components:**
+- `CompactSessionTimer` — Compact inline timer with Start/Pause/Finish buttons
+- `ExpandableMovementTile` — Collapsible movement card with Log Result + Results buttons
+- `ExerciseLeaderboardModal` — Per-exercise leaderboard sorted by `sortDirection`
 
 ### Data (Phase 1: local)
 - Wins stored in AsyncStorage keyed by dateKey (YYYY-MM-DD)
