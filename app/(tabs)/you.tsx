@@ -14,8 +14,47 @@ import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
 import { Goal, loadGoals } from '@/lib/goals';
+import { getTotalsByTypeForDate, getTotalsByTypeForWeek } from '@/lib/repositories/ActivityRepo';
+import { getProfile } from '@/lib/repositories/ProfileRepo';
+import type { Profile } from '@/lib/training/types';
 
 type ModalType = 'morning' | 'evening' | 'task' | null;
+
+// ========== Helper Functions ==========
+
+function getTodayISO(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekStartISO(): string {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Monday is week start
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff);
+
+  const year = monday.getFullYear();
+  const month = String(monday.getMonth() + 1).padStart(2, '0');
+  const day = String(monday.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds === 0) return '—';
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  return `${minutes}m`;
+}
 
 export default function YouScreen() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
@@ -30,6 +69,13 @@ export default function YouScreen() {
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalType, setModalType] = useState<ModalType>(null);
+
+  // Personal Mastery Dashboard state
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [readingToday, setReadingToday] = useState(0);
+  const [readingWeek, setReadingWeek] = useState(0);
+  const [trainingToday, setTrainingToday] = useState(0);
+  const [trainingWeek, setTrainingWeek] = useState(0);
 
   useEffect(() => {
     const loadAllData = async () => {
@@ -48,6 +94,25 @@ export default function YouScreen() {
       const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
       setDailyTasks(tasks);
       setGoals(goalsData);
+
+      // Load Personal Mastery Dashboard data
+      const profileData = await getProfile();
+      setProfile(profileData);
+
+      const todayISO = getTodayISO();
+      const weekStartISO = getWeekStartISO();
+
+      const [rToday, rWeek, tToday, tWeek] = await Promise.all([
+        getTotalsByTypeForDate('reading', todayISO),
+        getTotalsByTypeForWeek('reading', weekStartISO),
+        getTotalsByTypeForDate('workout', todayISO),
+        getTotalsByTypeForWeek('workout', weekStartISO),
+      ]);
+
+      setReadingToday(rToday);
+      setReadingWeek(rWeek);
+      setTrainingToday(tToday);
+      setTrainingWeek(tWeek);
     };
     loadAllData();
   }, []);
@@ -125,6 +190,16 @@ export default function YouScreen() {
             <Text style={styles.streakValue}>🔥 {appStreakDays}</Text>
           </View>
         </View>
+
+        {/* On App Streak Chip */}
+        {profile && (
+          <View style={styles.onAppChipContainer}>
+            <View style={styles.onAppChip}>
+              <Text style={styles.onAppChipValue}>🔥 {profile.onAppStreakDays}</Text>
+              <Text style={styles.onAppChipLabel}>On app</Text>
+            </View>
+          </View>
+        )}
 
         {/* Stats Bar */}
         <Card style={{ paddingVertical: tokens.spacing.sm }}>
@@ -206,6 +281,43 @@ export default function YouScreen() {
           )}
         </Card>
 
+        {/* Personal Mastery Dashboard */}
+        <SectionHeader title="Personal Mastery Dashboard" />
+
+        {/* TIME Group */}
+        <View style={styles.dashboardGroup}>
+          <Text style={styles.groupLabel}>TIME</Text>
+          <View style={styles.tileRow}>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>READING</Text>
+              <Text style={styles.tileValue}>{formatDuration(readingToday)}</Text>
+              <Text style={styles.tileSecondary}>{formatDuration(readingWeek)} ↗</Text>
+            </View>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>TRAINING</Text>
+              <Text style={styles.tileValue}>{formatDuration(trainingToday)}</Text>
+              <Text style={styles.tileSecondary}>{formatDuration(trainingWeek)} ↗</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* TRACKING Group */}
+        <View style={styles.dashboardGroup}>
+          <Text style={styles.groupLabel}>TRACKING</Text>
+          <View style={styles.tileRow}>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>DISCIPLINE</Text>
+              <Text style={styles.tileValue}>—</Text>
+              <Text style={styles.tileSecondary}> </Text>
+            </View>
+            <View style={styles.tile}>
+              <Text style={styles.tileLabel}>GOALS</Text>
+              <Text style={styles.tileValue}>{goals.length}</Text>
+              <Text style={styles.tileSecondary}>active</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={{ height: tokens.spacing.xl }} />
       </ScrollView>
 
@@ -224,6 +336,13 @@ const styles = StyleSheet.create({
   streakPill: { borderWidth: 1, borderColor: tokens.colors.border, backgroundColor: tokens.colors.card, borderRadius: tokens.radius.pill, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minWidth: 78 },
   streakLabel: { fontSize: 12, fontWeight: '800', color: tokens.colors.muted },
   streakValue: { marginTop: 2, fontSize: 22, fontWeight: '900', color: tokens.colors.text },
+
+  // On App Streak Chip
+  onAppChipContainer: { marginBottom: tokens.spacing.md, alignItems: 'flex-start' },
+  onAppChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F7F5', borderRadius: tokens.radius.pill, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: tokens.colors.border },
+  onAppChipValue: { fontSize: 14, fontWeight: '700', color: tokens.colors.text, marginRight: 6 },
+  onAppChipLabel: { fontSize: 11, fontWeight: '600', color: tokens.colors.muted, textTransform: 'uppercase', letterSpacing: 0.3 },
+
   statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statBlock: { flex: 1 },
   statDivider: { width: 1, height: 32, backgroundColor: tokens.colors.border, marginHorizontal: 10 },
@@ -234,4 +353,13 @@ const styles = StyleSheet.create({
   addBtnText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   divider: { height: 1, backgroundColor: tokens.colors.border, marginTop: tokens.spacing.md, marginBottom: tokens.spacing.sm },
   placeholder: { fontSize: 15, fontStyle: 'italic', color: tokens.colors.muted, paddingVertical: tokens.spacing.md },
+
+  // Personal Mastery Dashboard
+  dashboardGroup: { marginBottom: tokens.spacing.md },
+  groupLabel: { fontSize: 12, fontWeight: '700', color: tokens.colors.muted, marginBottom: tokens.spacing.sm, letterSpacing: 0.5 },
+  tileRow: { flexDirection: 'row', gap: tokens.spacing.sm },
+  tile: { flex: 1, backgroundColor: tokens.colors.card, borderRadius: tokens.radius.md, borderWidth: 1, borderColor: tokens.colors.border, padding: tokens.spacing.md, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  tileLabel: { fontSize: 10, fontWeight: '700', color: tokens.colors.muted, marginBottom: 8, letterSpacing: 0.5 },
+  tileValue: { fontSize: 24, fontWeight: '900', color: tokens.colors.text, marginBottom: 4 },
+  tileSecondary: { fontSize: 13, fontWeight: '600', color: tokens.colors.muted, minHeight: 18 },
 });
