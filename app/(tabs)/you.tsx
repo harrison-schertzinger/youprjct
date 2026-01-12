@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
+import { WeekBattery } from '@/components/ui/WeekBattery';
 import { loadWins, markDayAsWin, getTotalDaysWon, getThisWeekStats, getDayOutcome } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
@@ -140,7 +141,7 @@ export default function YouScreen() {
             <View style={styles.statDivider} />
             <View style={styles.statBlock}>
               <Text style={styles.statLabel}>THIS WEEK</Text>
-              <Text style={[styles.statValue, { color: tokens.colors.action }]}>{winsThisWeek}/{totalDaysThisWeek}</Text>
+              <WeekBattery wins={winsThisWeek} total={totalDaysThisWeek} />
             </View>
           </View>
         </Card>
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 11, fontWeight: '700', color: tokens.colors.muted, marginBottom: 2, letterSpacing: 0.5 },
   statValue: { fontSize: 20, fontWeight: '900' },
   blockTitle: { fontSize: 16, fontWeight: '800', color: tokens.colors.text },
-  addBtnCorner: { position: 'absolute', top: 14, right: 14, paddingHorizontal: 12, paddingVertical: 6, borderRadius: tokens.radius.sm, backgroundColor: tokens.colors.action, alignItems: 'center', justifyContent: 'center', zIndex: 1 },
+  addBtnCorner: { position: 'absolute', top: 14, right: 14, paddingHorizontal: 12, paddingVertical: 6, borderRadius: tokens.radius.sm, backgroundColor: '#8B8B8B', alignItems: 'center', justifyContent: 'center', zIndex: 1 },
   addBtnText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
   divider: { height: 1, backgroundColor: tokens.colors.border, marginTop: tokens.spacing.md, marginBottom: tokens.spacing.sm },
   placeholder: { fontSize: 15, fontStyle: 'italic', color: tokens.colors.muted, paddingVertical: tokens.spacing.md },

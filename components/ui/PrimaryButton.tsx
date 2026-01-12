@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   btn: {
     height: 54,
     borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.text,
+    backgroundColor: tokens.colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
