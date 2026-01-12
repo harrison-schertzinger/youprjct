@@ -92,7 +92,7 @@ export default function YouScreen() {
   }, []);
 
   const handleAddTask = useCallback(async (title: string, _label?: string, goal?: Goal) => {
-    const newTask = await addDailyTask(title, goal?.id, goal?.name);
+    const newTask = await addDailyTask(title, goal?.id, goal?.title);
     setDailyTasks(prev => [...prev, newTask]);
   }, []);
 
