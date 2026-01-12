@@ -75,7 +75,8 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.text,
   },
   optionText: {
-    ...tokens.typography.h3,
+    ...tokens.typography.body,
+    fontWeight: '700',
     color: tokens.colors.text,
   },
   optionTextActive: {

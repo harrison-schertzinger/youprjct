@@ -245,10 +245,7 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    ...Platform.select({
-      ios: tokens.shadow.ios,
-      android: tokens.shadow.android,
-    }),
+    ...(Platform.OS === 'ios' ? tokens.shadow.ios : tokens.shadow.android),
   },
   typeBar: {
     width: 4,

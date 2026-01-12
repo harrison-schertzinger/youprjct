@@ -8,7 +8,7 @@
 
 export type CalendarCell =
   | { type: 'blank' }
-  | { type: 'day'; value: number; date: Date };
+  | { type: 'day'; value: number; date: Date; dateKey: string };
 
 export interface MonthData {
   year: number;
@@ -75,10 +75,12 @@ export function generateMonthData(year: number, month: number): MonthData {
 
   // Add cells for each day in the month
   for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
     cells.push({
       type: 'day',
       value: day,
-      date: new Date(year, month, day)
+      date,
+      dateKey: formatDateKey(date)
     });
   }
 

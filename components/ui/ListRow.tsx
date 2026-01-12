@@ -28,7 +28,7 @@ export function ListRow({
           <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
         </View>
         <View style={styles.right}>
-          {rightChipText ? <Chip text={rightChipText} tone={rightChipTone} /> : null}
+          {rightChipText ? <Chip label={rightChipText} /> : null}
         </View>
       </Pressable>
       {onDelete && (

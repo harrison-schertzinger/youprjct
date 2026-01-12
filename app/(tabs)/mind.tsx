@@ -41,7 +41,7 @@ export default function MindScreen() {
   const [sessionDuration, setSessionDuration] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState<number>(0);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Modals
   const [bookPickerVisible, setBookPickerVisible] = useState(false);

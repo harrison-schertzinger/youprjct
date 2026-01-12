@@ -47,7 +47,7 @@ export default function BodyScreen() {
   // Session timer
   const [sessionActive, setSessionActive] = useState(false);
   const [sessionDuration, setSessionDuration] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (sessionActive) {
