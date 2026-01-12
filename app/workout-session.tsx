@@ -1,14 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { tokens } from '@/design/tokens';
-import type { EnrichedWorkout, EnrichedMovement } from '@/features/body/hooks';
+import type { EnrichedMovement } from '@/features/body/hooks';
 import { useTrainingDay } from '@/features/body/hooks';
-import { LogResultModal } from '@/features/body';
-import type { ScoreValue } from '@/features/body/types';
+import {
+  LogResultModal,
+  CompactSessionTimer,
+  ExpandableMovementTile,
+  ExerciseLeaderboardModal,
+  TimerState,
+} from '@/features/body';
+import type { ScoreValue, WorkoutItem } from '@/features/body/types';
+import { logSession } from '@/lib/repositories/ActivityRepo';
+import { logResult, getLeaderboardForExercise, LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
+import { getItem, setItem } from '@/lib/storage';
+import { StorageKeys } from '@/lib/storage/keys';
+
+// Timer persistence type
+type PersistedTimerState = {
+  workoutId: string;
+  dateISO: string;
+  elapsedSeconds: number;
+  timerState: TimerState;
+  lastTickISO: string;
+};
+
+// Generate storage key for specific workout+date
+function getTimerStorageKey(workoutId: string, dateISO: string): string {
+  return `${StorageKeys.WORKOUT_SESSION_TIMER}:${workoutId}:${dateISO}`;
+}
 
 export default function WorkoutSessionScreen() {
   const params = useLocalSearchParams<{
@@ -22,19 +45,41 @@ export default function WorkoutSessionScreen() {
   const { enrichedWorkouts, loading } = useTrainingDay(trackId, date);
   const workout = enrichedWorkouts.find((w) => w.id === workoutId);
 
-  // Session timer
-  const [sessionActive, setSessionActive] = useState(false);
-  const [sessionDuration, setSessionDuration] = useState(0);
+  // Timer state
+  const [timerState, setTimerState] = useState<TimerState>('idle');
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [timerRestored, setTimerRestored] = useState(false);
 
-  // Result logging
+  // Expanded movements (track which ones are expanded)
+  const [expandedMovements, setExpandedMovements] = useState<Set<string>>(new Set());
+
+  // Log result modal
   const [logResultVisible, setLogResultVisible] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<EnrichedMovement | null>(null);
 
+  // Leaderboard modal
+  const [leaderboardVisible, setLeaderboardVisible] = useState(false);
+  const [leaderboardMovement, setLeaderboardMovement] = useState<EnrichedMovement | null>(null);
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+
+  // Restore timer state on mount
   useEffect(() => {
-    if (sessionActive) {
+    if (workoutId && date) {
+      restoreTimerState();
+    }
+  }, [workoutId, date]);
+
+  // Timer tick effect
+  useEffect(() => {
+    if (timerState === 'running') {
       timerRef.current = setInterval(() => {
-        setSessionDuration((prev) => prev + 1);
+        setElapsedSeconds((prev) => {
+          const newValue = prev + 1;
+          // Persist every tick
+          persistTimerState(newValue, 'running');
+          return newValue;
+        });
       }, 1000);
     } else {
       if (timerRef.current) {
@@ -48,35 +93,177 @@ export default function WorkoutSessionScreen() {
         clearInterval(timerRef.current);
       }
     };
-  }, [sessionActive]);
+  }, [timerState]);
 
-  const handleStartSession = () => {
-    setSessionActive(true);
-    setSessionDuration(0);
+  const restoreTimerState = async () => {
+    try {
+      const key = getTimerStorageKey(workoutId, date);
+      const persisted = await getItem<PersistedTimerState>(key);
+
+      if (persisted && persisted.workoutId === workoutId && persisted.dateISO === date) {
+        // Calculate elapsed time if timer was running
+        if (persisted.timerState === 'running') {
+          const lastTick = new Date(persisted.lastTickISO).getTime();
+          const now = Date.now();
+          const additionalSeconds = Math.floor((now - lastTick) / 1000);
+          setElapsedSeconds(persisted.elapsedSeconds + additionalSeconds);
+          setTimerState('running');
+        } else {
+          setElapsedSeconds(persisted.elapsedSeconds);
+          setTimerState(persisted.timerState);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to restore timer state:', error);
+    } finally {
+      setTimerRestored(true);
+    }
   };
 
-  const handleEndSession = () => {
-    setSessionActive(false);
-    console.log('Session ended. Duration:', sessionDuration);
+  const persistTimerState = async (seconds: number, state: TimerState) => {
+    try {
+      const key = getTimerStorageKey(workoutId, date);
+      const persisted: PersistedTimerState = {
+        workoutId,
+        dateISO: date,
+        elapsedSeconds: seconds,
+        timerState: state,
+        lastTickISO: new Date().toISOString(),
+      };
+      await setItem(key, persisted);
+    } catch (error) {
+      console.error('Failed to persist timer state:', error);
+    }
   };
 
-  const handleLogResult = (movement: EnrichedMovement) => {
+  const clearTimerState = async () => {
+    try {
+      const key = getTimerStorageKey(workoutId, date);
+      await setItem(key, null);
+    } catch (error) {
+      console.error('Failed to clear timer state:', error);
+    }
+  };
+
+  // Timer handlers
+  const handleStart = useCallback(() => {
+    setTimerState('running');
+    persistTimerState(elapsedSeconds, 'running');
+  }, [elapsedSeconds]);
+
+  const handlePause = useCallback(() => {
+    setTimerState('paused');
+    persistTimerState(elapsedSeconds, 'paused');
+  }, [elapsedSeconds]);
+
+  const handleResume = useCallback(() => {
+    setTimerState('running');
+    persistTimerState(elapsedSeconds, 'running');
+  }, [elapsedSeconds]);
+
+  const handleFinish = useCallback(async () => {
+    // Log activity session
+    if (elapsedSeconds > 0) {
+      try {
+        await logSession('workout', date, elapsedSeconds);
+      } catch (error) {
+        console.error('Failed to log workout session:', error);
+      }
+    }
+
+    // Reset timer
+    setTimerState('idle');
+    setElapsedSeconds(0);
+    await clearTimerState();
+  }, [elapsedSeconds, date]);
+
+  // Movement expansion toggle
+  const toggleMovementExpanded = useCallback((movementId: string) => {
+    setExpandedMovements((prev) => {
+      const next = new Set(prev);
+      if (next.has(movementId)) {
+        next.delete(movementId);
+      } else {
+        next.add(movementId);
+      }
+      return next;
+    });
+  }, []);
+
+  // Log result handlers
+  const handleLogResultPress = useCallback((movement: EnrichedMovement) => {
     setSelectedMovement(movement);
     setLogResultVisible(true);
+  }, []);
+
+  const handleSubmitResult = useCallback(async (score: ScoreValue) => {
+    if (!selectedMovement) return;
+
+    try {
+      // Map ScoreValue to repository format
+      let value: { valueNumber?: number; valueTimeSeconds?: number } = {};
+
+      if (score.type === 'weight') {
+        value.valueNumber = score.value;
+      } else if (score.type === 'time') {
+        value.valueTimeSeconds = score.seconds;
+      } else if (score.type === 'completed') {
+        // For completed, we use valueNumber as 1 or 0
+        value.valueNumber = score.value ? 1 : 0;
+      } else if (score.type === 'rounds-reps') {
+        // Store as total reps (rounds * assumed reps per round + extra reps)
+        value.valueNumber = score.rounds * 100 + score.reps;
+      }
+
+      await logResult(selectedMovement.exercise.id, trackId, date, value);
+    } catch (error) {
+      console.error('Failed to log result:', error);
+    }
+
+    setLogResultVisible(false);
+    setSelectedMovement(null);
+  }, [selectedMovement, trackId, date]);
+
+  // Leaderboard handlers
+  const handleViewResultsPress = useCallback(async (movement: EnrichedMovement) => {
+    setLeaderboardMovement(movement);
+
+    try {
+      const entries = await getLeaderboardForExercise(
+        movement.exercise.id,
+        movement.exercise.sortDirection,
+        10
+      );
+      setLeaderboardEntries(entries);
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      setLeaderboardEntries([]);
+    }
+
+    setLeaderboardVisible(true);
+  }, []);
+
+  const handleCloseLeaderboard = useCallback(() => {
+    setLeaderboardVisible(false);
+    setLeaderboardMovement(null);
+    setLeaderboardEntries([]);
+  }, []);
+
+  // Map exercise scoreType to WorkoutItem scoreType
+  const mapScoreType = (exerciseScoreType: string): WorkoutItem['scoreType'] => {
+    switch (exerciseScoreType) {
+      case 'weight':
+        return 'weight';
+      case 'time':
+        return 'time';
+      case 'reps':
+        return 'completed';
+      default:
+        return 'weight';
+    }
   };
 
-  const handleSubmitResult = (score: ScoreValue) => {
-    console.log('Result submitted:', { movement: selectedMovement, score });
-    // In production, save to repository
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  if (loading) {
+  if (loading || !timerRestored) {
     return (
       <ScreenContainer>
         <View style={styles.loadingContainer}>
@@ -118,39 +305,36 @@ export default function WorkoutSessionScreen() {
           </Text>
         </View>
 
-        {/* Session Timer */}
-        <Card style={styles.sessionTimer}>
-          <View style={styles.sessionTimerContent}>
-            <View>
-              <Text style={styles.sessionTimerLabel}>Workout Session</Text>
-              {sessionActive && (
-                <Text style={styles.sessionTimerDuration}>{formatTime(sessionDuration)}</Text>
-              )}
-            </View>
-            <PrimaryButton
-              label={sessionActive ? 'End' : 'Start'}
-              onPress={sessionActive ? handleEndSession : handleStartSession}
-              style={styles.sessionTimerButton}
-            />
-          </View>
-        </Card>
+        {/* Compact Session Timer */}
+        <CompactSessionTimer
+          state={timerState}
+          duration={elapsedSeconds}
+          onStart={handleStart}
+          onPause={handlePause}
+          onResume={handleResume}
+          onFinish={handleFinish}
+        />
 
         {/* Movements */}
-        <View>
-          <Text style={styles.sectionTitle}>Movements</Text>
-          {workout.movements.map((movement) => (
-            <MovementCard
-              key={movement.id}
-              movement={movement}
-              onLogResult={() => handleLogResult(movement)}
-            />
-          ))}
-        </View>
-
-        {workout.movements.length === 0 && (
+        <Text style={styles.sectionTitle}>Movements</Text>
+        {workout.movements.length === 0 ? (
           <View style={styles.noMovements}>
             <Text style={styles.noMovementsText}>No movements scheduled</Text>
           </View>
+        ) : (
+          workout.movements.map((movement) => (
+            <ExpandableMovementTile
+              key={movement.id}
+              exerciseTitle={movement.exercise.title}
+              targetText={movement.targetText}
+              notes={movement.notes}
+              scoreType={movement.exercise.scoreType}
+              isExpanded={expandedMovements.has(movement.id)}
+              onToggle={() => toggleMovementExpanded(movement.id)}
+              onLogResult={() => handleLogResultPress(movement)}
+              onViewResults={() => handleViewResultsPress(movement)}
+            />
+          ))
         )}
       </ScrollView>
 
@@ -162,41 +346,30 @@ export default function WorkoutSessionScreen() {
             ? {
                 id: selectedMovement.id,
                 name: selectedMovement.exercise.title,
-                scoreType: selectedMovement.exercise.scoreType === 'reps' ? 'completed' : selectedMovement.exercise.scoreType,
+                scoreType: mapScoreType(selectedMovement.exercise.scoreType),
                 description: selectedMovement.targetText,
               }
             : null
         }
-        onClose={() => setLogResultVisible(false)}
+        onClose={() => {
+          setLogResultVisible(false);
+          setSelectedMovement(null);
+        }}
         onSubmit={handleSubmitResult}
       />
+
+      {/* Exercise Leaderboard Modal */}
+      {leaderboardMovement && (
+        <ExerciseLeaderboardModal
+          visible={leaderboardVisible}
+          exerciseTitle={leaderboardMovement.exercise.title}
+          scoreType={leaderboardMovement.exercise.scoreType}
+          sortDirection={leaderboardMovement.exercise.sortDirection}
+          entries={leaderboardEntries}
+          onClose={handleCloseLeaderboard}
+        />
+      )}
     </ScreenContainer>
-  );
-}
-
-type MovementCardProps = {
-  movement: EnrichedMovement;
-  onLogResult: () => void;
-};
-
-function MovementCard({ movement, onLogResult }: MovementCardProps) {
-  return (
-    <Card style={styles.movementCard}>
-      <View style={styles.movementHeader}>
-        <View style={styles.movementInfo}>
-          <Text style={styles.movementName}>{movement.exercise.title}</Text>
-          {movement.targetText && (
-            <Text style={styles.movementTarget}>{movement.targetText}</Text>
-          )}
-          {movement.notes && (
-            <Text style={styles.movementNotes}>{movement.notes}</Text>
-          )}
-        </View>
-        <Pressable style={styles.logButton} onPress={onLogResult}>
-          <Text style={styles.logButtonText}>Log</Text>
-        </Pressable>
-      </View>
-    </Card>
   );
 }
 
@@ -224,11 +397,11 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
   },
   header: {
-    marginBottom: tokens.spacing.xl,
+    marginBottom: tokens.spacing.lg,
   },
   backButton: {
     paddingVertical: tokens.spacing.sm,
-    marginBottom: tokens.spacing.sm,
+    marginBottom: tokens.spacing.xs,
     alignSelf: 'flex-start',
   },
   backButtonText: {
@@ -245,72 +418,10 @@ const styles = StyleSheet.create({
     ...tokens.typography.body,
     color: tokens.colors.muted,
   },
-  sessionTimer: {
-    marginBottom: tokens.spacing.xl,
-  },
-  sessionTimerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sessionTimerLabel: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-    marginBottom: 2,
-  },
-  sessionTimerDuration: {
-    ...tokens.typography.h1,
-    color: tokens.colors.text,
-  },
-  sessionTimerButton: {
-    width: 100,
-    height: 44,
-  },
   sectionTitle: {
     ...tokens.typography.h2,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.md,
-  },
-  movementCard: {
-    marginBottom: tokens.spacing.md,
-  },
-  movementHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  movementInfo: {
-    flex: 1,
-    marginRight: tokens.spacing.md,
-  },
-  movementName: {
-    ...tokens.typography.body,
-    fontWeight: '700',
-    color: tokens.colors.text,
-    marginBottom: 2,
-  },
-  movementTarget: {
-    ...tokens.typography.small,
-    color: tokens.colors.text,
-    marginBottom: 2,
-  },
-  movementNotes: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-    fontStyle: 'italic',
-  },
-  logButton: {
-    paddingHorizontal: tokens.spacing.md,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colors.tint,
-    borderRadius: tokens.radius.sm,
-  },
-  logButtonText: {
-    ...tokens.typography.small,
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   noMovements: {
     paddingVertical: tokens.spacing.xl * 2,

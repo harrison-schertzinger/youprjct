@@ -2,10 +2,23 @@
 
 import { getItem, setItem } from '../storage';
 import { StorageKeys } from '../storage/keys';
-import type { Result, Exercise } from '../training/types';
-import { getMajorExercises } from './TrainingRepo';
+import type { Result, Exercise, SortDirection } from '../training/types';
+import { getMajorExercises, getExerciseById } from './TrainingRepo';
+import { getProfile } from './ProfileRepo';
 
 const LOCAL_USER_ID = 'local-user';
+
+// ========== Leaderboard Entry Type ==========
+
+export type LeaderboardEntry = {
+  id: string;
+  rank: number;
+  userId: string;
+  displayName: string;
+  value: number; // weight in lbs, reps count, or time in seconds
+  dateISO: string;
+  isPR: boolean;
+};
 
 // ========== Log Results ==========
 
@@ -58,6 +71,72 @@ export async function getResultsForExercise(
   }
 
   return results;
+}
+
+// ========== Leaderboard ==========
+
+export async function getLeaderboardForExercise(
+  exerciseId: string,
+  sortDirection: SortDirection,
+  limit: number = 10
+): Promise<LeaderboardEntry[]> {
+  const allResults = await getAllResults();
+  const profile = await getProfile();
+
+  // Filter by exercise
+  const exerciseResults = allResults.filter((r) => r.exerciseId === exerciseId);
+
+  if (exerciseResults.length === 0) {
+    return [];
+  }
+
+  // Get the exercise to determine scoreType
+  const exercise = await getExerciseById(exerciseId);
+  const isTimeBasedExercise = exercise?.scoreType === 'time';
+
+  // Sort based on sortDirection
+  // desc = higher is better (weight, reps)
+  // asc = lower is better (time)
+  const sorted = [...exerciseResults].sort((a, b) => {
+    const aValue = isTimeBasedExercise
+      ? a.valueTimeSeconds || Infinity
+      : a.valueNumber || 0;
+    const bValue = isTimeBasedExercise
+      ? b.valueTimeSeconds || Infinity
+      : b.valueNumber || 0;
+
+    if (sortDirection === 'desc') {
+      return bValue - aValue; // Higher first
+    } else {
+      return aValue - bValue; // Lower first
+    }
+  });
+
+  // Find the best value (PR) for marking
+  const bestValue = sorted.length > 0
+    ? (isTimeBasedExercise
+        ? sorted[0].valueTimeSeconds || 0
+        : sorted[0].valueNumber || 0)
+    : 0;
+
+  // Map to leaderboard entries with rank
+  const entries: LeaderboardEntry[] = sorted.slice(0, limit).map((result, index) => {
+    const value = isTimeBasedExercise
+      ? result.valueTimeSeconds || 0
+      : result.valueNumber || 0;
+
+    return {
+      id: result.id,
+      rank: index + 1,
+      userId: result.userId,
+      displayName: result.userId === LOCAL_USER_ID ? profile.displayName : 'Unknown',
+      value,
+      dateISO: result.dateISO,
+      isPR: value === bestValue,
+    };
+  });
+
+  return entries;
 }
 
 // ========== PRs (Personal Records) ==========

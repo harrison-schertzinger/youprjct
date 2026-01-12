@@ -18,6 +18,9 @@ export const StorageKeys = {
 
   // Profile
   PROFILE: '@profile:current',
+
+  // Workout session timer (persisted per workout+date)
+  WORKOUT_SESSION_TIMER: '@workout:session:timer',
 } as const;
 
 export type StorageKey = typeof StorageKeys[keyof typeof StorageKeys];
