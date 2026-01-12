@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { tokens } from '@/design/tokens';
@@ -9,121 +10,48 @@ import {
   TrackPickerButton,
   TrackPickerModal,
   WeekStrip,
-  WorkoutSessionTimer,
   WorkoutTile,
-  LogResultModal,
-  LeaderboardModal,
 } from '@/features/body';
 import {
-  mockTracks,
-  mockWorkoutDays,
-  mockMajorMovements,
-  mockResults,
-} from '@/features/body/mock';
-import type {
-  BodyView,
-  Track,
-  WorkoutItem,
-  ScoreValue,
-} from '@/features/body/types';
+  useActiveTrack,
+  useTrainingDay,
+  useMajorMovements,
+} from '@/features/body/hooks';
+import type { BodyView } from '@/features/body/types';
+import type { TrainingTrack } from '@/lib/training/types';
+import { getTodayISO } from '@/lib/repositories/TrainingRepo';
 
 export default function BodyScreen() {
   const [view, setView] = useState<BodyView>('profile');
-  const [activeTrack, setActiveTrack] = useState<Track | null>(mockTracks[0]);
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
-  const [expandedWorkoutIds, setExpandedWorkoutIds] = useState<Set<string>>(
-    new Set()
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(() => getTodayISO());
+
+  // Data hooks
+  const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading } = useActiveTrack();
+  const { enrichedWorkouts, loading: workoutsLoading } = useTrainingDay(activeTrackId, selectedDate);
+  const { movements: majorMovements, loading: movementsLoading } = useMajorMovements();
 
   // Modals
   const [trackPickerVisible, setTrackPickerVisible] = useState(false);
-  const [logResultVisible, setLogResultVisible] = useState(false);
-  const [leaderboardVisible, setLeaderboardVisible] = useState(false);
-  const [selectedWorkoutItem, setSelectedWorkoutItem] =
-    useState<WorkoutItem | null>(null);
-
-  // Session timer
-  const [sessionActive, setSessionActive] = useState(false);
-  const [sessionDuration, setSessionDuration] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  useEffect(() => {
-    if (sessionActive) {
-      timerRef.current = setInterval(() => {
-        setSessionDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [sessionActive]);
 
   const handleViewChange = (index: number) => {
     setView(index === 0 ? 'profile' : 'training');
   };
 
-  const handleSelectTrack = (track: Track) => {
-    setActiveTrack(track);
+  const handleSelectTrack = async (track: TrainingTrack) => {
+    await setActiveTrackId(track.id);
   };
 
-  const handleToggleWorkout = (workoutId: string) => {
-    setExpandedWorkoutIds((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(workoutId)) {
-        newSet.delete(workoutId);
-      } else {
-        newSet.add(workoutId);
-      }
-      return newSet;
+  const handleWorkoutPress = (workoutId: string) => {
+    if (!activeTrackId) return;
+    router.push({
+      pathname: '/workout-session',
+      params: {
+        workoutId,
+        date: selectedDate,
+        trackId: activeTrackId,
+      },
     });
   };
-
-  const handleLogResult = (item: WorkoutItem) => {
-    setSelectedWorkoutItem(item);
-    setLogResultVisible(true);
-  };
-
-  const handleViewLeaderboard = (item: WorkoutItem) => {
-    setSelectedWorkoutItem(item);
-    setLeaderboardVisible(true);
-  };
-
-  const handleSubmitResult = (score: ScoreValue) => {
-    // In v1 scaffold, we just log to console
-    console.log('Result submitted:', { item: selectedWorkoutItem, score });
-    // In production, this would save to backend/local storage
-  };
-
-  const handleStartSession = () => {
-    setSessionActive(true);
-    setSessionDuration(0);
-  };
-
-  const handleEndSession = () => {
-    setSessionActive(false);
-    // In production, save session duration to storage
-    console.log('Session ended. Duration:', sessionDuration);
-  };
-
-  // Get workouts for selected date
-  const workoutsForDate = mockWorkoutDays.find(
-    (day) => day.date === selectedDate
-  );
-
-  // Filter results for selected workout item
-  const resultsForItem = mockResults.filter(
-    (result) => result.workoutItemId === selectedWorkoutItem?.id
-  );
 
   return (
     <ScreenContainer>
@@ -143,12 +71,20 @@ export default function BodyScreen() {
         {view === 'profile' ? (
           <View>
             <ProfileHeader name="You" streak={12} />
-            <MajorMovementsTiles movements={mockMajorMovements} />
+            <MajorMovementsTiles movements={majorMovements} />
           </View>
         ) : (
           <View>
             <TrackPickerButton
-              activeTrack={activeTrack}
+              activeTrack={
+                activeTrack
+                  ? {
+                      id: activeTrack.id,
+                      name: activeTrack.title,
+                      description: '',
+                    }
+                  : null
+              }
               onPress={() => setTrackPickerVisible(true)}
             />
 
@@ -157,14 +93,11 @@ export default function BodyScreen() {
               onSelectDate={setSelectedDate}
             />
 
-            <WorkoutSessionTimer
-              isActive={sessionActive}
-              duration={sessionDuration}
-              onStart={handleStartSession}
-              onEnd={handleEndSession}
-            />
-
-            {workoutsForDate ? (
+            {workoutsLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={styles.loadingText}>Loading workouts...</Text>
+              </View>
+            ) : enrichedWorkouts.length > 0 ? (
               <View>
                 <Text style={styles.workoutsHeader}>
                   Workouts for{' '}
@@ -174,14 +107,16 @@ export default function BodyScreen() {
                     day: 'numeric',
                   })}
                 </Text>
-                {workoutsForDate.workouts.map((workout) => (
+                {enrichedWorkouts.map((workout) => (
                   <WorkoutTile
                     key={workout.id}
-                    workout={workout}
-                    isExpanded={expandedWorkoutIds.has(workout.id)}
-                    onToggle={() => handleToggleWorkout(workout.id)}
-                    onLogResult={handleLogResult}
-                    onViewLeaderboard={handleViewLeaderboard}
+                    workout={{
+                      id: workout.id,
+                      title: workout.title,
+                      description: `${workout.movements.length} movement${workout.movements.length !== 1 ? 's' : ''}`,
+                      items: [],
+                    }}
+                    onPress={() => handleWorkoutPress(workout.id)}
                   />
                 ))}
               </View>
@@ -199,24 +134,19 @@ export default function BodyScreen() {
       {/* Modals */}
       <TrackPickerModal
         visible={trackPickerVisible}
-        tracks={mockTracks}
-        selectedTrackId={activeTrack?.id || null}
-        onSelect={handleSelectTrack}
+        tracks={tracks.map((t) => ({
+          id: t.id,
+          name: t.title,
+          description: '',
+        }))}
+        selectedTrackId={activeTrackId}
+        onSelect={(track) => {
+          const realTrack = tracks.find((t) => t.id === track.id);
+          if (realTrack) {
+            handleSelectTrack(realTrack);
+          }
+        }}
         onClose={() => setTrackPickerVisible(false)}
-      />
-
-      <LogResultModal
-        visible={logResultVisible}
-        item={selectedWorkoutItem}
-        onClose={() => setLogResultVisible(false)}
-        onSubmit={handleSubmitResult}
-      />
-
-      <LeaderboardModal
-        visible={leaderboardVisible}
-        item={selectedWorkoutItem}
-        results={resultsForItem}
-        onClose={() => setLeaderboardVisible(false)}
       />
     </ScreenContainer>
   );
@@ -241,6 +171,14 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
     marginBottom: tokens.spacing.md,
     marginTop: tokens.spacing.md,
+  },
+  loadingContainer: {
+    paddingVertical: tokens.spacing.xl,
+    alignItems: 'center',
+  },
+  loadingText: {
+    ...tokens.typography.body,
+    color: tokens.colors.muted,
   },
   noWorkouts: {
     paddingVertical: tokens.spacing.xl * 2,
