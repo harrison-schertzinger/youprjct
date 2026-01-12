@@ -109,7 +109,7 @@ export function useTrainingDay(trackId: string | null, dateISO: string) {
           id: workout.id,
           title: workout.title,
           movements: workout.movements
-            .map((movement) => {
+            .map((movement): EnrichedMovement | null => {
               const exercise = exercises.find((ex) => ex.id === movement.exerciseId);
               if (!exercise) return null;
               return {
