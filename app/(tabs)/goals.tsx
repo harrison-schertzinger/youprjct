@@ -1,13 +1,120 @@
-import React from 'react';
-import { ScreenShell } from '@/components/ScreenShell';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { tokens } from '@/design/tokens';
+import { GoalsList, AddGoalModal } from '@/features/goals';
+import { Goal, GoalType, loadGoals, addGoal, deleteGoal } from '@/lib/goals';
+import { loadDailyTasks, DailyTask } from '@/lib/dailyTasks';
 
 export default function GoalsScreen() {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Load goals and daily tasks on mount
+  useEffect(() => {
+    const loadData = async () => {
+      const [goalsData, tasksData] = await Promise.all([
+        loadGoals(),
+        loadDailyTasks(),
+      ]);
+      setGoals(goalsData);
+      setDailyTasks(tasksData);
+    };
+    loadData();
+  }, []);
+
+  // Calculate task counts per goal
+  const taskCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    dailyTasks.forEach((task) => {
+      if (task.goalId && task.completed) {
+        counts[task.goalId] = (counts[task.goalId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [dailyTasks]);
+
+  const handleAddGoal = useCallback(async (title: string, goalType: GoalType) => {
+    const newGoal = await addGoal(title, goalType);
+    setGoals((prev) => [...prev, newGoal]);
+  }, []);
+
+  const handleDeleteGoal = useCallback(async (id: string) => {
+    await deleteGoal(id);
+    setGoals((prev) => prev.filter((g) => g.id !== id));
+  }, []);
+
   return (
-    <ScreenShell
-      title="Goals"
-      subtitle="What you're aiming at"
-    >
-      {/* Content goes here */}
-    </ScreenShell>
+    <ScreenContainer>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.headerTitle}>Goals</Text>
+            <Text style={styles.headerSubtitle}>What you're aiming at</Text>
+          </View>
+          {goals.length > 0 && (
+            <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
+              <Text style={styles.addBtnText}>+</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {/* Goals List */}
+        <GoalsList
+          goals={goals}
+          taskCounts={taskCounts}
+          onAddGoal={() => setShowAddModal(true)}
+          onDeleteGoal={handleDeleteGoal}
+        />
+
+        <View style={{ height: tokens.spacing.xl }} />
+      </ScrollView>
+
+      {/* Add Goal Modal */}
+      <AddGoalModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddGoal}
+      />
+    </ScreenContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  scroll: {
+    paddingBottom: tokens.spacing.xl,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: tokens.spacing.lg,
+  },
+  headerTitle: {
+    fontSize: 38,
+    fontWeight: '900',
+    color: tokens.colors.text,
+    letterSpacing: -0.6,
+  },
+  headerSubtitle: {
+    marginTop: 6,
+    fontSize: 16,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  addBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: '#8B8B8B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtnText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+});

@@ -85,7 +85,7 @@ export function AddItemModal({
                 <Text style={styles.goalLabel}>Link to Goal</Text>
                 <Pressable style={styles.goalSelector} onPress={() => setShowGoalPicker(!showGoalPicker)}>
                   <Text style={[styles.goalSelectorText, !selectedGoal && styles.goalPlaceholder]}>
-                    {selectedGoal?.name || 'Select a goal (optional)'}
+                    {selectedGoal?.title || 'Select a goal (optional)'}
                   </Text>
                   <Text style={styles.chevron}>{showGoalPicker ? '▲' : '▼'}</Text>
                 </Pressable>
@@ -101,7 +101,7 @@ export function AddItemModal({
                         style={[styles.goalOption, selectedGoal?.id === goal.id && styles.goalOptionSelected]}
                         onPress={() => { setSelectedGoal(goal); setShowGoalPicker(false); }}
                       >
-                        <Text style={styles.goalOptionText}>{goal.name}</Text>
+                        <Text style={styles.goalOptionText}>{goal.title}</Text>
                       </Pressable>
                     ))}
                   </View>
