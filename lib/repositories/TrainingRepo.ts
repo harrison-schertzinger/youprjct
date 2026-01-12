@@ -4,6 +4,7 @@ import { getItem, setItem } from '../storage';
 import { StorageKeys } from '../storage/keys';
 import type { TrainingTrack, Exercise, TrainingDay } from '../training/types';
 import { SEED_TRACKS, SEED_EXERCISES, generateCurrentWeekTraining } from '../training/seed';
+import { formatDateKey } from '@/utils/calendar';
 
 // ========== Seed ==========
 
@@ -97,8 +98,8 @@ export function getMondayOfWeek(dateISO?: string): string {
   return monday.toISOString().split('T')[0];
 }
 
-// ========== Helper: Get today's date ==========
+// ========== Helper: Get today's date (local timezone) ==========
 
 export function getTodayISO(): string {
-  return new Date().toISOString().split('T')[0];
+  return formatDateKey(new Date());
 }

@@ -7,6 +7,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { seedIfEmpty } from '@/lib/repositories/TrainingRepo';
 import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
+import { formatDateKey } from '@/utils/calendar';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -21,8 +22,8 @@ export default function RootLayout() {
       console.error('Failed to seed training data:', error);
     });
 
-    // Bump on-app streak if needed
-    const today = new Date().toISOString().split('T')[0];
+    // Bump on-app streak if needed (use local day, not UTC)
+    const today = formatDateKey(new Date());
     bumpOnAppStreakIfNeeded(today).catch((error) => {
       console.error('Failed to bump on-app streak:', error);
     });
