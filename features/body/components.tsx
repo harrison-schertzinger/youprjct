@@ -169,7 +169,9 @@ type WeekStripProps = {
 export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
   const today = new Date();
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  // Monday-first week: subtract days to get to Monday
+  const dayOfWeek = today.getDay();
+  startOfWeek.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(startOfWeek);
@@ -182,7 +184,10 @@ export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
   };
 
   const getDayLabel = (date: Date) => {
-    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.getDay()];
+    // Monday-first layout: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][
+      date.getDay() === 0 ? 6 : date.getDay() - 1
+    ];
   };
 
   return (
@@ -249,77 +254,27 @@ export function WorkoutSessionTimer({
 
 type WorkoutTileProps = {
   workout: Workout;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onLogResult: (item: WorkoutItem) => void;
-  onViewLeaderboard: (item: WorkoutItem) => void;
+  onPress: () => void;
 };
 
-export function WorkoutTile({
-  workout,
-  isExpanded,
-  onToggle,
-  onLogResult,
-  onViewLeaderboard,
-}: WorkoutTileProps) {
+export function WorkoutTile({ workout, onPress }: WorkoutTileProps) {
   return (
-    <Card style={styles.workoutTile}>
-      <Pressable onPress={onToggle} style={styles.workoutHeader}>
-        <View>
-          <Text style={styles.workoutTitle}>{workout.title}</Text>
-          {workout.description && (
-            <Text style={styles.workoutDescription}>{workout.description}</Text>
-          )}
+    <Pressable onPress={onPress}>
+      <Card style={styles.workoutTile}>
+        <View style={styles.workoutHeader}>
+          <View style={styles.workoutHeaderContent}>
+            <Text style={styles.workoutTitle}>{workout.title}</Text>
+            {workout.description && (
+              <Text style={styles.workoutDescription}>{workout.description}</Text>
+            )}
+          </View>
+          <Text style={styles.chevron}>›</Text>
         </View>
-        <Text style={styles.expandIcon}>{isExpanded ? '−' : '+'}</Text>
-      </Pressable>
-
-      {isExpanded && (
-        <View style={styles.workoutItems}>
-          {workout.items.map((item) => (
-            <WorkoutItemRow
-              key={item.id}
-              item={item}
-              onLogResult={() => onLogResult(item)}
-              onViewLeaderboard={() => onViewLeaderboard(item)}
-            />
-          ))}
-        </View>
-      )}
-    </Card>
+      </Card>
+    </Pressable>
   );
 }
 
-type WorkoutItemRowProps = {
-  item: WorkoutItem;
-  onLogResult: () => void;
-  onViewLeaderboard: () => void;
-};
-
-export function WorkoutItemRow({
-  item,
-  onLogResult,
-  onViewLeaderboard,
-}: WorkoutItemRowProps) {
-  return (
-    <View style={styles.workoutItemRow}>
-      <View style={styles.workoutItemInfo}>
-        <Text style={styles.workoutItemName}>{item.name}</Text>
-        {item.description && (
-          <Text style={styles.workoutItemDesc}>{item.description}</Text>
-        )}
-      </View>
-      <View style={styles.workoutItemActions}>
-        <Pressable style={styles.iconButton} onPress={onViewLeaderboard}>
-          <Text style={styles.iconButtonText}>📊</Text>
-        </Pressable>
-        <Pressable style={styles.logButton} onPress={onLogResult}>
-          <Text style={styles.logButtonText}>Log</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
 
 type LogResultModalProps = {
   visible: boolean;
@@ -755,6 +710,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  workoutHeaderContent: {
+    flex: 1,
+  },
   workoutTitle: {
     ...tokens.typography.body,
     fontWeight: '700',
@@ -764,63 +722,6 @@ const styles = StyleSheet.create({
   workoutDescription: {
     ...tokens.typography.small,
     color: tokens.colors.muted,
-  },
-  expandIcon: {
-    fontSize: 24,
-    fontWeight: '300',
-    color: tokens.colors.text,
-  },
-  workoutItems: {
-    marginTop: tokens.spacing.md,
-    paddingTop: tokens.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: tokens.colors.border,
-  },
-  workoutItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: tokens.spacing.sm,
-  },
-  workoutItemInfo: {
-    flex: 1,
-  },
-  workoutItemName: {
-    ...tokens.typography.body,
-    color: tokens.colors.text,
-    marginBottom: 2,
-  },
-  workoutItemDesc: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-  },
-  workoutItemActions: {
-    flexDirection: 'row',
-    gap: tokens.spacing.sm,
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colors.bg,
-    borderRadius: tokens.radius.sm,
-  },
-  iconButtonText: {
-    fontSize: 16,
-  },
-  logButton: {
-    paddingHorizontal: tokens.spacing.md,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colors.tint,
-    borderRadius: tokens.radius.sm,
-  },
-  logButtonText: {
-    ...tokens.typography.small,
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
 
   // Log Result Form
