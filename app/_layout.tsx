@@ -1,9 +1,12 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { seedIfEmpty } from '@/lib/repositories/TrainingRepo';
+import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -11,6 +14,19 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // Seed training data if empty
+    seedIfEmpty().catch((error) => {
+      console.error('Failed to seed training data:', error);
+    });
+
+    // Bump on-app streak if needed
+    const today = new Date().toISOString().split('T')[0];
+    bumpOnAppStreakIfNeeded(today).catch((error) => {
+      console.error('Failed to bump on-app streak:', error);
+    });
+  }, []);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
