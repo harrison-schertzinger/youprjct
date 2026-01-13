@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { seedIfEmpty } from '@/lib/repositories/TrainingRepo';
+import { initializeTraining } from '@/lib/repositories/TrainingRepo';
 import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 import { formatDateKey } from '@/utils/calendar';
 
@@ -17,9 +17,9 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Seed training data if empty
-    seedIfEmpty().catch((error) => {
-      console.error('Failed to seed training data:', error);
+    // Initialize training data (Supabase if configured, else local seed)
+    initializeTraining().catch((error) => {
+      console.error('Failed to initialize training data:', error);
     });
 
     // Bump on-app streak if needed (use local day, not UTC)
