@@ -23,7 +23,20 @@ Once your project is ready:
 
 > **Note**: The `anon` key is safe to use in client apps. It only allows operations permitted by Row Level Security (RLS) policies.
 
-## 3. Configure Environment Variables
+## 3. Enable Anonymous Sign-ins
+
+Anonymous sign-ins allow users to use the app immediately without creating an account. Sessions persist across app launches.
+
+1. In your Supabase dashboard, go to **Authentication** (left sidebar)
+2. Click **Providers** (under Configuration)
+3. Scroll down to find **Anonymous Sign-ins**
+4. Click on it to expand
+5. Toggle **Enable Anonymous Sign-ins** to ON
+6. Click **Save**
+
+> **Why Anonymous Sign-ins?** Users get a real authenticated session without friction. They can later link their account to email/password if needed. This enables leaderboards and profile features while maintaining a seamless UX.
+
+## 4. Configure Environment Variables
 
 1. Copy the example env file:
    ```bash
@@ -41,7 +54,7 @@ Once your project is ready:
    npx expo start --clear
    ```
 
-## 4. Apply the Database Schema
+## 5. Apply the Database Schema
 
 > **Important**: Use a NEW query tab for schema vs seed. Supabase only shows results from the last statement, so running both in one tab may hide errors.
 
@@ -54,7 +67,20 @@ Once your project is ready:
 
 You should see "Success. No rows returned" — this means the tables were created.
 
-## 5. Seed Initial Data
+## 6. Apply the Profiles Schema
+
+The profiles table stores user display names and avatars for leaderboards.
+
+1. In the SQL Editor, click **New query** to open a fresh tab
+2. Copy the **entire contents** of `supabase/profiles.sql`
+3. Paste and click **Run**
+
+This creates:
+- `profiles` table linked to `auth.users`
+- RLS policies for authenticated access
+- Auto-updating `updated_at` trigger
+
+## 7. Seed Initial Data
 
 > **Important**: Use a **NEW query tab** for seeding (not the same tab as schema).
 
@@ -69,7 +95,7 @@ This creates:
 
 The seed is **idempotent** — you can run it multiple times safely. It uses `ON CONFLICT DO UPDATE` to upsert data.
 
-## 6. Verify the Setup
+## 8. Verify the Setup
 
 > **Note**: Supabase SQL Editor only displays the result of the **last query**. Use this single combined query to verify all data at once:
 
@@ -89,6 +115,15 @@ SELECT
 | 2      | 12        | 14            |
 
 If any count is 0, re-run the appropriate SQL file.
+
+### Verify Profiles Table
+
+```sql
+SELECT EXISTS (
+  SELECT FROM information_schema.tables
+  WHERE table_schema = 'public' AND table_name = 'profiles'
+) AS profiles_table_exists;
+```
 
 ### Verify JSON Data (Optional)
 
@@ -110,6 +145,14 @@ The schema includes RLS policies that allow anonymous reads. To verify:
 ```sql
 SELECT policyname FROM pg_policies WHERE tablename = 'training_tracks';
 ```
+
+For profiles:
+
+```sql
+SELECT policyname FROM pg_policies WHERE tablename = 'profiles';
+```
+
+Expected policies: `Profiles are viewable by authenticated users`, `Users can insert own profile`, `Users can update own profile`
 
 ### Test from the App
 
@@ -158,6 +201,18 @@ SELECT policyname FROM pg_policies WHERE tablename = 'training_tracks';
    ALTER TABLE training_days DISABLE ROW LEVEL SECURITY;
    ```
 
+### Profile Save Fails with RLS Error
+
+**Cause**: User is not authenticated or anonymous sign-ins are not enabled.
+
+**Solutions**:
+1. Verify anonymous sign-ins are enabled (see step 3 above)
+2. Check the browser/app console for auth errors
+3. Verify profiles RLS policies:
+   ```sql
+   SELECT * FROM pg_policies WHERE tablename = 'profiles';
+   ```
+
 ### Admin Cannot Insert/Update Data
 
 **Cause**: RLS policies only allow SELECT for anon users. Admin writes require service_role key.
@@ -196,8 +251,19 @@ SELECT policyname FROM pg_policies WHERE tablename = 'training_tracks';
 | `EXPO_PUBLIC_SUPABASE_URL` | Project API URL | Settings → API → Project URL |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Anonymous/public key | Settings → API → anon public |
 
+## Authentication Flow
+
+The app uses Supabase Anonymous Sign-ins for seamless identity:
+
+1. **App Launch**: `ensureSession()` checks for existing session
+2. **No Session**: Creates anonymous session via `signInAnonymously()`
+3. **Session Exists**: Reuses existing session (persisted in AsyncStorage)
+4. **Profile Setup**: User can set display name (stored in `public.profiles`)
+
+Sessions persist across app launches. Users can later link to email/password if needed.
+
 ## Next Steps
 
-- **Phase 2**: Add Supabase Auth for user accounts
+- **Phase 2**: Link anonymous users to email/password accounts
 - **Phase 3**: Build admin dashboard for publishing programming
 - **Future**: Sync user results and PRs to Supabase

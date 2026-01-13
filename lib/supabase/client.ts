@@ -2,6 +2,7 @@
 // Reads EXPO_PUBLIC_* env vars directly (Expo handles this automatically)
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ========== Configuration ==========
 
@@ -23,6 +24,11 @@ export function isSupabaseConfigured(): boolean {
 /**
  * Get the Supabase client instance.
  * Returns null if Supabase is not configured.
+ *
+ * Auth configuration:
+ * - Uses AsyncStorage for session persistence (React Native)
+ * - Enables autoRefreshToken for seamless token renewal
+ * - Disables detectSessionInUrl (not applicable for RN)
  */
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured()) {
@@ -32,7 +38,10 @@ export function getSupabase(): SupabaseClient | null {
   if (!supabaseClient) {
     supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!, {
       auth: {
-        persistSession: false, // No auth in V1, just anon reads
+        storage: AsyncStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
       },
     });
   }
