@@ -1,10 +1,83 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+  Keyboard,
+} from 'react-native';
 import { Stack } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { Card } from '@/components/ui/Card';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { tokens } from '@/design/tokens';
+import {
+  getSupabaseProfile,
+  upsertDisplayName,
+  getProfile,
+  type SupabaseProfile,
+} from '@/lib/repositories/ProfileRepo';
+import { isSupabaseConfigured } from '@/lib/supabase/client';
+import type { Profile } from '@/lib/training/types';
 
 export default function ProfileScreen() {
+  const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
+  const [localProfile, setLocalProfile] = useState<Profile | null>(null);
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const loadProfiles = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [sbProfile, localProf] = await Promise.all([
+        getSupabaseProfile(),
+        getProfile(),
+      ]);
+      setSupabaseProfile(sbProfile);
+      setLocalProfile(localProf);
+      if (sbProfile) {
+        setDisplayNameInput(sbProfile.display_name);
+      }
+    } catch (error) {
+      console.error('Error loading profiles:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProfiles();
+  }, [loadProfiles]);
+
+  const handleSaveDisplayName = async () => {
+    const trimmed = displayNameInput.trim();
+    if (!trimmed || trimmed.length < 2) {
+      return;
+    }
+
+    Keyboard.dismiss();
+    setIsSaving(true);
+    try {
+      const result = await upsertDisplayName(trimmed);
+      if (result) {
+        setSupabaseProfile(result);
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error saving display name:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const displayName = supabaseProfile?.display_name ?? localProfile?.displayName ?? 'Athlete';
+  const avatarInitial = displayName.charAt(0).toUpperCase();
+  const hasSupabaseProfile = supabaseProfile !== null;
+  const supabaseAvailable = isSupabaseConfigured();
+
   return (
     <>
       <Stack.Screen
@@ -16,15 +89,90 @@ export default function ProfileScreen() {
       />
       <ScreenContainer>
         <View style={styles.container}>
+          {/* Avatar */}
           <View style={styles.avatarLarge}>
-            <Text style={styles.avatarTextLarge}>Y</Text>
+            <Text style={styles.avatarTextLarge}>{avatarInitial}</Text>
           </View>
-          <Text style={styles.name}>You</Text>
-          <Text style={styles.email}>you@example.com</Text>
 
-          <View style={styles.placeholderSection}>
-            <Text style={styles.placeholderText}>Profile settings coming soon</Text>
-          </View>
+          {/* Display Name */}
+          <Text style={styles.name}>{displayName}</Text>
+
+          {/* Streak Info */}
+          {localProfile && (
+            <Text style={styles.streakText}>
+              {localProfile.onAppStreakDays} day streak
+            </Text>
+          )}
+
+          {/* Loading State */}
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={tokens.colors.muted} />
+            </View>
+          )}
+
+          {/* Display Name Setup / Edit Section */}
+          {!isLoading && supabaseAvailable && (
+            <Card style={styles.profileCard}>
+              {!hasSupabaseProfile || isEditing ? (
+                <>
+                  <Text style={styles.cardTitle}>
+                    {hasSupabaseProfile ? 'Edit Display Name' : 'Set Display Name'}
+                  </Text>
+                  <Text style={styles.cardSubtitle}>
+                    Your name on leaderboards
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={displayNameInput}
+                    onChangeText={setDisplayNameInput}
+                    placeholder="Enter display name"
+                    placeholderTextColor={tokens.colors.muted}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    maxLength={30}
+                    editable={!isSaving}
+                  />
+                  <View style={styles.buttonRow}>
+                    {isEditing && (
+                      <PrimaryButton
+                        label="Cancel"
+                        onPress={() => {
+                          setIsEditing(false);
+                          setDisplayNameInput(supabaseProfile?.display_name ?? '');
+                        }}
+                        style={styles.cancelButton}
+                      />
+                    )}
+                    <PrimaryButton
+                      label={isSaving ? 'Saving...' : 'Save'}
+                      onPress={handleSaveDisplayName}
+                      style={isEditing ? { ...styles.saveButton, ...styles.saveButtonSmall } : styles.saveButton}
+                    />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.cardTitle}>Display Name</Text>
+                  <Text style={styles.displayNameValue}>{supabaseProfile.display_name}</Text>
+                  <PrimaryButton
+                    label="Edit"
+                    onPress={() => setIsEditing(true)}
+                    style={styles.editButton}
+                  />
+                </>
+              )}
+            </Card>
+          )}
+
+          {/* Offline / No Supabase Message */}
+          {!isLoading && !supabaseAvailable && (
+            <View style={styles.offlineContainer}>
+              <Text style={styles.offlineText}>
+                Connect to set up your profile for leaderboards
+              </Text>
+            </View>
+          )}
         </View>
       </ScreenContainer>
     </>
@@ -56,16 +204,66 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
     marginBottom: tokens.spacing.xs,
   },
-  email: {
+  streakText: {
     ...tokens.typography.body,
-    color: tokens.colors.muted,
+    color: tokens.colors.action,
     marginBottom: tokens.spacing.xl,
   },
-  placeholderSection: {
-    marginTop: tokens.spacing.xl * 2,
-    padding: tokens.spacing.xl,
+  loadingContainer: {
+    marginTop: tokens.spacing.xl,
   },
-  placeholderText: {
+  profileCard: {
+    width: '100%',
+    marginTop: tokens.spacing.lg,
+  },
+  cardTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.xs,
+  },
+  cardSubtitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    marginBottom: tokens.spacing.md,
+  },
+  input: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.sm,
+    paddingHorizontal: tokens.spacing.md,
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+    backgroundColor: tokens.colors.bg,
+    marginBottom: tokens.spacing.md,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
+  saveButton: {
+    flex: 1,
+  },
+  saveButtonSmall: {
+    flex: 2,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: tokens.colors.muted,
+  },
+  displayNameValue: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.md,
+  },
+  editButton: {
+    backgroundColor: tokens.colors.muted,
+  },
+  offlineContainer: {
+    marginTop: tokens.spacing.xl * 2,
+    paddingHorizontal: tokens.spacing.xl,
+  },
+  offlineText: {
     ...tokens.typography.body,
     color: tokens.colors.muted,
     textAlign: 'center',
