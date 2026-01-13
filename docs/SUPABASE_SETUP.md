@@ -43,10 +43,12 @@ Once your project is ready:
 
 ## 4. Apply the Database Schema
 
+> **Important**: Use a NEW query tab for schema vs seed. Supabase only shows results from the last statement, so running both in one tab may hide errors.
+
 1. Go to your Supabase dashboard
 2. Click **SQL Editor** in the left sidebar
-3. Click **New query**
-4. Copy the entire contents of `supabase/schema.sql`
+3. Click **New query** to open a fresh query tab
+4. Copy the **entire contents** of `supabase/schema.sql`
 5. Paste into the SQL Editor
 6. Click **Run** (or press Cmd/Ctrl + Enter)
 
@@ -54,10 +56,10 @@ You should see "Success. No rows returned" — this means the tables were create
 
 ## 5. Seed Initial Data
 
-After applying the schema, seed the training data:
+> **Important**: Use a **NEW query tab** for seeding (not the same tab as schema).
 
-1. In the SQL Editor, click **New query**
-2. Copy the entire contents of `supabase/seed.sql`
+1. In the SQL Editor, click **New query** to open a fresh tab
+2. Copy the **entire contents** of `supabase/seed.sql`
 3. Paste and click **Run**
 
 This creates:
@@ -65,29 +67,47 @@ This creates:
 - 12 exercises (Back Squat, Deadlift, etc.)
 - 14 training days (7 days × 2 tracks for the current week)
 
+The seed is **idempotent** — you can run it multiple times safely. It uses `ON CONFLICT DO UPDATE` to upsert data.
+
 ## 6. Verify the Setup
 
-### Check Tables Have Data
+> **Note**: Supabase SQL Editor only displays the result of the **last query**. Use this single combined query to verify all data at once:
 
-In the SQL Editor, run:
+In the SQL Editor, click **New query** and run:
 
 ```sql
-SELECT * FROM training_tracks;
-SELECT COUNT(*) FROM exercises;
-SELECT COUNT(*) FROM training_days;
+SELECT
+  (SELECT COUNT(*) FROM training_tracks) AS tracks,
+  (SELECT COUNT(*) FROM exercises) AS exercises,
+  (SELECT COUNT(*) FROM training_days) AS training_days;
 ```
 
-Expected results:
-- 2 tracks
-- 12 exercises
-- 14 training days
+**Expected result:**
+
+| tracks | exercises | training_days |
+|--------|-----------|---------------|
+| 2      | 12        | 14            |
+
+If any count is 0, re-run the appropriate SQL file.
+
+### Verify JSON Data (Optional)
+
+To confirm the workout JSON is valid:
+
+```sql
+SELECT id, track_id, jsonb_pretty(workouts)
+FROM training_days
+WHERE jsonb_array_length(workouts) > 0
+LIMIT 1;
+```
+
+You should see properly formatted JSON with workout objects containing `id`, `trackId`, `dateISO`, `title`, and `movements`.
 
 ### Check RLS Policies
 
 The schema includes RLS policies that allow anonymous reads. To verify:
 
 ```sql
--- Should return the policy names
 SELECT policyname FROM pg_policies WHERE tablename = 'training_tracks';
 ```
 
@@ -106,8 +126,14 @@ SELECT policyname FROM pg_policies WHERE tablename = 'training_tracks';
 **Solutions**:
 1. Check your `.env.local` has correct values
 2. Restart Expo with `npx expo start --clear`
-3. Check Supabase dashboard → SQL Editor → Run `SELECT * FROM training_tracks`
-4. If tables are empty, run `supabase/seed.sql`
+3. Check Supabase dashboard → SQL Editor → Run the verification query above
+4. If tables are empty, run `supabase/seed.sql` in a new query tab
+
+### JSON Syntax Error When Running seed.sql
+
+**Cause**: Older seed.sql versions used string concatenation inside JSON literals.
+
+**Solution**: Pull the latest `supabase/seed.sql` which uses `jsonb_build_object()` and `jsonb_build_array()` functions to construct JSON safely.
 
 ### "403 Forbidden" / RLS Blocking Reads
 

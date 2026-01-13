@@ -35,11 +35,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- ========== Training Days ==========
 -- Generate current week dates dynamically using PostgreSQL date functions
+-- Uses jsonb_build_object/jsonb_build_array for proper JSON construction
 
 DO $$
 DECLARE
   monday_date DATE;
-  day_offset INT;
   current_date_iso TEXT;
   week_start_iso TEXT;
 BEGIN
@@ -56,17 +56,19 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Lower Body Strength",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-back-squat", "targetText": "5x5 @ 80%", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-deadlift", "targetText": "3x3 @ 85%", "order": 2},
-        {"id": "mov-3", "exerciseId": "ex-box-jumps", "targetText": "3x10", "order": 3}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Lower Body Strength',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-back-squat', 'targetText', '5x5 @ 80%', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-deadlift', 'targetText', '3x3 @ 85%', 'order', 2),
+          jsonb_build_object('id', 'mov-3', 'exerciseId', 'ex-box-jumps', 'targetText', '3x10', 'order', 3)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Tuesday: Upper Body Push
@@ -76,17 +78,19 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Upper Body Push",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-bench-press", "targetText": "5x5 @ 75%", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-overhead-press", "targetText": "4x6 @ 70%", "order": 2},
-        {"id": "mov-3", "exerciseId": "ex-push-ups", "targetText": "3xAMRAP", "order": 3}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Upper Body Push',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-bench-press', 'targetText', '5x5 @ 75%', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-overhead-press', 'targetText', '4x6 @ 70%', 'order', 2),
+          jsonb_build_object('id', 'mov-3', 'exerciseId', 'ex-push-ups', 'targetText', '3xAMRAP', 'order', 3)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Wednesday: Active Recovery
@@ -96,15 +100,17 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Active Recovery",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-rowing", "targetText": "3x500m easy pace", "notes": "Focus on form and breathing", "order": 1}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Active Recovery',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-rowing', 'targetText', '3x500m easy pace', 'notes', 'Focus on form and breathing', 'order', 1)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Thursday: Lower Body Power
@@ -114,16 +120,18 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Lower Body Power",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-power-clean", "targetText": "5x3 @ 75%", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-front-squat", "targetText": "4x6 @ 70%", "order": 2}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Lower Body Power',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-power-clean', 'targetText', '5x3 @ 75%', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-front-squat', 'targetText', '4x6 @ 70%', 'order', 2)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Friday: Upper Body Pull
@@ -133,16 +141,18 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Upper Body Pull",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-deadlift", "targetText": "5x3 @ 80%", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-pull-ups", "targetText": "5xAMRAP", "order": 2}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Upper Body Pull',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-deadlift', 'targetText', '5x3 @ 80%', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-pull-ups', 'targetText', '5xAMRAP', 'order', 2)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Saturday: Optional Conditioning
@@ -152,15 +162,17 @@ BEGIN
     'track-athlete',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-athlete-' || current_date_iso || '-1",
-      "trackId": "track-athlete",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Optional Conditioning",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-running", "targetText": "5K steady pace", "notes": "Optional - prioritize recovery", "order": 1}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-athlete-' || current_date_iso || '-1',
+        'trackId', 'track-athlete',
+        'dateISO', current_date_iso,
+        'title', 'Optional Conditioning',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-running', 'targetText', '5K steady pace', 'notes', 'Optional - prioritize recovery', 'order', 1)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Sunday: Rest
@@ -182,23 +194,26 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Strength",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-back-squat", "targetText": "3x8 @ 70%", "order": 1}
-      ]
-    }, {
-      "id": "workout-functional-' || current_date_iso || '-2",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "MetCon",
-      "movements": [
-        {"id": "mov-2", "exerciseId": "ex-burpees", "targetText": "AMRAP 10min", "notes": "10 burpees + 200m run, repeat", "order": 1}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Strength',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-back-squat', 'targetText', '3x8 @ 70%', 'order', 1)
+        )
+      ),
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-2',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'MetCon',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-burpees', 'targetText', 'AMRAP 10min', 'notes', '10 burpees + 200m run, repeat', 'order', 1)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Tuesday: Upper Body + Core
@@ -208,17 +223,19 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Upper Body",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-bench-press", "targetText": "4x8", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-pull-ups", "targetText": "4xAMRAP", "order": 2},
-        {"id": "mov-3", "exerciseId": "ex-push-ups", "targetText": "3x20", "order": 3}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Upper Body',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-bench-press', 'targetText', '4x8', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-pull-ups', 'targetText', '4xAMRAP', 'order', 2),
+          jsonb_build_object('id', 'mov-3', 'exerciseId', 'ex-push-ups', 'targetText', '3x20', 'order', 3)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Wednesday: Cardio + Mobility
@@ -228,15 +245,17 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Cardio",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-rowing", "targetText": "4x500m @ 90% effort", "notes": "Rest 2min between rounds", "order": 1}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Cardio',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-rowing', 'targetText', '4x500m @ 90% effort', 'notes', 'Rest 2min between rounds', 'order', 1)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Thursday: Lower Body + MetCon
@@ -246,16 +265,18 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Lower Body",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-deadlift", "targetText": "4x6 @ 75%", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-box-jumps", "targetText": "4x12", "order": 2}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Lower Body',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-deadlift', 'targetText', '4x6 @ 75%', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-box-jumps', 'targetText', '4x12', 'order', 2)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Friday: Full Body Circuit
@@ -265,17 +286,19 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Full Body Circuit",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-front-squat", "targetText": "3 rounds: 10 reps", "order": 1},
-        {"id": "mov-2", "exerciseId": "ex-overhead-press", "targetText": "3 rounds: 10 reps", "order": 2},
-        {"id": "mov-3", "exerciseId": "ex-pull-ups", "targetText": "3 rounds: 10 reps", "order": 3}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Full Body Circuit',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-front-squat', 'targetText', '3 rounds: 10 reps', 'order', 1),
+          jsonb_build_object('id', 'mov-2', 'exerciseId', 'ex-overhead-press', 'targetText', '3 rounds: 10 reps', 'order', 2),
+          jsonb_build_object('id', 'mov-3', 'exerciseId', 'ex-pull-ups', 'targetText', '3 rounds: 10 reps', 'order', 3)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Saturday: Active Recovery
@@ -285,15 +308,17 @@ BEGIN
     'track-functional',
     current_date_iso,
     week_start_iso,
-    '[{
-      "id": "workout-functional-' || current_date_iso || '-1",
-      "trackId": "track-functional",
-      "dateISO": "' || current_date_iso || '",
-      "title": "Active Recovery",
-      "movements": [
-        {"id": "mov-1", "exerciseId": "ex-running", "targetText": "30min easy pace", "notes": "Optional - listen to your body", "order": 1}
-      ]
-    }]'::jsonb
+    jsonb_build_array(
+      jsonb_build_object(
+        'id', 'workout-functional-' || current_date_iso || '-1',
+        'trackId', 'track-functional',
+        'dateISO', current_date_iso,
+        'title', 'Active Recovery',
+        'movements', jsonb_build_array(
+          jsonb_build_object('id', 'mov-1', 'exerciseId', 'ex-running', 'targetText', '30min easy pace', 'notes', 'Optional - listen to your body', 'order', 1)
+        )
+      )
+    )
   ) ON CONFLICT (id) DO UPDATE SET workouts = EXCLUDED.workouts;
 
   -- Sunday: Rest
