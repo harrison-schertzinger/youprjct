@@ -3,8 +3,8 @@
 ## Tech Stack
 - Expo + React Native + TypeScript
 - Expo Router (file-based routing)
-- Local-first persistence via AsyncStorage (Phase 1)
-- Supabase auth + data sync later (Phase 2)
+- Local-first persistence via AsyncStorage
+- Supabase backend for admin-published training programming (PR#4)
 
 ## Navigation
 Tabs: You / Discipline / Body / Mind / Goals
@@ -48,11 +48,13 @@ We use a typed repository layer to abstract data access and prepare for future S
 
 1. **TrainingRepo** (`lib/repositories/TrainingRepo.ts`)
    - Manages training tracks, exercises, and scheduled programming
-   - `seedIfEmpty()` — Seeds tracks, exercises, and current week training
+   - `initializeTraining()` — Initialize on app start with cache + background sync
+   - `seedIfEmpty()` — Seeds tracks, exercises, and current week training (fallback)
    - `getTracks()`, `getActiveTrackId()`, `setActiveTrackId()`
    - `getTrainingDay(trackId, dateISO)` — Get single day's programming
    - `getTrainingWeek(trackId, weekStartISO)` — Get 7 days of programming
    - `getAllExercises()`, `getExerciseById()`, `getMajorExercises()`
+   - `forceRefreshFromSupabase()` — Manual refresh (pull-to-refresh)
 
 2. **ResultsRepo** (`lib/repositories/ResultsRepo.ts`)
    - Manages logged performance results and PRs
@@ -81,6 +83,37 @@ We use a typed repository layer to abstract data access and prepare for future S
 - **Time tracking foundation:** ActivitySession model supports "You" dashboard metrics (reading time, workout time)
 - **Schema versioning:** Ready for future migrations with schema version tracking
 
+### Supabase Integration (PR#4)
+
+Training programming is now fetched from Supabase with local-first caching.
+
+**Architecture:**
+- `lib/supabase/client.ts` — Supabase client singleton with env check
+- `lib/supabase/trainingApi.ts` — Typed fetch functions for training data
+- `lib/storage/cache.ts` — Cache staleness tracking (5-minute TTL)
+
+**Database Schema** (`supabase/schema.sql`):
+- `training_tracks` — Track definitions (Athlete, Functional Fitness)
+- `exercises` — Movement definitions with scoring config
+- `training_days` — Date-based programming with `workouts` JSONB column
+
+**Data Flow:**
+1. App starts → `initializeTraining()` called
+2. If cached data exists → Return immediately, trigger background refresh
+3. If no cache + Supabase configured → Fetch and cache
+4. If no cache + no Supabase → Fall back to seed data
+
+**Offline Behavior:**
+- Cached data always available immediately
+- Background sync when online
+- Seed data fallback for development without Supabase
+
+**Environment Variables:**
+```
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
 ### Workout Session Timer (PR#3)
 
 The workout session screen (`app/workout-session.tsx`) implements a persistent timer:
@@ -104,12 +137,13 @@ The workout session screen (`app/workout-session.tsx`) implements a persistent t
 - `ExpandableMovementTile` — Collapsible movement card with Log Result + Results buttons
 - `ExerciseLeaderboardModal` — Per-exercise leaderboard sorted by `sortDirection`
 
-### Data (Phase 1: local)
+### Data (Phase 1: local + Supabase hybrid)
 - Wins stored in AsyncStorage keyed by dateKey (YYYY-MM-DD)
 - Loss is implicit for past days without win
 - Today neutral until day ends
-- Training data: Tracks, exercises, scheduled workouts, results, activity sessions, profile
-- Later: Supabase sync (repository swap, no UI changes)
+- Training data: Tracks, exercises, scheduled workouts from Supabase (cached locally)
+- Results, activity sessions, profile: Local-only (Phase 1)
+- Later: Full Supabase sync for results and user data (Phase 2+)
 
 ## Safety rules
 - Keep diffs small
