@@ -9,6 +9,7 @@ export const StorageKeys = {
   TRAINING_EXERCISES: '@training:exercises',
   TRAINING_DAYS: '@training:days',
   TRAINING_ACTIVE_TRACK_ID: '@training:activeTrackId',
+  TRAINING_CACHE_METADATA: '@training:cacheMetadata',
 
   // Results
   RESULTS: '@results:all',
