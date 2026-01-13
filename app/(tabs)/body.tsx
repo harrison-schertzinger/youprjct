@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -26,8 +26,8 @@ export default function BodyScreen() {
   const [selectedDate, setSelectedDate] = useState<string>(() => getTodayISO());
 
   // Data hooks
-  const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading } = useActiveTrack();
-  const { enrichedWorkouts, loading: workoutsLoading } = useTrainingDay(activeTrackId, selectedDate);
+  const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading, refreshing, refresh } = useActiveTrack();
+  const { enrichedWorkouts, loading: workoutsLoading, reload: reloadWorkouts } = useTrainingDay(activeTrackId, selectedDate);
   const { movements: majorMovements, loading: movementsLoading } = useMajorMovements();
 
   // Modals
@@ -53,11 +53,26 @@ export default function BodyScreen() {
     });
   };
 
+  const handleRefresh = async () => {
+    await refresh();
+    reloadWorkouts();
+  };
+
   return (
     <ScreenContainer>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          view === 'training' ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.tint}
+              colors={[tokens.colors.tint]}
+            />
+          ) : undefined
+        }
       >
         <Text style={styles.title}>Body</Text>
         <Text style={styles.subtitle}>Training, recovery, readiness</Text>

@@ -1,6 +1,6 @@
 // Body feature hooks for data fetching
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { TrainingTrack, Exercise, TrainingDay, Workout, ScheduledMovement } from '@/lib/training/types';
 import {
   getTracks,
@@ -11,6 +11,7 @@ import {
   getMajorExercises,
   getTodayISO,
   getMondayOfWeek,
+  forceRefreshFromSupabase,
 } from '@/lib/repositories/TrainingRepo';
 import type { MajorMovement } from './types';
 
@@ -36,6 +37,7 @@ export function useActiveTrack() {
   const [tracks, setTracks] = useState<TrainingTrack[]>([]);
   const [activeTrackId, setActiveTrackIdState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadTracksAndActiveId();
@@ -65,6 +67,18 @@ export function useActiveTrack() {
     }
   };
 
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await forceRefreshFromSupabase();
+      await loadTracksAndActiveId();
+    } catch (error) {
+      console.error('Failed to refresh from Supabase:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
   const activeTrack = tracks.find((t) => t.id === activeTrackId) || null;
 
   return {
@@ -73,6 +87,8 @@ export function useActiveTrack() {
     activeTrackId,
     setActiveTrackId,
     loading,
+    refreshing,
+    refresh,
   };
 }
 
@@ -82,10 +98,11 @@ export function useTrainingDay(trackId: string | null, dateISO: string) {
   const [trainingDay, setTrainingDay] = useState<TrainingDay | null>(null);
   const [enrichedWorkouts, setEnrichedWorkouts] = useState<EnrichedWorkout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
     loadTrainingDay();
-  }, [trackId, dateISO]);
+  }, [trackId, dateISO, reloadTrigger]);
 
   const loadTrainingDay = async () => {
     setLoading(true);
@@ -136,10 +153,15 @@ export function useTrainingDay(trackId: string | null, dateISO: string) {
     }
   };
 
+  const reload = useCallback(() => {
+    setReloadTrigger((prev) => prev + 1);
+  }, []);
+
   return {
     trainingDay,
     enrichedWorkouts,
     loading,
+    reload,
   };
 }
 
