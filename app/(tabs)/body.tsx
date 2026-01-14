@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -33,6 +34,14 @@ export default function BodyScreen() {
   // Modals
   const [trackPickerVisible, setTrackPickerVisible] = useState(false);
 
+  // Reload data every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      reloadWorkouts();
+    }, [refresh, reloadWorkouts])
+  );
+
   const handleViewChange = (index: number) => {
     setView(index === 0 ? 'profile' : 'training');
   };
@@ -64,14 +73,11 @@ export default function BodyScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          view === 'training' ? (
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={tokens.colors.tint}
-              colors={[tokens.colors.tint]}
-            />
-          ) : undefined
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={tokens.colors.muted}
+          />
         }
       >
         <Text style={styles.title}>Body</Text>

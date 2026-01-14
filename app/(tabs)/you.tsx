@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -81,53 +81,62 @@ export default function YouScreen() {
   const [readingWeek, setReadingWeek] = useState(0);
   const [trainingToday, setTrainingToday] = useState(0);
   const [trainingWeek, setTrainingWeek] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadAllData = useCallback(async () => {
+    const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
+    setWins(winsData);
+    setFirstOpenedAt(firstOpened);
+
+    const [morning, evening, morningDone, eveningDone] = await Promise.all([
+      loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
+    ]);
+    setMorningRoutines(morning);
+    setEveningRoutines(evening);
+    setMorningCompleted(morningDone);
+    setEveningCompleted(eveningDone);
+
+    const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
+    setDailyTasks(tasks);
+    setGoals(goalsData);
+
+    // Load profile data
+    const [localProfile, sbProfile] = await Promise.all([
+      getProfile(),
+      getSupabaseProfile(),
+    ]);
+    setProfile(localProfile);
+    setSupabaseProfile(sbProfile);
+
+    const todayISO = getTodayISO();
+    const weekStartISO = getWeekStartISO();
+
+    const [rToday, rWeek, tToday, tWeek] = await Promise.all([
+      getTotalsByTypeForDate('reading', todayISO),
+      getTotalsByTypeForWeek('reading', weekStartISO),
+      getTotalsByTypeForDate('workout', todayISO),
+      getTotalsByTypeForWeek('workout', weekStartISO),
+    ]);
+
+    setReadingToday(rToday);
+    setReadingWeek(rWeek);
+    setTrainingToday(tToday);
+    setTrainingWeek(tWeek);
+  }, []);
 
   // Reload data every time the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      const loadAllData = async () => {
-        const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
-        setWins(winsData);
-        setFirstOpenedAt(firstOpened);
-
-        const [morning, evening, morningDone, eveningDone] = await Promise.all([
-          loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
-        ]);
-        setMorningRoutines(morning);
-        setEveningRoutines(evening);
-        setMorningCompleted(morningDone);
-        setEveningCompleted(eveningDone);
-
-        const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
-        setDailyTasks(tasks);
-        setGoals(goalsData);
-
-        // Load profile data
-        const [localProfile, sbProfile] = await Promise.all([
-          getProfile(),
-          getSupabaseProfile(),
-        ]);
-        setProfile(localProfile);
-        setSupabaseProfile(sbProfile);
-
-        const todayISO = getTodayISO();
-        const weekStartISO = getWeekStartISO();
-
-        const [rToday, rWeek, tToday, tWeek] = await Promise.all([
-          getTotalsByTypeForDate('reading', todayISO),
-          getTotalsByTypeForWeek('reading', weekStartISO),
-          getTotalsByTypeForDate('workout', todayISO),
-          getTotalsByTypeForWeek('workout', weekStartISO),
-        ]);
-
-        setReadingToday(rToday);
-        setReadingWeek(rWeek);
-        setTrainingToday(tToday);
-        setTrainingWeek(tWeek);
-      };
       loadAllData();
-    }, [])
+    }, [loadAllData])
   );
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData();
+    setRefreshing(false);
+  }, [loadAllData]);
 
   const appStreakDays = useMemo(() => firstOpenedAt ? daysSince(firstOpenedAt) + 1 : 1, [firstOpenedAt]);
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
@@ -195,7 +204,17 @@ export default function YouScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={tokens.colors.muted}
+          />
+        }
+      >
         {/* Header: Brand + Profile Avatar with Streak */}
         <View style={styles.topHeader}>
           <Text style={styles.brandText}>PERSONAL EXCELLENCE PROJECT</Text>
