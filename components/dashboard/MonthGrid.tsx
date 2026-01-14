@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { tokens } from '@/design/tokens';
 import { generateMonthData, isSameDay } from '@/utils/calendar';
 import { getLossStreakLength } from '@/lib/dailyOutcomes';
@@ -13,20 +14,49 @@ type Props = {
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-// Colors
-const WIN_COLOR = '#10B981';
-const TODAY_COLOR = '#5B8DEF'; // Marble-like blue
-const PRE_SIGNUP_COLOR = '#9CA3AF'; // Darker grey for days before signup
-const LOSS_COLORS = {
-  light: '#FCA5A5',
-  medium: '#F87171',
-  dark: '#EF4444',
+// Premium color palettes with gradients
+const COLORS = {
+  win: {
+    gradient: ['#34D399', '#10B981', '#059669'] as const,
+    shadow: '#059669',
+  },
+  today: {
+    gradient: ['#93C5FD', '#5B8DEF', '#3B82F6'] as const,
+    shadow: '#3B82F6',
+    glow: 'rgba(91, 141, 239, 0.4)',
+  },
+  preSignup: {
+    gradient: ['#D1D5DB', '#9CA3AF', '#6B7280'] as const,
+    shadow: '#6B7280',
+  },
+  loss: {
+    light: {
+      gradient: ['#FCA5A5', '#F87171', '#EF4444'] as const,
+      shadow: '#EF4444',
+    },
+    medium: {
+      gradient: ['#F87171', '#EF4444', '#DC2626'] as const,
+      shadow: '#DC2626',
+    },
+    dark: {
+      gradient: ['#EF4444', '#DC2626', '#B91C1C'] as const,
+      shadow: '#B91C1C',
+    },
+  },
+  neutral: {
+    gradient: ['#FFFFFF', '#FAFAFA', '#F5F5F5'] as const,
+    border: '#E5E7EB',
+  },
+  selected: {
+    gradient: ['#374151', '#1F2937', '#111827'] as const,
+    shadow: '#111827',
+  },
 };
 
-function getLossColor(streakLength: number): string {
-  if (streakLength >= 5) return LOSS_COLORS.dark;
-  if (streakLength >= 3) return LOSS_COLORS.medium;
-  return LOSS_COLORS.light;
+function getLossColors(streakLength: number) {
+  if (streakLength >= 5) return COLORS.loss.dark;
+  if (streakLength >= 3) return COLORS.loss.medium;
+  return COLORS.loss.light;
 }
 
 function isPastDay(date: Date, today: Date): boolean {
@@ -42,6 +72,14 @@ function isBeforeFirstOpen(date: Date, firstOpenedAt: string | null): boolean {
   const checkDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   return checkDay.getTime() < firstOpenDay.getTime();
 }
+
+type DayStyle = {
+  gradient: readonly [string, string, string];
+  shadow?: string;
+  glow?: string;
+  textColor: string;
+  borderColor?: string;
+};
 
 export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Props) {
   const today = new Date();
@@ -62,7 +100,6 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
   };
 
   const goToNextMonth = () => {
-    // Don't allow navigating past current month
     if (isCurrentMonth) return;
 
     if (viewMonth === 11) {
@@ -71,6 +108,59 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
     } else {
       setViewMonth(viewMonth + 1);
     }
+  };
+
+  const getDayStyle = (
+    isSelected: boolean,
+    isToday: boolean,
+    isWin: boolean,
+    isPreSignup: boolean,
+    isPast: boolean,
+    streakLen: number
+  ): DayStyle => {
+    if (isSelected && !isToday) {
+      return {
+        gradient: COLORS.selected.gradient,
+        shadow: COLORS.selected.shadow,
+        textColor: '#FFFFFF',
+      };
+    }
+    if (isWin) {
+      return {
+        gradient: COLORS.win.gradient,
+        shadow: COLORS.win.shadow,
+        textColor: '#FFFFFF',
+      };
+    }
+    if (isToday) {
+      return {
+        gradient: COLORS.today.gradient,
+        shadow: COLORS.today.shadow,
+        glow: COLORS.today.glow,
+        textColor: '#FFFFFF',
+      };
+    }
+    if (isPreSignup) {
+      return {
+        gradient: COLORS.preSignup.gradient,
+        shadow: COLORS.preSignup.shadow,
+        textColor: '#FFFFFF',
+      };
+    }
+    if (isPast) {
+      const lossColors = getLossColors(streakLen);
+      return {
+        gradient: lossColors.gradient,
+        shadow: lossColors.shadow,
+        textColor: '#FFFFFF',
+      };
+    }
+    // Future/neutral
+    return {
+      gradient: COLORS.neutral.gradient,
+      borderColor: COLORS.neutral.border,
+      textColor: tokens.colors.text,
+    };
   };
 
   return (
@@ -110,56 +200,46 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
 
           const dateKey = cell.dateKey;
           const isWin = !!wins[dateKey];
+          const isLoss = isPast && !isWin && !isPreSignup;
+          const streakLen = isLoss ? getLossStreakLength(date, wins) : 0;
 
-          // Determine day state
-          let bgColor: string | undefined;
-          let borderColor: string = tokens.colors.border;
-          let textColor: string = tokens.colors.text;
-
-          if (isSelected && !isToday) {
-            // Selected (but not today) - dark text background
-            bgColor = tokens.colors.text;
-            borderColor = tokens.colors.text;
-            textColor = '#FFFFFF';
-          } else if (isWin) {
-            // Win - green
-            bgColor = WIN_COLOR;
-            borderColor = WIN_COLOR;
-            textColor = '#FFFFFF';
-          } else if (isToday) {
-            // Today (not won yet) - marble blue
-            bgColor = TODAY_COLOR;
-            borderColor = TODAY_COLOR;
-            textColor = '#FFFFFF';
-          } else if (isPreSignup) {
-            // Before user signed up - darker grey
-            bgColor = PRE_SIGNUP_COLOR;
-            borderColor = PRE_SIGNUP_COLOR;
-            textColor = '#FFFFFF';
-          } else if (isPast && !isWin) {
-            // Loss (past day, after signup, not won) - red gradient
-            const streakLen = getLossStreakLength(date, wins);
-            bgColor = getLossColor(streakLen);
-            borderColor = bgColor;
-            textColor = '#FFFFFF';
-          } else {
-            // Future days - white/neutral
-            bgColor = tokens.colors.card;
-            borderColor = tokens.colors.border;
-            textColor = tokens.colors.text;
-          }
+          const style = getDayStyle(isSelected, isToday, isWin, isPreSignup, isLoss, streakLen);
 
           return (
             <View key={`d-${viewYear}-${viewMonth}-${day}`} style={styles.cell}>
+              {/* Glow effect for today */}
+              {style.glow && (
+                <View style={[styles.glowOuter, { backgroundColor: style.glow }]} />
+              )}
               <Pressable
                 onPress={() => {
                   if (isCurrentMonth) {
                     onSelectDay(day);
                   }
                 }}
-                style={[styles.dayBtn, { backgroundColor: bgColor, borderColor, borderWidth: 1 }]}
+                style={({ pressed }) => [
+                  styles.dayBtnOuter,
+                  style.shadow && {
+                    shadowColor: style.shadow,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 3,
+                  },
+                  pressed && styles.pressed,
+                ]}
               >
-                <Text style={[styles.dayText, { color: textColor }]}>{day}</Text>
+                <LinearGradient
+                  colors={style.gradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.dayBtn,
+                    style.borderColor && { borderWidth: 1, borderColor: style.borderColor },
+                  ]}
+                >
+                  <Text style={[styles.dayText, { color: style.textColor }]}>{day}</Text>
+                </LinearGradient>
               </Pressable>
             </View>
           );
@@ -194,7 +274,36 @@ const styles = StyleSheet.create({
   weekdays: { flexDirection: 'row', marginTop: 10, marginBottom: 6 },
   weekday: { width: '14.285%', textAlign: 'center', fontSize: 14, fontWeight: '600' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6 },
-  cell: { width: '14.285%', paddingVertical: 8, alignItems: 'center', justifyContent: 'center' },
-  dayBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  dayText: { fontSize: 16, fontWeight: '700' },
+  cell: {
+    width: '14.285%',
+    paddingVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glowOuter: {
+    position: 'absolute',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    opacity: 0.6,
+  },
+  dayBtnOuter: {
+    borderRadius: 20,
+  },
+  dayBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  dayText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.95 }],
+  },
 });
