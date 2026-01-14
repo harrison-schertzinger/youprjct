@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { tokens } from '@/design/tokens';
@@ -35,6 +36,7 @@ export default function MindScreen() {
     avgSessionLength: 0,
     booksCompleted: 0,
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   // Session timer state
   const [sessionActive, setSessionActive] = useState(false);
@@ -47,10 +49,35 @@ export default function MindScreen() {
   const [bookPickerVisible, setBookPickerVisible] = useState(false);
   const [endSessionVisible, setEndSessionVisible] = useState(false);
 
-  // Load data on mount
-  useEffect(() => {
-    loadData();
-  }, []);
+  const loadData = useCallback(async () => {
+    const loadedBooks = await getBooks();
+    const loadedSessions = await getSessions();
+    const calculatedInsights = await calculateInsights();
+
+    setBooks(loadedBooks);
+    setSessions(loadedSessions);
+    setInsights(calculatedInsights);
+
+    // Auto-select first active book if available
+    const activeBook = loadedBooks.find((b) => b.isActive);
+    if (activeBook && !selectedBook) {
+      setSelectedBook(activeBook);
+    }
+  }, [selectedBook]);
+
+  // Reload data every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   // Timer effect
   useEffect(() => {
@@ -71,22 +98,6 @@ export default function MindScreen() {
       }
     };
   }, [sessionActive]);
-
-  const loadData = async () => {
-    const loadedBooks = await getBooks();
-    const loadedSessions = await getSessions();
-    const calculatedInsights = await calculateInsights();
-
-    setBooks(loadedBooks);
-    setSessions(loadedSessions);
-    setInsights(calculatedInsights);
-
-    // Auto-select first active book if available
-    const activeBook = loadedBooks.find((b) => b.isActive);
-    if (activeBook && !selectedBook) {
-      setSelectedBook(activeBook);
-    }
-  };
 
   const handleViewChange = (index: number) => {
     const views: MindView[] = ['list', 'history', 'insights'];
@@ -181,6 +192,13 @@ export default function MindScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={tokens.colors.muted}
+          />
+        }
       >
         <Text style={styles.title}>Mind</Text>
         <Text style={styles.subtitle}>Reading and reflection</Text>
@@ -254,6 +272,3 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.xl,
   },
 });
-
-
-

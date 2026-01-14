@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { tokens } from '@/design/tokens';
 import { GoalsList, AddGoalModal } from '@/features/goals';
@@ -10,19 +11,30 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Load goals and daily tasks on mount
-  useEffect(() => {
-    const loadData = async () => {
-      const [goalsData, tasksData] = await Promise.all([
-        loadGoals(),
-        loadDailyTasks(),
-      ]);
-      setGoals(goalsData);
-      setDailyTasks(tasksData);
-    };
-    loadData();
+  const loadData = useCallback(async () => {
+    const [goalsData, tasksData] = await Promise.all([
+      loadGoals(),
+      loadDailyTasks(),
+    ]);
+    setGoals(goalsData);
+    setDailyTasks(tasksData);
   }, []);
+
+  // Reload data every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   // Calculate task counts per goal
   const taskCounts = useMemo(() => {
@@ -47,7 +59,17 @@ export default function GoalsScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={tokens.colors.muted}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <View>

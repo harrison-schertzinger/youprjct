@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { tokens } from '@/design/tokens';
@@ -33,6 +34,25 @@ export default function DisciplineScreen() {
       { id: '4', text: 'Cold shower', completed: false },
     ],
   });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(async () => {
+    // TODO: Load rules and challenge from storage when persistence is added
+  }, []);
+
+  // Reload data every time screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
 
   const handleViewChange = (index: number) => {
     setView(index === 0 ? 'challenge' : 'rules');
@@ -80,6 +100,13 @@ export default function DisciplineScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={tokens.colors.muted}
+          />
+        }
       >
         <Text style={styles.title}>Discipline</Text>
         <Text style={styles.subtitle}>Daily actions that compound</Text>
