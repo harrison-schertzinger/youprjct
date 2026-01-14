@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -16,7 +17,7 @@ import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, 
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
 import { Goal, loadGoals } from '@/lib/goals';
 import { getTotalsByTypeForDate, getTotalsByTypeForWeek } from '@/lib/repositories/ActivityRepo';
-import { getProfile } from '@/lib/repositories/ProfileRepo';
+import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
 import type { Profile } from '@/lib/training/types';
 
 type ModalType = 'morning' | 'evening' | 'task' | null;
@@ -71,8 +72,11 @@ export default function YouScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalType, setModalType] = useState<ModalType>(null);
 
-  // Personal Mastery Dashboard state
+  // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
+
+  // Personal Mastery Dashboard state
   const [readingToday, setReadingToday] = useState(0);
   const [readingWeek, setReadingWeek] = useState(0);
   const [trainingToday, setTrainingToday] = useState(0);
@@ -98,9 +102,13 @@ export default function YouScreen() {
         setDailyTasks(tasks);
         setGoals(goalsData);
 
-        // Load Personal Mastery Dashboard data
-        const profileData = await getProfile();
-        setProfile(profileData);
+        // Load profile data
+        const [localProfile, sbProfile] = await Promise.all([
+          getProfile(),
+          getSupabaseProfile(),
+        ]);
+        setProfile(localProfile);
+        setSupabaseProfile(sbProfile);
 
         const todayISO = getTodayISO();
         const weekStartISO = getWeekStartISO();
@@ -126,6 +134,11 @@ export default function YouScreen() {
   const isSelectedDayWon = useMemo(() => getDayOutcome(selectedDate, wins) === 'win', [selectedDate, wins]);
   const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
   const { winsThisWeek, totalDaysThisWeek } = useMemo(() => getThisWeekStats(wins), [wins]);
+
+  // Derived profile values
+  const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
+  const avatarLetter = displayName.charAt(0).toUpperCase();
+  const streakCount = profile?.onAppStreakDays ?? 0;
 
   const handleWinTheDay = async () => {
     await markDayAsWin(selectedDate);
@@ -183,27 +196,20 @@ export default function YouScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header with Streak */}
+        {/* Header: Brand + Profile Avatar with Streak */}
         <View style={styles.topHeader}>
-          <View>
-            <Text style={styles.headerTitle}>Today</Text>
-            <Text style={styles.headerSubtitle}>Winning the day</Text>
-          </View>
-          <View style={styles.streakPill}>
-            <Text style={styles.streakLabel}>Streak</Text>
-            <Text style={styles.streakValue}>🔥 {appStreakDays}</Text>
-          </View>
+          <Text style={styles.brandText}>PERSONAL EXCELLENCE PROJECT</Text>
+          <Link href="/profile" asChild>
+            <TouchableOpacity style={styles.avatarContainer}>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+              </View>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{avatarLetter}</Text>
+              </View>
+            </TouchableOpacity>
+          </Link>
         </View>
-
-        {/* On App Streak Chip */}
-        {profile && (
-          <View style={styles.onAppChipContainer}>
-            <View style={styles.onAppChip}>
-              <Text style={styles.onAppChipValue}>🔥 {profile.onAppStreakDays}</Text>
-              <Text style={styles.onAppChipLabel}>On app</Text>
-            </View>
-          </View>
-        )}
 
         {/* Stats Bar */}
         <Card style={{ paddingVertical: tokens.spacing.sm }}>
@@ -334,24 +340,69 @@ export default function YouScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: tokens.spacing.xl },
-  topHeader: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: tokens.spacing.md },
-  headerTitle: { fontSize: 38, fontWeight: '900', color: tokens.colors.text, letterSpacing: -0.6 },
-  headerSubtitle: { marginTop: 6, fontSize: 16, fontWeight: '600', color: tokens.colors.muted },
-  streakPill: { borderWidth: 1, borderColor: tokens.colors.border, backgroundColor: tokens.colors.card, borderRadius: tokens.radius.pill, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minWidth: 78 },
-  streakLabel: { fontSize: 12, fontWeight: '800', color: tokens.colors.muted },
-  streakValue: { marginTop: 2, fontSize: 22, fontWeight: '900', color: tokens.colors.text },
 
-  // On App Streak Chip
-  onAppChipContainer: { marginBottom: tokens.spacing.md, alignItems: 'flex-start' },
-  onAppChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F7F5', borderRadius: tokens.radius.pill, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: tokens.colors.border },
-  onAppChipValue: { fontSize: 14, fontWeight: '700', color: tokens.colors.text, marginRight: 6 },
-  onAppChipLabel: { fontSize: 11, fontWeight: '600', color: tokens.colors.muted, textTransform: 'uppercase', letterSpacing: 0.3 },
+  // Header
+  topHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.md,
+    paddingLeft: tokens.spacing.md,
+  },
+  brandText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 1.2,
+    flex: 1,
+    marginLeft: -2,
+    marginTop: 1,
+  },
+  avatarContainer: {
+    position: 'relative',
+    paddingTop: 6,
+    paddingLeft: 20,
+  },
+  streakBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    zIndex: 1,
+  },
+  streakBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: tokens.colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: tokens.colors.card,
+    fontSize: 15,
+    fontWeight: '700',
+  },
 
+  // Stats
   statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   statBlock: { flex: 1 },
   statDivider: { width: 1, height: 32, backgroundColor: tokens.colors.border, marginHorizontal: 10 },
   statLabel: { fontSize: 11, fontWeight: '700', color: tokens.colors.muted, marginBottom: 2, letterSpacing: 0.5 },
   statValue: { fontSize: 20, fontWeight: '900' },
+
+  // Cards
   blockTitle: { fontSize: 16, fontWeight: '800', color: tokens.colors.text },
   addBtnCorner: { position: 'absolute', top: 14, right: 14, paddingHorizontal: 12, paddingVertical: 6, borderRadius: tokens.radius.sm, backgroundColor: '#8B8B8B', alignItems: 'center', justifyContent: 'center', zIndex: 1 },
   addBtnText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
