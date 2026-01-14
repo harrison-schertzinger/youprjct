@@ -233,7 +233,7 @@ export default function YouScreen() {
 
         {/* Calendar */}
         <Card style={{ marginTop: tokens.spacing.md }}>
-          <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} />
+          <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} firstOpenedAt={firstOpenedAt} />
         </Card>
 
         {/* Day Won Button */}
