@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
+import { AccentCard } from '@/components/ui/AccentCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { ListRow } from '@/components/ui/ListRow';
+import { RoutineTileHeader } from '@/components/ui/RoutineTileHeader';
+import { RoutineListItem } from '@/components/ui/RoutineListItem';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
@@ -263,52 +265,96 @@ export default function YouScreen() {
         <SectionHeader title="Daily Routines" />
 
         {/* Morning */}
-        <Card style={{ position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('morning')}>
-            <Text style={styles.addBtnText}>+</Text>
-          </Pressable>
-          <Text style={styles.blockTitle}>Morning</Text>
-          <View style={styles.divider} />
+        <AccentCard
+          accent="amber"
+          header={
+            <RoutineTileHeader
+              icon="☀️"
+              title="Morning"
+              completedCount={morningRoutines.filter(r => morningCompleted.has(r.id)).length}
+              totalCount={morningRoutines.length}
+              onAdd={() => setModalType('morning')}
+            />
+          }
+        >
           {morningRoutines.length === 0 ? (
             <Text style={styles.placeholder}>Add your first morning routine...</Text>
           ) : (
-            morningRoutines.map(r => (
-              <ListRow key={r.id} title={r.title} checked={morningCompleted.has(r.id)} onToggle={() => handleToggleMorning(r.id)} rightChipText={r.label} onDelete={() => handleDeleteMorning(r.id)} />
+            morningRoutines.map((r, index) => (
+              <View key={r.id} style={index === morningRoutines.length - 1 ? styles.lastItem : undefined}>
+                <RoutineListItem
+                  title={r.title}
+                  checked={morningCompleted.has(r.id)}
+                  onToggle={() => handleToggleMorning(r.id)}
+                  chipText={r.label}
+                  onDelete={() => handleDeleteMorning(r.id)}
+                />
+              </View>
             ))
           )}
-        </Card>
+        </AccentCard>
 
         {/* Tasks */}
-        <Card style={{ marginTop: tokens.spacing.md, position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('task')}>
-            <Text style={styles.addBtnText}>+</Text>
-          </Pressable>
-          <Text style={styles.blockTitle}>Today's Tasks</Text>
-          <View style={styles.divider} />
+        <AccentCard
+          accent="blue"
+          style={{ marginTop: tokens.spacing.md }}
+          header={
+            <RoutineTileHeader
+              icon="🎯"
+              title="Today's Tasks"
+              completedCount={dailyTasks.filter(t => t.completed).length}
+              totalCount={dailyTasks.length}
+              onAdd={() => setModalType('task')}
+            />
+          }
+        >
           {dailyTasks.length === 0 ? (
             <Text style={styles.placeholder}>Add a task to get started...</Text>
           ) : (
-            dailyTasks.map(t => (
-              <ListRow key={t.id} title={t.title} checked={t.completed} onToggle={() => handleToggleTask(t.id)} rightChipText={t.goalName} onDelete={() => handleDeleteTask(t.id)} />
+            dailyTasks.map((t, index) => (
+              <View key={t.id} style={index === dailyTasks.length - 1 ? styles.lastItem : undefined}>
+                <RoutineListItem
+                  title={t.title}
+                  checked={t.completed}
+                  onToggle={() => handleToggleTask(t.id)}
+                  chipText={t.goalName}
+                  onDelete={() => handleDeleteTask(t.id)}
+                />
+              </View>
             ))
           )}
-        </Card>
+        </AccentCard>
 
         {/* Evening */}
-        <Card style={{ marginTop: tokens.spacing.md, position: 'relative' }}>
-          <Pressable style={styles.addBtnCorner} onPress={() => setModalType('evening')}>
-            <Text style={styles.addBtnText}>+</Text>
-          </Pressable>
-          <Text style={styles.blockTitle}>Evening</Text>
-          <View style={styles.divider} />
+        <AccentCard
+          accent="indigo"
+          style={{ marginTop: tokens.spacing.md }}
+          header={
+            <RoutineTileHeader
+              icon="🌙"
+              title="Evening"
+              completedCount={eveningRoutines.filter(r => eveningCompleted.has(r.id)).length}
+              totalCount={eveningRoutines.length}
+              onAdd={() => setModalType('evening')}
+            />
+          }
+        >
           {eveningRoutines.length === 0 ? (
             <Text style={styles.placeholder}>Add your first evening routine...</Text>
           ) : (
-            eveningRoutines.map(r => (
-              <ListRow key={r.id} title={r.title} checked={eveningCompleted.has(r.id)} onToggle={() => handleToggleEvening(r.id)} rightChipText={r.label} onDelete={() => handleDeleteEvening(r.id)} />
+            eveningRoutines.map((r, index) => (
+              <View key={r.id} style={index === eveningRoutines.length - 1 ? styles.lastItem : undefined}>
+                <RoutineListItem
+                  title={r.title}
+                  checked={eveningCompleted.has(r.id)}
+                  onToggle={() => handleToggleEvening(r.id)}
+                  chipText={r.label}
+                  onDelete={() => handleDeleteEvening(r.id)}
+                />
+              </View>
             ))
           )}
-        </Card>
+        </AccentCard>
 
         {/* Personal Mastery Dashboard */}
         <SectionHeader title="Personal Mastery Dashboard" />
@@ -422,11 +468,8 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 20, fontWeight: '900' },
 
   // Cards
-  blockTitle: { fontSize: 16, fontWeight: '800', color: tokens.colors.text },
-  addBtnCorner: { position: 'absolute', top: 14, right: 14, paddingHorizontal: 12, paddingVertical: 6, borderRadius: tokens.radius.sm, backgroundColor: '#8B8B8B', alignItems: 'center', justifyContent: 'center', zIndex: 1 },
-  addBtnText: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-  divider: { height: 1, backgroundColor: tokens.colors.border, marginTop: tokens.spacing.md, marginBottom: tokens.spacing.sm },
   placeholder: { fontSize: 15, fontStyle: 'italic', color: tokens.colors.muted, paddingVertical: tokens.spacing.md },
+  lastItem: { borderBottomWidth: 0 },
 
   // Personal Mastery Dashboard
   dashboardGroup: { marginBottom: tokens.spacing.md },
