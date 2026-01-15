@@ -22,12 +22,20 @@ type Props = {
   children: React.ReactNode;
 };
 
+// Set to true to bypass premium gate during development
+const DEV_BYPASS_PREMIUM = __DEV__;
+
 /**
  * PremiumGate wraps a screen and shows a locked state for non-premium users.
  * When the user is premium, the children are rendered normally.
  */
 export function PremiumGate({ feature, tagline, benefits, children }: Props) {
   const { isPremium, isLoading } = useMembership();
+
+  // Bypass gate in development mode
+  if (DEV_BYPASS_PREMIUM) {
+    return <>{children}</>;
+  }
 
   // While loading, show nothing (prevents flash)
   if (isLoading) {
