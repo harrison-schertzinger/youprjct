@@ -2,10 +2,26 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
+import { PremiumGate } from '@/components/ui/PremiumGate';
 import { tokens } from '@/design/tokens';
 import { GoalsList, AddGoalModal } from '@/features/goals';
 import { Goal, GoalType, loadGoals, addGoal, deleteGoal } from '@/lib/goals';
 import { loadDailyTasks, DailyTask } from '@/lib/dailyTasks';
+
+const GOALS_BENEFITS = [
+  {
+    title: 'Goal Setting',
+    description: 'Define clear objectives with categorization for work, health, learning, and more.',
+  },
+  {
+    title: 'Daily Task Linking',
+    description: 'Connect daily tasks to larger goals and track progress automatically.',
+  },
+  {
+    title: 'Progress Tracking',
+    description: 'See how your daily actions compound toward meaningful outcomes.',
+  },
+];
 
 export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -58,49 +74,55 @@ export default function GoalsScreen() {
   }, []);
 
   return (
-    <ScreenContainer>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={tokens.colors.muted}
-          />
-        }
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Goals</Text>
-            <Text style={styles.headerSubtitle}>What you're aiming at</Text>
+    <PremiumGate
+      feature="Goals"
+      tagline="What you're aiming at"
+      benefits={GOALS_BENEFITS}
+    >
+      <ScreenContainer>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={tokens.colors.muted}
+            />
+          }
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.headerTitle}>Goals</Text>
+              <Text style={styles.headerSubtitle}>What you're aiming at</Text>
+            </View>
+            {goals.length > 0 && (
+              <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
+                <Text style={styles.addBtnText}>+</Text>
+              </Pressable>
+            )}
           </View>
-          {goals.length > 0 && (
-            <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
-              <Text style={styles.addBtnText}>+</Text>
-            </Pressable>
-          )}
-        </View>
 
-        {/* Goals List */}
-        <GoalsList
-          goals={goals}
-          taskCounts={taskCounts}
-          onAddGoal={() => setShowAddModal(true)}
-          onDeleteGoal={handleDeleteGoal}
+          {/* Goals List */}
+          <GoalsList
+            goals={goals}
+            taskCounts={taskCounts}
+            onAddGoal={() => setShowAddModal(true)}
+            onDeleteGoal={handleDeleteGoal}
+          />
+
+          <View style={{ height: tokens.spacing.xl }} />
+        </ScrollView>
+
+        {/* Add Goal Modal */}
+        <AddGoalModal
+          visible={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddGoal}
         />
-
-        <View style={{ height: tokens.spacing.xl }} />
-      </ScrollView>
-
-      {/* Add Goal Modal */}
-      <AddGoalModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleAddGoal}
-      />
-    </ScreenContainer>
+      </ScreenContainer>
+    </PremiumGate>
   );
 }
 

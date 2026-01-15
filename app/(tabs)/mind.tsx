@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { PremiumGate } from '@/components/ui/PremiumGate';
 import { tokens } from '@/design/tokens';
 import {
   TimerCard,
@@ -23,6 +24,21 @@ import {
   calculateInsights,
 } from '@/features/mind/storage';
 import type { Book, ReadingSession, InsightStats, MindView } from '@/features/mind/types';
+
+const MIND_BENEFITS = [
+  {
+    title: 'Reading Timer',
+    description: 'Track your reading sessions with a focused timer and automatic logging.',
+  },
+  {
+    title: 'Book Library',
+    description: 'Manage your reading list, track progress, and mark books as complete.',
+  },
+  {
+    title: 'Reading Insights',
+    description: 'See your reading patterns, streaks, and total time invested in learning.',
+  },
+];
 
 export default function MindScreen() {
   const [view, setView] = useState<MindView>('list');
@@ -188,72 +204,78 @@ export default function MindScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={tokens.colors.muted}
-          />
-        }
-      >
-        <Text style={styles.title}>Mind</Text>
-        <Text style={styles.subtitle}>Reading and reflection</Text>
+    <PremiumGate
+      feature="Mind"
+      tagline="Reading and reflection"
+      benefits={MIND_BENEFITS}
+    >
+      <ScreenContainer>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={tokens.colors.muted}
+            />
+          }
+        >
+          <Text style={styles.title}>Mind</Text>
+          <Text style={styles.subtitle}>Reading and reflection</Text>
 
-        <TimerCard
-          isActive={sessionActive}
+          <TimerCard
+            isActive={sessionActive}
+            duration={sessionDuration}
+            selectedBook={selectedBook}
+            onStart={handleStartSession}
+            onEnd={handleEndSession}
+            onSelectBook={() => setBookPickerVisible(true)}
+          />
+
+          <SegmentedControl
+            segments={['List', 'History', 'Insights']}
+            selectedIndex={view === 'list' ? 0 : view === 'history' ? 1 : 2}
+            onChange={handleViewChange}
+          />
+
+          {view === 'list' && (
+            <BookListView
+              books={books}
+              onAddBook={() => setBookPickerVisible(true)}
+              onToggleComplete={handleToggleComplete}
+              onDeleteBook={handleDeleteBook}
+            />
+          )}
+
+          {view === 'history' && (
+            <HistoryView
+              sessions={sessions}
+              onDeleteSession={handleDeleteSession}
+            />
+          )}
+
+          {view === 'insights' && <InsightsView stats={insights} />}
+        </ScrollView>
+
+        {/* Modals */}
+        <BookPickerModal
+          visible={bookPickerVisible}
+          books={books}
+          selectedBookId={selectedBook?.id || null}
+          onSelect={handleSelectBook}
+          onAddNew={handleAddBook}
+          onClose={() => setBookPickerVisible(false)}
+        />
+
+        <EndSessionModal
+          visible={endSessionVisible}
           duration={sessionDuration}
-          selectedBook={selectedBook}
-          onStart={handleStartSession}
-          onEnd={handleEndSession}
-          onSelectBook={() => setBookPickerVisible(true)}
+          onSave={handleSaveSession}
+          onClose={() => setEndSessionVisible(false)}
         />
-
-        <SegmentedControl
-          segments={['List', 'History', 'Insights']}
-          selectedIndex={view === 'list' ? 0 : view === 'history' ? 1 : 2}
-          onChange={handleViewChange}
-        />
-
-        {view === 'list' && (
-          <BookListView
-            books={books}
-            onAddBook={() => setBookPickerVisible(true)}
-            onToggleComplete={handleToggleComplete}
-            onDeleteBook={handleDeleteBook}
-          />
-        )}
-
-        {view === 'history' && (
-          <HistoryView
-            sessions={sessions}
-            onDeleteSession={handleDeleteSession}
-          />
-        )}
-
-        {view === 'insights' && <InsightsView stats={insights} />}
-      </ScrollView>
-
-      {/* Modals */}
-      <BookPickerModal
-        visible={bookPickerVisible}
-        books={books}
-        selectedBookId={selectedBook?.id || null}
-        onSelect={handleSelectBook}
-        onAddNew={handleAddBook}
-        onClose={() => setBookPickerVisible(false)}
-      />
-
-      <EndSessionModal
-        visible={endSessionVisible}
-        duration={sessionDuration}
-        onSave={handleSaveSession}
-        onClose={() => setEndSessionVisible(false)}
-      />
-    </ScreenContainer>
+      </ScreenContainer>
+    </PremiumGate>
   );
 }
 

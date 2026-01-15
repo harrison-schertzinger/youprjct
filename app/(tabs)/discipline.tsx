@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { PremiumGate } from '@/components/ui/PremiumGate';
 import { tokens } from '@/design/tokens';
 import {
   SegmentedControl,
@@ -15,6 +16,21 @@ import {
   type Rule,
   type Challenge,
 } from '@/features/discipline';
+
+const DISCIPLINE_BENEFITS = [
+  {
+    title: 'Personal Rules System',
+    description: 'Define the non-negotiables that shape your character and track adherence over time.',
+  },
+  {
+    title: '40-Day Challenges',
+    description: 'Structured challenges that build lasting habits through daily accountability.',
+  },
+  {
+    title: 'Streak Tracking',
+    description: 'Visual progress tracking that rewards consistency and builds momentum.',
+  },
+];
 
 export default function DisciplineScreen() {
   const [view, setView] = useState<DisciplineView>('challenge');
@@ -96,68 +112,74 @@ export default function DisciplineScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={tokens.colors.muted}
+    <PremiumGate
+      feature="Discipline"
+      tagline="Daily actions that compound"
+      benefits={DISCIPLINE_BENEFITS}
+    >
+      <ScreenContainer>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={tokens.colors.muted}
+            />
+          }
+        >
+          <Text style={styles.title}>Discipline</Text>
+          <Text style={styles.subtitle}>Daily actions that compound</Text>
+
+          <SegmentedControl
+            segments={['Challenge', 'Rules']}
+            selectedIndex={view === 'challenge' ? 0 : 1}
+            onChange={handleViewChange}
           />
-        }
-      >
-        <Text style={styles.title}>Discipline</Text>
-        <Text style={styles.subtitle}>Daily actions that compound</Text>
 
-        <SegmentedControl
-          segments={['Challenge', 'Rules']}
-          selectedIndex={view === 'challenge' ? 0 : 1}
-          onChange={handleViewChange}
-        />
+          {view === 'rules' ? (
+            <View>
+              <RulesAdherenceCard todayPercentage={85} bestStreak={12} />
 
-        {view === 'rules' ? (
-          <View>
-            <RulesAdherenceCard todayPercentage={85} bestStreak={12} />
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>30-Day View</Text>
-              <MiniGrid />
-            </View>
-
-            <AddNewRuleButton onPress={handleAddRule} />
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>My Rules</Text>
-              {rules.map((rule) => (
-                <RuleListItem key={rule.id} rule={rule} onDelete={handleDeleteRule} />
-              ))}
-            </View>
-          </View>
-        ) : (
-          <View>
-            {challenge ? (
-              <ChallengeCard
-                challenge={challenge}
-                onToggleRequirement={handleToggleRequirement}
-              />
-            ) : (
-              <View style={styles.noChallengeContainer}>
-                <Text style={styles.noChallengeText}>
-                  No active challenge. Start one to build discipline!
-                </Text>
-                <PrimaryButton
-                  label="Start New Challenge"
-                  onPress={handleStartChallenge}
-                  style={styles.startButton}
-                />
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>30-Day View</Text>
+                <MiniGrid />
               </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
-    </ScreenContainer>
+
+              <AddNewRuleButton onPress={handleAddRule} />
+
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>My Rules</Text>
+                {rules.map((rule) => (
+                  <RuleListItem key={rule.id} rule={rule} onDelete={handleDeleteRule} />
+                ))}
+              </View>
+            </View>
+          ) : (
+            <View>
+              {challenge ? (
+                <ChallengeCard
+                  challenge={challenge}
+                  onToggleRequirement={handleToggleRequirement}
+                />
+              ) : (
+                <View style={styles.noChallengeContainer}>
+                  <Text style={styles.noChallengeText}>
+                    No active challenge. Start one to build discipline!
+                  </Text>
+                  <PrimaryButton
+                    label="Start New Challenge"
+                    onPress={handleStartChallenge}
+                    style={styles.startButton}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </ScreenContainer>
+    </PremiumGate>
   );
 }
 
