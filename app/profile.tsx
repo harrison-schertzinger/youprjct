@@ -6,8 +6,9 @@ import {
   TextInput,
   ActivityIndicator,
   Keyboard,
+  TouchableOpacity,
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -19,6 +20,7 @@ import {
   type SupabaseProfile,
 } from '@/lib/repositories/ProfileRepo';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { useMembership } from '@/hooks/useMembership';
 import type { Profile } from '@/lib/training/types';
 
 export default function ProfileScreen() {
@@ -28,6 +30,8 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  const { isPremium, isLoading: membershipLoading } = useMembership();
 
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
@@ -102,6 +106,36 @@ export default function ProfileScreen() {
             <Text style={styles.streakText}>
               {localProfile.onAppStreakDays} day streak
             </Text>
+          )}
+
+          {/* Pro Membership Card */}
+          {!membershipLoading && (
+            <Card style={styles.membershipCard}>
+              {isPremium ? (
+                <>
+                  <View style={styles.proHeader}>
+                    <Text style={styles.proIcon}>★</Text>
+                    <Text style={styles.proTitle}>Pro Member</Text>
+                  </View>
+                  <Text style={styles.proSubtitle}>
+                    Thank you for your support
+                  </Text>
+                </>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => router.push('/premium')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.upgradeHeader}>
+                    <Text style={styles.upgradeTitle}>Upgrade to Pro</Text>
+                    <Text style={styles.upgradeArrow}>→</Text>
+                  </View>
+                  <Text style={styles.upgradeSubtitle}>
+                    Unlock all features
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </Card>
           )}
 
           {/* Loading State */}
@@ -208,6 +242,47 @@ const styles = StyleSheet.create({
     ...tokens.typography.body,
     color: tokens.colors.action,
     marginBottom: tokens.spacing.xl,
+  },
+  membershipCard: {
+    width: '100%',
+    marginBottom: tokens.spacing.lg,
+  },
+  proHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.xs,
+  },
+  proIcon: {
+    fontSize: 20,
+    color: tokens.colors.tint,
+    marginRight: tokens.spacing.sm,
+  },
+  proTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.tint,
+  },
+  proSubtitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+  },
+  upgradeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: tokens.spacing.xs,
+  },
+  upgradeTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+  },
+  upgradeArrow: {
+    fontSize: 20,
+    color: tokens.colors.tint,
+    fontWeight: '600',
+  },
+  upgradeSubtitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
   },
   loadingContainer: {
     marginTop: tokens.spacing.xl,
