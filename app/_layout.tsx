@@ -8,6 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initializeTraining } from '@/lib/repositories/TrainingRepo';
 import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 import { ensureSession } from '@/lib/supabase/AuthRepo';
+import { configureRevenueCat } from '@/lib/revenuecat';
 import { formatDateKey } from '@/utils/calendar';
 
 export const unstable_settings = {
@@ -18,8 +19,21 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // Bootstrap anonymous auth session (non-blocking, silent)
-    ensureSession();
+    // Fire-and-forget async init
+    // Sequential: ensureSession completes before configureRevenueCat
+    // so RevenueCat can use Supabase user ID
+    (async () => {
+      try {
+        // Bootstrap anonymous auth session first
+        await ensureSession();
+
+        // Configure RevenueCat with Supabase user ID (if available)
+        await configureRevenueCat();
+      } catch (error) {
+        // Non-blocking, fail silently
+        console.error('App init error:', error);
+      }
+    })();
 
     // Initialize training data (Supabase if configured, else local seed)
     initializeTraining().catch((error) => {
@@ -39,6 +53,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="workout-session" options={{ headerShown: false, presentation: 'card' }} />
+        <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'card' }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
