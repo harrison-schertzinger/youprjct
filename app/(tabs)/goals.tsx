@@ -5,7 +5,16 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PremiumGate } from '@/components/ui/PremiumGate';
 import { tokens } from '@/design/tokens';
 import { GoalsList, AddGoalModal } from '@/features/goals';
-import { Goal, GoalType, loadGoals, addGoal, deleteGoal } from '@/lib/goals';
+import {
+  Goal,
+  GoalType,
+  GoalColor,
+  loadGoals,
+  addGoal,
+  deleteGoal,
+  completeGoal,
+  uncompleteGoal,
+} from '@/lib/goals';
 import { loadDailyTasks, DailyTask } from '@/lib/dailyTasks';
 
 const GOALS_BENEFITS = [
@@ -63,15 +72,45 @@ export default function GoalsScreen() {
     return counts;
   }, [dailyTasks]);
 
-  const handleAddGoal = useCallback(async (title: string, goalType: GoalType) => {
-    const newGoal = await addGoal(title, goalType);
-    setGoals((prev) => [...prev, newGoal]);
-  }, []);
+  const handleAddGoal = useCallback(
+    async (
+      title: string,
+      outcome: string,
+      whys: string[],
+      goalType: GoalType,
+      color: GoalColor
+    ) => {
+      const newGoal = await addGoal(title, outcome, whys, goalType, color);
+      setGoals((prev) => [...prev, newGoal]);
+    },
+    []
+  );
 
   const handleDeleteGoal = useCallback(async (id: string) => {
     await deleteGoal(id);
     setGoals((prev) => prev.filter((g) => g.id !== id));
   }, []);
+
+  const handleCompleteGoal = useCallback(async (id: string) => {
+    const updated = await completeGoal(id);
+    if (updated) {
+      setGoals((prev) =>
+        prev.map((g) => (g.id === id ? updated : g))
+      );
+    }
+  }, []);
+
+  const handleUncompleteGoal = useCallback(async (id: string) => {
+    const updated = await uncompleteGoal(id);
+    if (updated) {
+      setGoals((prev) =>
+        prev.map((g) => (g.id === id ? updated : g))
+      );
+    }
+  }, []);
+
+  // Count active goals for header display
+  const activeGoalsCount = goals.filter((g) => !g.isCompleted).length;
 
   return (
     <PremiumGate
@@ -95,7 +134,11 @@ export default function GoalsScreen() {
           <View style={styles.header}>
             <View>
               <Text style={styles.headerTitle}>Goals</Text>
-              <Text style={styles.headerSubtitle}>What you're aiming at</Text>
+              <Text style={styles.headerSubtitle}>
+                {activeGoalsCount > 0
+                  ? `${activeGoalsCount} active goal${activeGoalsCount !== 1 ? 's' : ''}`
+                  : 'What you\'re aiming at'}
+              </Text>
             </View>
             {goals.length > 0 && (
               <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
@@ -110,6 +153,8 @@ export default function GoalsScreen() {
             taskCounts={taskCounts}
             onAddGoal={() => setShowAddModal(true)}
             onDeleteGoal={handleDeleteGoal}
+            onCompleteGoal={handleCompleteGoal}
+            onUncompleteGoal={handleUncompleteGoal}
           />
 
           <View style={{ height: tokens.spacing.xl }} />
@@ -152,7 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: tokens.radius.sm,
-    backgroundColor: '#8B8B8B',
+    backgroundColor: tokens.colors.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
