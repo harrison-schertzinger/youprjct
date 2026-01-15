@@ -2,6 +2,7 @@
 // Uses lazy require() to avoid crashes if native module not present
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { getCurrentUserId } from '@/lib/supabase/AuthRepo';
 
 // Import types from react-native-purchases for TypeScript
@@ -14,9 +15,19 @@ import type {
   PurchasesOfferings,
 } from 'react-native-purchases';
 
+// Check if running in Expo Go (which doesn't support native modules)
+function isExpoGo(): boolean {
+  return Constants.appOwnership === 'expo';
+}
+
 // Lazy getter for RevenueCat SDK
 // Returns null if module not available (e.g., Expo Go without dev client)
 function getRevenueCat(): typeof Purchases | null {
+  // Skip native module loading entirely in Expo Go to prevent crashes
+  if (isExpoGo()) {
+    return null;
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const PurchasesModule = require('react-native-purchases').default;
