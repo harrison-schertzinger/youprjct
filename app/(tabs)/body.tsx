@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { PremiumGate } from '@/components/ui/PremiumGate';
 import { tokens } from '@/design/tokens';
 import {
   ProfileHeader,
@@ -21,6 +22,21 @@ import {
 import type { BodyView } from '@/features/body/types';
 import type { TrainingTrack } from '@/lib/training/types';
 import { getTodayISO } from '@/lib/repositories/TrainingRepo';
+
+const BODY_BENEFITS = [
+  {
+    title: 'Training Tracks',
+    description: 'Structured programming designed for progressive overload and long-term gains.',
+  },
+  {
+    title: 'Movement Library',
+    description: 'Track your major lifts with detailed exercise logging and PR tracking.',
+  },
+  {
+    title: 'Workout Sessions',
+    description: 'Guided workout timer with automatic rest periods and set tracking.',
+  },
+];
 
 export default function BodyScreen() {
   const [view, setView] = useState<BodyView>('profile');
@@ -68,108 +84,114 @@ export default function BodyScreen() {
   };
 
   return (
-    <ScreenContainer>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={tokens.colors.muted}
-          />
-        }
-      >
-        <Text style={styles.title}>Body</Text>
-        <Text style={styles.subtitle}>Training, recovery, readiness</Text>
-
-        <SegmentedControl
-          segments={['Profile', 'Training']}
-          selectedIndex={view === 'profile' ? 0 : 1}
-          onChange={handleViewChange}
-        />
-
-        {view === 'profile' ? (
-          <View>
-            <ProfileHeader name="You" streak={12} />
-            <MajorMovementsTiles movements={majorMovements} />
-          </View>
-        ) : (
-          <View>
-            <TrackPickerButton
-              activeTrack={
-                activeTrack
-                  ? {
-                      id: activeTrack.id,
-                      name: activeTrack.title,
-                      description: '',
-                    }
-                  : null
-              }
-              onPress={() => setTrackPickerVisible(true)}
+    <PremiumGate
+      feature="Body"
+      tagline="Training, recovery, readiness"
+      benefits={BODY_BENEFITS}
+    >
+      <ScreenContainer>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={tokens.colors.muted}
             />
-
-            <WeekStrip
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-            />
-
-            {workoutsLoading ? (
-              <View style={styles.loadingContainer}>
-                <Text style={styles.loadingText}>Loading workouts...</Text>
-              </View>
-            ) : enrichedWorkouts.length > 0 ? (
-              <View>
-                <Text style={styles.workoutsHeader}>
-                  Workouts for{' '}
-                  {new Date(selectedDate).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </Text>
-                {enrichedWorkouts.map((workout) => (
-                  <WorkoutTile
-                    key={workout.id}
-                    workout={{
-                      id: workout.id,
-                      title: workout.title,
-                      description: `${workout.movements.length} movement${workout.movements.length !== 1 ? 's' : ''}`,
-                      items: [],
-                    }}
-                    onPress={() => handleWorkoutPress(workout.id)}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View style={styles.noWorkouts}>
-                <Text style={styles.noWorkoutsText}>
-                  No workouts scheduled for this day
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Modals */}
-      <TrackPickerModal
-        visible={trackPickerVisible}
-        tracks={tracks.map((t) => ({
-          id: t.id,
-          name: t.title,
-          description: '',
-        }))}
-        selectedTrackId={activeTrackId}
-        onSelect={(track) => {
-          const realTrack = tracks.find((t) => t.id === track.id);
-          if (realTrack) {
-            handleSelectTrack(realTrack);
           }
-        }}
-        onClose={() => setTrackPickerVisible(false)}
-      />
-    </ScreenContainer>
+        >
+          <Text style={styles.title}>Body</Text>
+          <Text style={styles.subtitle}>Training, recovery, readiness</Text>
+
+          <SegmentedControl
+            segments={['Profile', 'Training']}
+            selectedIndex={view === 'profile' ? 0 : 1}
+            onChange={handleViewChange}
+          />
+
+          {view === 'profile' ? (
+            <View>
+              <ProfileHeader name="You" streak={12} />
+              <MajorMovementsTiles movements={majorMovements} />
+            </View>
+          ) : (
+            <View>
+              <TrackPickerButton
+                activeTrack={
+                  activeTrack
+                    ? {
+                        id: activeTrack.id,
+                        name: activeTrack.title,
+                        description: '',
+                      }
+                    : null
+                }
+                onPress={() => setTrackPickerVisible(true)}
+              />
+
+              <WeekStrip
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+              />
+
+              {workoutsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading workouts...</Text>
+                </View>
+              ) : enrichedWorkouts.length > 0 ? (
+                <View>
+                  <Text style={styles.workoutsHeader}>
+                    Workouts for{' '}
+                    {new Date(selectedDate).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Text>
+                  {enrichedWorkouts.map((workout) => (
+                    <WorkoutTile
+                      key={workout.id}
+                      workout={{
+                        id: workout.id,
+                        title: workout.title,
+                        description: `${workout.movements.length} movement${workout.movements.length !== 1 ? 's' : ''}`,
+                        items: [],
+                      }}
+                      onPress={() => handleWorkoutPress(workout.id)}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.noWorkouts}>
+                  <Text style={styles.noWorkoutsText}>
+                    No workouts scheduled for this day
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Modals */}
+        <TrackPickerModal
+          visible={trackPickerVisible}
+          tracks={tracks.map((t) => ({
+            id: t.id,
+            name: t.title,
+            description: '',
+          }))}
+          selectedTrackId={activeTrackId}
+          onSelect={(track) => {
+            const realTrack = tracks.find((t) => t.id === track.id);
+            if (realTrack) {
+              handleSelectTrack(realTrack);
+            }
+          }}
+          onClose={() => setTrackPickerVisible(false)}
+        />
+      </ScreenContainer>
+    </PremiumGate>
   );
 }
 
