@@ -23,26 +23,57 @@ import type { LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
 import type { Exercise, ScoreType, SortDirection } from '@/lib/training/types';
 
 // ============================================
-// PROFILE VIEW COMPONENTS
+// PROFILE VIEW COMPONENTS (ATHLETE STATS)
 // ============================================
 
-type ProfileHeaderProps = {
-  name: string;
-  streak: number;
+// Helper to format duration
+function formatDuration(seconds: number): string {
+  if (seconds === 0) return '—';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+  return `${minutes}m`;
+}
+
+type TrainingStatsProps = {
+  totalSessions: number;
+  sessionsThisWeek: number;
+  totalTimeSeconds: number;
+  avgSessionSeconds: number;
 };
 
-export function ProfileHeader({ name, streak }: ProfileHeaderProps) {
+export function TrainingStatsSection({
+  totalSessions,
+  sessionsThisWeek,
+  totalTimeSeconds,
+  avgSessionSeconds,
+}: TrainingStatsProps) {
   return (
-    <Card style={styles.profileHeader}>
-      <View style={styles.avatarPlaceholder}>
-        <Text style={styles.avatarText}>{name.charAt(0)}</Text>
+    <View style={styles.statsSection}>
+      <Text style={styles.statsSectionTitle}>TRAINING OVERVIEW</Text>
+      <View style={styles.statsGrid}>
+        <View style={styles.statCard}>
+          <Text style={styles.statCardValue}>{totalSessions}</Text>
+          <Text style={styles.statCardLabel}>TOTAL SESSIONS</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={[styles.statCardValue, { color: tokens.colors.tint }]}>
+            {sessionsThisWeek}
+          </Text>
+          <Text style={styles.statCardLabel}>THIS WEEK</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statCardValue}>{formatDuration(totalTimeSeconds)}</Text>
+          <Text style={styles.statCardLabel}>TOTAL TIME</Text>
+        </View>
+        <View style={styles.statCard}>
+          <Text style={styles.statCardValue}>{formatDuration(avgSessionSeconds)}</Text>
+          <Text style={styles.statCardLabel}>AVG SESSION</Text>
+        </View>
       </View>
-      <Text style={styles.profileName}>{name}</Text>
-      <View style={styles.streakContainer}>
-        <Text style={styles.streakNumber}>{streak}</Text>
-        <Text style={styles.streakLabel}>Day Streak</Text>
-      </View>
-    </Card>
+    </View>
   );
 }
 
@@ -51,35 +82,19 @@ type MovementTileProps = {
 };
 
 export function MovementTile({ movement }: MovementTileProps) {
-  const trendIcon = movement.trend === 'up' ? '↗' : movement.trend === 'down' ? '↘' : '→';
-  const trendColor =
-    movement.trend === 'up'
-      ? tokens.colors.action
-      : movement.trend === 'down'
-      ? tokens.colors.danger
-      : tokens.colors.muted;
-
   return (
-    <Card style={styles.movementTile}>
-      <Text style={styles.movementName}>{movement.name}</Text>
-      <View style={styles.movementStats}>
-        <View>
-          <Text style={styles.movementLabel}>Last Logged</Text>
-          <Text style={styles.movementValue}>
-            {movement.lastLogged || 'Never'}
-          </Text>
-        </View>
-        <View>
-          <Text style={styles.movementLabel}>PR</Text>
-          <Text style={styles.movementValue}>
-            {movement.bestWeight ? `${movement.bestWeight} lbs` : '—'}
-          </Text>
-        </View>
+    <View style={styles.prTile}>
+      <Text style={styles.prMovementName}>{movement.name}</Text>
+      <View style={styles.prValueRow}>
+        <Text style={styles.prValue}>
+          {movement.bestWeight ? `${movement.bestWeight}` : '—'}
+        </Text>
+        {movement.bestWeight && <Text style={styles.prUnit}>lbs</Text>}
       </View>
-      <View style={styles.trendContainer}>
-        <Text style={[styles.trendIcon, { color: trendColor }]}>{trendIcon}</Text>
-      </View>
-    </Card>
+      {movement.lastLogged && (
+        <Text style={styles.prLastLogged}>{movement.lastLogged}</Text>
+      )}
+    </View>
   );
 }
 
@@ -89,13 +104,16 @@ type MajorMovementsTilesProps = {
 
 export function MajorMovementsTiles({ movements }: MajorMovementsTilesProps) {
   return (
-    <View>
-      <Text style={styles.sectionTitle}>Major Movements</Text>
-      <View style={styles.tilesGrid}>
+    <View style={styles.prSection}>
+      <Text style={styles.statsSectionTitle}>PERSONAL RECORDS</Text>
+      <View style={styles.prGrid}>
         {movements.map((movement) => (
           <MovementTile key={movement.id} movement={movement} />
         ))}
       </View>
+      {movements.length === 0 && (
+        <Text style={styles.emptyPRText}>Log workouts to track your PRs</Text>
+      )}
     </View>
   );
 }
@@ -733,81 +751,93 @@ export function ExerciseLeaderboardModal({
 // ============================================
 
 const styles = StyleSheet.create({
-  // Profile Header
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: tokens.spacing.xl,
+  // Training Stats Section
+  statsSection: {
+    marginBottom: tokens.spacing.lg,
   },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: tokens.colors.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
+  statsSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 0.5,
     marginBottom: tokens.spacing.md,
   },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: tokens.spacing.sm,
   },
-  profileName: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-  },
-  streakContainer: {
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    padding: tokens.spacing.md,
     alignItems: 'center',
   },
-  streakNumber: {
-    ...tokens.typography.h1,
-    color: tokens.colors.action,
+  statCardValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: tokens.colors.text,
+    marginBottom: 4,
   },
-  streakLabel: {
-    ...tokens.typography.small,
+  statCardLabel: {
+    fontSize: 9,
+    fontWeight: '600',
     color: tokens.colors.muted,
+    letterSpacing: 0.3,
   },
 
-  // Major Movements
-  sectionTitle: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.md,
-    marginTop: tokens.spacing.lg,
+  // Personal Records Section
+  prSection: {
+    marginTop: tokens.spacing.md,
   },
-  tilesGrid: {
-    gap: tokens.spacing.md,
-  },
-  movementTile: {
-    position: 'relative',
-  },
-  movementName: {
-    ...tokens.typography.body,
-    fontWeight: '700',
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-  },
-  movementStats: {
+  prGrid: {
     flexDirection: 'row',
-    gap: tokens.spacing.xl,
+    flexWrap: 'wrap',
+    gap: tokens.spacing.sm,
   },
-  movementLabel: {
-    ...tokens.typography.tiny,
+  prTile: {
+    width: '48%',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    padding: tokens.spacing.md,
+  },
+  prMovementName: {
+    fontSize: 12,
+    fontWeight: '600',
     color: tokens.colors.muted,
-    marginBottom: 2,
+    marginBottom: tokens.spacing.xs,
   },
-  movementValue: {
-    ...tokens.typography.small,
+  prValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 4,
+  },
+  prValue: {
+    fontSize: 28,
+    fontWeight: '800',
     color: tokens.colors.text,
   },
-  trendContainer: {
-    position: 'absolute',
-    top: tokens.spacing.lg,
-    right: tokens.spacing.lg,
+  prUnit: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.muted,
   },
-  trendIcon: {
-    fontSize: 20,
+  prLastLogged: {
+    fontSize: 11,
+    color: tokens.colors.muted,
+    marginTop: tokens.spacing.xs,
+  },
+  emptyPRText: {
+    fontSize: 14,
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    paddingVertical: tokens.spacing.lg,
   },
 
   // Track Picker

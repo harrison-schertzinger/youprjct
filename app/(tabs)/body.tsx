@@ -9,7 +9,7 @@ import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
 import {
-  ProfileHeader,
+  TrainingStatsSection,
   MajorMovementsTiles,
   TrackPickerButton,
   TrackPickerModal,
@@ -20,6 +20,7 @@ import {
   useActiveTrack,
   useTrainingDay,
   useMajorMovements,
+  useTrainingStats,
 } from '@/features/body/hooks';
 import type { BodyView } from '@/features/body/types';
 import type { TrainingTrack } from '@/lib/training/types';
@@ -48,6 +49,7 @@ export default function BodyScreen() {
   const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading, refreshing, refresh } = useActiveTrack();
   const { enrichedWorkouts, loading: workoutsLoading, reload: reloadWorkouts } = useTrainingDay(activeTrackId, selectedDate);
   const { movements: majorMovements, loading: movementsLoading } = useMajorMovements();
+  const { stats: trainingStats, reload: reloadStats } = useTrainingStats();
 
   // Modals
   const [trackPickerVisible, setTrackPickerVisible] = useState(false);
@@ -57,7 +59,8 @@ export default function BodyScreen() {
     useCallback(() => {
       refresh();
       reloadWorkouts();
-    }, [refresh, reloadWorkouts])
+      reloadStats();
+    }, [refresh, reloadWorkouts, reloadStats])
   );
 
   const handleViewChange = (index: number) => {
@@ -83,6 +86,7 @@ export default function BodyScreen() {
   const handleRefresh = async () => {
     await refresh();
     reloadWorkouts();
+    reloadStats();
   };
 
   // Calculate KPI stats
@@ -180,7 +184,12 @@ export default function BodyScreen() {
             </View>
           ) : (
             <View>
-              <ProfileHeader name="You" streak={12} />
+              <TrainingStatsSection
+                totalSessions={trainingStats.totalSessions}
+                sessionsThisWeek={trainingStats.sessionsThisWeek}
+                totalTimeSeconds={trainingStats.totalTimeSeconds}
+                avgSessionSeconds={trainingStats.avgSessionSeconds}
+              />
               <MajorMovementsTiles movements={majorMovements} />
             </View>
           )}
