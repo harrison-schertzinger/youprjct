@@ -14,6 +14,9 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Modal } from '@/components/ui/Modal';
 import type { Book, ReadingSession, InsightStats } from './types';
 
+// ========== Mind Accent Color ==========
+const MIND_ACCENT = '#6366F1'; // Indigo
+
 // ========== Timer Card ==========
 
 type TimerCardProps = {
@@ -38,26 +41,47 @@ export function TimerCard({
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <Card style={styles.timerCard}>
-      <Text style={styles.timerTitle}>Reading Session</Text>
+    <View style={[styles.timerCard, isActive && styles.timerCardActive]}>
+      {/* Active indicator */}
+      {isActive && (
+        <View style={styles.activeIndicator}>
+          <View style={styles.activeDot} />
+          <Text style={styles.activeLabel}>Reading</Text>
+        </View>
+      )}
 
+      {/* Timer Display */}
       <View style={styles.timerDisplay}>
-        <Text style={styles.timerText}>{formattedTime}</Text>
+        <Text style={[styles.timerText, isActive && styles.timerTextActive]}>
+          {formattedTime}
+        </Text>
       </View>
 
+      {/* Book Info */}
       <Pressable onPress={onSelectBook} style={styles.bookSelector}>
-        <Text style={styles.bookSelectorLabel}>Book:</Text>
-        <Text style={styles.bookSelectorValue}>
-          {selectedBook ? selectedBook.title : 'No book selected'}
-        </Text>
+        {selectedBook ? (
+          <View style={styles.bookInfo}>
+            <Text style={styles.bookTitle}>{selectedBook.title}</Text>
+            {selectedBook.author && (
+              <Text style={styles.bookAuthor}>by {selectedBook.author}</Text>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.bookPlaceholder}>Tap to select a book</Text>
+        )}
+        <Text style={styles.bookChevron}>›</Text>
       </Pressable>
 
-      <PrimaryButton
-        label={isActive ? 'End Session' : 'Start Reading'}
+      {/* Action Button */}
+      <Pressable
+        style={[styles.timerButton, isActive && styles.timerButtonActive]}
         onPress={isActive ? onEnd : onStart}
-        style={styles.timerButton}
-      />
-    </Card>
+      >
+        <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
+          {isActive ? 'End Session' : 'Start Reading'}
+        </Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -470,44 +494,102 @@ function StatTile({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   // Timer Card
   timerCard: {
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.lg,
     marginBottom: tokens.spacing.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
-  timerTitle: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.md,
+  timerCardActive: {
+    borderColor: MIND_ACCENT,
+  },
+  activeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: tokens.spacing.sm,
+  },
+  activeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: MIND_ACCENT,
+    marginRight: tokens.spacing.xs,
+  },
+  activeLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: MIND_ACCENT,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   timerDisplay: {
     alignItems: 'center',
     paddingVertical: tokens.spacing.xl,
   },
   timerText: {
-    fontSize: 56,
-    fontWeight: '800',
+    fontSize: 64,
+    fontWeight: '200',
     color: tokens.colors.text,
-    letterSpacing: -1,
+    letterSpacing: -2,
+    fontVariant: ['tabular-nums'],
+  },
+  timerTextActive: {
+    color: MIND_ACCENT,
+    fontWeight: '300',
   },
   bookSelector: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.md,
     backgroundColor: tokens.colors.bg,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.lg,
   },
-  bookSelectorLabel: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    marginRight: tokens.spacing.sm,
-  },
-  bookSelectorValue: {
-    ...tokens.typography.body,
-    color: tokens.colors.text,
+  bookInfo: {
     flex: 1,
   },
+  bookTitle: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+    fontWeight: '600',
+  },
+  bookAuthor: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    marginTop: 2,
+  },
+  bookPlaceholder: {
+    ...tokens.typography.body,
+    color: tokens.colors.muted,
+    flex: 1,
+  },
+  bookChevron: {
+    fontSize: 20,
+    color: tokens.colors.muted,
+    marginLeft: tokens.spacing.sm,
+  },
   timerButton: {
-    marginTop: tokens.spacing.sm,
+    backgroundColor: MIND_ACCENT,
+    paddingVertical: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
+    alignItems: 'center',
+  },
+  timerButtonActive: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: MIND_ACCENT,
+  },
+  timerButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  timerButtonTextActive: {
+    color: MIND_ACCENT,
   },
 
   // Modals
@@ -524,7 +606,7 @@ const styles = StyleSheet.create({
   },
   addBookText: {
     ...tokens.typography.body,
-    color: tokens.colors.tint,
+    color: MIND_ACCENT,
     fontWeight: '700',
   },
   bookOption: {
@@ -539,8 +621,8 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.border,
   },
   bookOptionSelected: {
-    borderColor: tokens.colors.tint,
-    backgroundColor: `${tokens.colors.tint}08`,
+    borderColor: MIND_ACCENT,
+    backgroundColor: `${MIND_ACCENT}10`,
   },
   bookOptionContent: {
     flex: 1,
@@ -557,7 +639,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     fontSize: 20,
-    color: tokens.colors.tint,
+    color: MIND_ACCENT,
     marginLeft: tokens.spacing.sm,
   },
   emptyText: {
@@ -658,7 +740,7 @@ const styles = StyleSheet.create({
   addAction: {
     fontSize: 28,
     fontWeight: '300',
-    color: tokens.colors.tint,
+    color: MIND_ACCENT,
   },
   listCard: {
     marginBottom: tokens.spacing.lg,
@@ -770,11 +852,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.spacing.sm,
     paddingVertical: 4,
     borderRadius: tokens.radius.pill,
-    backgroundColor: tokens.colors.bg,
+    backgroundColor: `${MIND_ACCENT}15`,
   },
   durationText: {
     ...tokens.typography.tiny,
-    color: tokens.colors.text,
+    color: MIND_ACCENT,
+    fontWeight: '600',
   },
 
   // Insights
@@ -804,7 +887,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '800',
-    color: tokens.colors.text,
+    color: MIND_ACCENT,
     marginBottom: 4,
   },
   statLabel: {
