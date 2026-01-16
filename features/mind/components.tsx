@@ -8,6 +8,7 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { tokens } from '@/design/tokens';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -16,6 +17,7 @@ import type { Book, ReadingSession, InsightStats } from './types';
 
 // ========== Mind Accent Color ==========
 const MIND_ACCENT = '#6366F1'; // Indigo
+const MIND_GRADIENT = ['#6366F1', '#5558E8', '#4F46E5'] as const;
 
 // ========== Timer Card ==========
 
@@ -42,45 +44,56 @@ export function TimerCard({
 
   return (
     <View style={[styles.timerCard, isActive && styles.timerCardActive]}>
-      {/* Active indicator */}
-      {isActive && (
-        <View style={styles.activeIndicator}>
-          <View style={styles.activeDot} />
-          <Text style={styles.activeLabel}>Reading</Text>
-        </View>
-      )}
-
-      {/* Timer Display */}
-      <View style={styles.timerDisplay}>
-        <Text style={[styles.timerText, isActive && styles.timerTextActive]}>
-          {formattedTime}
-        </Text>
-      </View>
-
-      {/* Book Info */}
-      <Pressable onPress={onSelectBook} style={styles.bookSelector}>
-        {selectedBook ? (
-          <View style={styles.bookInfo}>
-            <Text style={styles.bookTitle}>{selectedBook.title}</Text>
-            {selectedBook.author && (
-              <Text style={styles.bookAuthor}>by {selectedBook.author}</Text>
-            )}
-          </View>
-        ) : (
-          <Text style={styles.bookPlaceholder}>Tap to select a book</Text>
-        )}
-        <Text style={styles.bookChevron}>›</Text>
-      </Pressable>
-
-      {/* Action Button */}
-      <Pressable
-        style={[styles.timerButton, isActive && styles.timerButtonActive]}
-        onPress={isActive ? onEnd : onStart}
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={MIND_GRADIENT}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.gradientHeader}
       >
-        <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
-          {isActive ? 'End Session' : 'Start Reading'}
-        </Text>
-      </Pressable>
+        <Text style={styles.gradientHeaderText}>READING</Text>
+        {isActive && (
+          <View style={styles.activeIndicatorInline}>
+            <View style={styles.activeDotWhite} />
+            <Text style={styles.activeLabelWhite}>Active</Text>
+          </View>
+        )}
+      </LinearGradient>
+
+      {/* Card Content */}
+      <View style={styles.timerCardContent}>
+        {/* Timer Display */}
+        <View style={styles.timerDisplay}>
+          <Text style={[styles.timerText, isActive && styles.timerTextActive]}>
+            {formattedTime}
+          </Text>
+        </View>
+
+        {/* Book Info */}
+        <Pressable onPress={onSelectBook} style={styles.bookSelector}>
+          {selectedBook ? (
+            <View style={styles.bookInfo}>
+              <Text style={styles.bookTitle}>{selectedBook.title}</Text>
+              {selectedBook.author && (
+                <Text style={styles.bookAuthor}>by {selectedBook.author}</Text>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.bookPlaceholder}>Tap to select a book</Text>
+          )}
+          <Text style={styles.bookChevron}>›</Text>
+        </Pressable>
+
+        {/* Action Button */}
+        <Pressable
+          style={[styles.timerButton, isActive && styles.timerButtonActive]}
+          onPress={isActive ? onEnd : onStart}
+        >
+          <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
+            {isActive ? 'End Session' : 'Start Reading'}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -495,34 +508,55 @@ const styles = StyleSheet.create({
   // Timer Card
   timerCard: {
     backgroundColor: tokens.colors.card,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.lg,
+    borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.lg,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    overflow: 'hidden', // Flush gradient header
+    // Soft shadow (matches RulesCard)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   timerCardActive: {
     borderColor: MIND_ACCENT,
+    borderWidth: 2,
   },
-  activeIndicator: {
+  gradientHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: tokens.spacing.sm,
+    justifyContent: 'space-between',
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
   },
-  activeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: MIND_ACCENT,
-    marginRight: tokens.spacing.xs,
-  },
-  activeLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: MIND_ACCENT,
-    textTransform: 'uppercase',
+  gradientHeaderText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
     letterSpacing: 1,
+  },
+  activeIndicatorInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activeDotWhite: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FFFFFF',
+    marginRight: 4,
+  },
+  activeLabelWhite: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  timerCardContent: {
+    padding: tokens.spacing.lg,
   },
   timerDisplay: {
     alignItems: 'center',
