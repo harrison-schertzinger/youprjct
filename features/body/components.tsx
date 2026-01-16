@@ -79,42 +79,399 @@ export function TrainingStatsSection({
 
 type MovementTileProps = {
   movement: MajorMovement;
+  onPress: () => void;
 };
 
-export function MovementTile({ movement }: MovementTileProps) {
+export function MovementTile({ movement, onPress }: MovementTileProps) {
+  const hasValue = movement.bestWeight !== undefined;
+
   return (
-    <View style={styles.prTile}>
+    <Pressable style={styles.prTile} onPress={onPress}>
       <Text style={styles.prMovementName}>{movement.name}</Text>
-      <View style={styles.prValueRow}>
-        <Text style={styles.prValue}>
-          {movement.bestWeight ? `${movement.bestWeight}` : '—'}
-        </Text>
-        {movement.bestWeight && <Text style={styles.prUnit}>lbs</Text>}
-      </View>
-      {movement.lastLogged && (
-        <Text style={styles.prLastLogged}>{movement.lastLogged}</Text>
+      {hasValue ? (
+        <>
+          <View style={styles.prValueRow}>
+            <Text style={styles.prValue}>{movement.bestWeight}</Text>
+            <Text style={styles.prUnit}>lbs</Text>
+          </View>
+          {movement.lastLogged && (
+            <Text style={styles.prLastLogged}>{movement.lastLogged}</Text>
+          )}
+        </>
+      ) : (
+        <Text style={styles.prAddText}>+ Add</Text>
       )}
-    </View>
+    </Pressable>
   );
 }
 
 type MajorMovementsTilesProps = {
   movements: MajorMovement[];
+  onMovementPress: (movement: MajorMovement) => void;
 };
 
-export function MajorMovementsTiles({ movements }: MajorMovementsTilesProps) {
+export function MajorMovementsTiles({ movements, onMovementPress }: MajorMovementsTilesProps) {
   return (
     <View style={styles.prSection}>
       <Text style={styles.statsSectionTitle}>PERSONAL RECORDS</Text>
       <View style={styles.prGrid}>
         {movements.map((movement) => (
-          <MovementTile key={movement.id} movement={movement} />
+          <MovementTile
+            key={movement.id}
+            movement={movement}
+            onPress={() => onMovementPress(movement)}
+          />
         ))}
       </View>
       {movements.length === 0 && (
-        <Text style={styles.emptyPRText}>Log workouts to track your PRs</Text>
+        <Text style={styles.emptyPRText}>No major movements configured</Text>
       )}
     </View>
+  );
+}
+
+// ============================================
+// PR INPUT MODAL
+// ============================================
+
+type PRInputModalProps = {
+  visible: boolean;
+  movementName: string;
+  currentValue?: number;
+  onClose: () => void;
+  onSubmit: (value: number) => void;
+};
+
+export function PRInputModal({
+  visible,
+  movementName,
+  currentValue,
+  onClose,
+  onSubmit,
+}: PRInputModalProps) {
+  const [value, setValue] = useState(currentValue?.toString() || '');
+
+  const handleSubmit = () => {
+    const numValue = parseInt(value) || 0;
+    if (numValue > 0) {
+      onSubmit(numValue);
+    }
+    setValue('');
+    onClose();
+  };
+
+  const handleClose = () => {
+    setValue('');
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      onClose={handleClose}
+      title={movementName}
+      footer={
+        <PrimaryButton label={currentValue ? 'Update PR' : 'Save PR'} onPress={handleSubmit} />
+      }
+    >
+      <View style={styles.formContainer}>
+        <View style={styles.formField}>
+          <Text style={styles.formLabel}>Personal Record (lbs)</Text>
+          <TextInput
+            style={styles.formInput}
+            value={value}
+            onChangeText={setValue}
+            keyboardType="numeric"
+            placeholder={currentValue?.toString() || '225'}
+            placeholderTextColor={tokens.colors.muted}
+            autoFocus
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ============================================
+// SESSION TIMER (Premium inline timer)
+// ============================================
+
+export type TimerState = 'idle' | 'running' | 'paused';
+
+type SessionTimerProps = {
+  state: TimerState;
+  duration: number;
+  workoutTitle?: string;
+  onStart: () => void;
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+};
+
+export function SessionTimer({
+  state,
+  duration,
+  workoutTitle,
+  onStart,
+  onPause,
+  onResume,
+  onFinish,
+}: SessionTimerProps) {
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const isActive = state === 'running' || state === 'paused';
+
+  return (
+    <View style={[styles.sessionTimer, isActive && styles.sessionTimerActive]}>
+      <View style={styles.sessionTimerContent}>
+        <View style={styles.sessionTimerLeft}>
+          {workoutTitle && state !== 'idle' && (
+            <Text style={styles.sessionTimerWorkout}>{workoutTitle}</Text>
+          )}
+          <Text style={[styles.sessionTimerTime, isActive && styles.sessionTimerTimeActive]}>
+            {formatTime(duration)}
+          </Text>
+        </View>
+        <View style={styles.sessionTimerButtons}>
+          {state === 'idle' && (
+            <Pressable style={styles.sessionTimerButton} onPress={onStart}>
+              <Text style={styles.sessionTimerButtonText}>Start</Text>
+            </Pressable>
+          )}
+          {state === 'running' && (
+            <>
+              <Pressable style={styles.sessionTimerButtonSecondary} onPress={onPause}>
+                <Text style={styles.sessionTimerButtonSecondaryText}>Pause</Text>
+              </Pressable>
+              <Pressable style={styles.sessionTimerButton} onPress={onFinish}>
+                <Text style={styles.sessionTimerButtonText}>Finish</Text>
+              </Pressable>
+            </>
+          )}
+          {state === 'paused' && (
+            <>
+              <Pressable style={styles.sessionTimerButtonSecondary} onPress={onResume}>
+                <Text style={styles.sessionTimerButtonSecondaryText}>Resume</Text>
+              </Pressable>
+              <Pressable style={styles.sessionTimerButton} onPress={onFinish}>
+                <Text style={styles.sessionTimerButtonText}>Finish</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ============================================
+// INLINE MOVEMENT CARD (Always expanded)
+// ============================================
+
+// Color mapping for score types
+const SCORE_TYPE_COLORS: Record<string, string> = {
+  weight: '#3B82F6', // Blue
+  time: '#22C55E', // Green
+  reps: '#F59E0B', // Amber
+};
+
+type MovementCardProps = {
+  exerciseTitle: string;
+  targetText?: string;
+  notes?: string;
+  scoreType: ScoreType;
+  onLog: () => void;
+  onViewResults: () => void;
+};
+
+export function MovementCard({
+  exerciseTitle,
+  targetText,
+  notes,
+  scoreType,
+  onLog,
+  onViewResults,
+}: MovementCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const accentColor = SCORE_TYPE_COLORS[scoreType] || tokens.colors.muted;
+
+  return (
+    <View style={styles.movementCard}>
+      <View style={[styles.movementCardAccent, { backgroundColor: accentColor }]} />
+      <View style={styles.movementCardContent}>
+        {/* Collapsed Header - Always visible */}
+        <Pressable
+          style={styles.movementCardHeader}
+          onPress={() => setExpanded(!expanded)}
+        >
+          <Text style={styles.movementCardTitle}>{exerciseTitle}</Text>
+          <Text style={styles.movementCardChevron}>{expanded ? '▾' : '▸'}</Text>
+        </Pressable>
+
+        {/* Expanded Content */}
+        {expanded && (
+          <View style={styles.movementCardBody}>
+            {(targetText || notes) && (
+              <View style={styles.movementCardDetails}>
+                {targetText && (
+                  <Text style={styles.movementCardTarget}>{targetText}</Text>
+                )}
+                {notes && (
+                  <Text style={styles.movementCardNotes}>{notes}</Text>
+                )}
+              </View>
+            )}
+            <View style={styles.movementCardButtons}>
+              <Pressable
+                style={styles.movementCardResultsButton}
+                onPress={onViewResults}
+              >
+                <Text style={styles.movementCardResultsButtonText}>Results</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.movementCardLogButton, { backgroundColor: accentColor }]}
+                onPress={onLog}
+              >
+                <Text style={styles.movementCardLogButtonText}>Log</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ============================================
+// INLINE LOG MODAL
+// ============================================
+
+type InlineLogModalProps = {
+  visible: boolean;
+  exerciseTitle: string;
+  scoreType: ScoreType;
+  onClose: () => void;
+  onSubmit: (value: { valueNumber?: number; valueTimeSeconds?: number }) => void;
+};
+
+export function InlineLogModal({
+  visible,
+  exerciseTitle,
+  scoreType,
+  onClose,
+  onSubmit,
+}: InlineLogModalProps) {
+  const [value, setValue] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const [seconds, setSeconds] = useState('');
+
+  const handleSubmit = () => {
+    if (scoreType === 'time') {
+      const totalSeconds = (parseInt(minutes) || 0) * 60 + (parseInt(seconds) || 0);
+      if (totalSeconds > 0) {
+        onSubmit({ valueTimeSeconds: totalSeconds });
+      }
+    } else {
+      const numValue = parseInt(value) || 0;
+      if (numValue > 0) {
+        onSubmit({ valueNumber: numValue });
+      }
+    }
+    resetForm();
+    onClose();
+  };
+
+  const resetForm = () => {
+    setValue('');
+    setMinutes('');
+    setSeconds('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const getLabel = (): string => {
+    switch (scoreType) {
+      case 'weight':
+        return 'Weight (lbs)';
+      case 'reps':
+        return 'Reps';
+      case 'time':
+        return 'Time';
+      default:
+        return 'Value';
+    }
+  };
+
+  const getPlaceholder = (): string => {
+    switch (scoreType) {
+      case 'weight':
+        return '225';
+      case 'reps':
+        return '12';
+      default:
+        return '0';
+    }
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      onClose={handleClose}
+      title={exerciseTitle}
+      footer={
+        <PrimaryButton label="Log Result" onPress={handleSubmit} />
+      }
+    >
+      <View style={styles.formContainer}>
+        {scoreType === 'time' ? (
+          <View style={styles.formRow}>
+            <View style={[styles.formField, styles.formFieldHalf]}>
+              <Text style={styles.formLabel}>Minutes</Text>
+              <TextInput
+                style={styles.formInput}
+                value={minutes}
+                onChangeText={setMinutes}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={tokens.colors.muted}
+                autoFocus
+              />
+            </View>
+            <View style={[styles.formField, styles.formFieldHalf]}>
+              <Text style={styles.formLabel}>Seconds</Text>
+              <TextInput
+                style={styles.formInput}
+                value={seconds}
+                onChangeText={setSeconds}
+                keyboardType="numeric"
+                placeholder="00"
+                placeholderTextColor={tokens.colors.muted}
+              />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.formField}>
+            <Text style={styles.formLabel}>{getLabel()}</Text>
+            <TextInput
+              style={styles.formInput}
+              value={value}
+              onChangeText={setValue}
+              keyboardType="numeric"
+              placeholder={getPlaceholder()}
+              placeholderTextColor={tokens.colors.muted}
+              autoFocus
+            />
+          </View>
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -183,15 +540,26 @@ export function TrackPickerModal({
 
 type WeekStripProps = {
   selectedDate: string;
+  weekOffset: number;
   onSelectDate: (date: string) => void;
+  onPrevWeek: () => void;
+  onNextWeek: () => void;
 };
 
-export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
+export function WeekStrip({
+  selectedDate,
+  weekOffset,
+  onSelectDate,
+  onPrevWeek,
+  onNextWeek,
+}: WeekStripProps) {
   const today = new Date();
   const startOfWeek = new Date(today);
   // Monday-first week: subtract days to get to Monday
   const dayOfWeek = today.getDay();
   startOfWeek.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  // Apply week offset
+  startOfWeek.setDate(startOfWeek.getDate() + weekOffset * 7);
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(startOfWeek);
@@ -210,91 +578,63 @@ export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
     ];
   };
 
-  return (
-    <View style={styles.weekStrip}>
-      {days.map((date) => {
-        const dateStr = formatDate(date);
-        const isSelected = dateStr === selectedDate;
-        return (
-          <Pressable
-            key={dateStr}
-            style={[styles.dayCell, isSelected && styles.dayCellSelected]}
-            onPress={() => onSelectDate(dateStr)}
-          >
-            <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
-              {getDayLabel(date)}
-            </Text>
-            <Text style={[styles.dayDate, isSelected && styles.dayDateSelected]}>
-              {date.getDate()}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
+  // Format week label (e.g., "Jan 6 - 12" or "This Week")
+  const getWeekLabel = () => {
+    if (weekOffset === 0) return 'This Week';
+    if (weekOffset === -1) return 'Last Week';
+    if (weekOffset === 1) return 'Next Week';
 
-type WorkoutSessionTimerProps = {
-  isActive: boolean;
-  duration: number;
-  onStart: () => void;
-  onEnd: () => void;
-};
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-export function WorkoutSessionTimer({
-  isActive,
-  duration,
-  onStart,
-  onEnd,
-}: WorkoutSessionTimerProps) {
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const startMonth = startOfWeek.toLocaleDateString('en-US', { month: 'short' });
+    const endMonth = endOfWeek.toLocaleDateString('en-US', { month: 'short' });
+
+    if (startMonth === endMonth) {
+      return `${startMonth} ${startOfWeek.getDate()} - ${endOfWeek.getDate()}`;
+    }
+    return `${startMonth} ${startOfWeek.getDate()} - ${endMonth} ${endOfWeek.getDate()}`;
   };
 
   return (
-    <Card style={styles.sessionTimer}>
-      <View style={styles.sessionTimerContent}>
-        <View>
-          <Text style={styles.sessionTimerLabel}>Workout Session</Text>
-          {isActive && (
-            <Text style={styles.sessionTimerDuration}>{formatTime(duration)}</Text>
-          )}
-        </View>
-        <PrimaryButton
-          label={isActive ? 'End' : 'Start'}
-          onPress={isActive ? onEnd : onStart}
-          style={styles.sessionTimerButton}
-        />
+    <View style={styles.weekStripContainer}>
+      <View style={styles.weekStripHeader}>
+        <Pressable style={styles.weekArrow} onPress={onPrevWeek}>
+          <Text style={styles.weekArrowText}>‹</Text>
+        </Pressable>
+        <Text style={styles.weekLabel}>{getWeekLabel()}</Text>
+        <Pressable style={styles.weekArrow} onPress={onNextWeek}>
+          <Text style={styles.weekArrowText}>›</Text>
+        </Pressable>
       </View>
-    </Card>
+      <View style={styles.weekStrip}>
+        {days.map((date) => {
+          const dateStr = formatDate(date);
+          const isSelected = dateStr === selectedDate;
+          const isToday = dateStr === formatDate(new Date());
+          return (
+            <Pressable
+              key={dateStr}
+              style={[
+                styles.dayCell,
+                isSelected && styles.dayCellSelected,
+                isToday && !isSelected && styles.dayCellToday,
+              ]}
+              onPress={() => onSelectDate(dateStr)}
+            >
+              <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
+                {getDayLabel(date)}
+              </Text>
+              <Text style={[styles.dayDate, isSelected && styles.dayDateSelected]}>
+                {date.getDate()}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
-
-type WorkoutTileProps = {
-  workout: Workout;
-  onPress: () => void;
-};
-
-export function WorkoutTile({ workout, onPress }: WorkoutTileProps) {
-  return (
-    <Pressable onPress={onPress}>
-      <Card style={styles.workoutTile}>
-        <View style={styles.workoutHeader}>
-          <View style={styles.workoutHeaderContent}>
-            <Text style={styles.workoutTitle}>{workout.title}</Text>
-            {workout.description && (
-              <Text style={styles.workoutDescription}>{workout.description}</Text>
-            )}
-          </View>
-          <Text style={styles.chevron}>›</Text>
-        </View>
-      </Card>
-    </Pressable>
-  );
-}
-
 
 type LogResultModalProps = {
   visible: boolean;
@@ -530,8 +870,6 @@ export function LeaderboardModal({
 // ============================================
 // WORKOUT SESSION COMPONENTS
 // ============================================
-
-export type TimerState = 'idle' | 'running' | 'paused';
 
 type CompactSessionTimerProps = {
   state: TimerState;
@@ -833,11 +1171,163 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     marginTop: tokens.spacing.xs,
   },
+  prAddText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: tokens.colors.tint,
+    marginTop: tokens.spacing.sm,
+  },
   emptyPRText: {
     fontSize: 14,
     color: tokens.colors.muted,
     textAlign: 'center',
     paddingVertical: tokens.spacing.lg,
+  },
+
+  // Session Timer
+  sessionTimer: {
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: tokens.spacing.md,
+  },
+  sessionTimerActive: {
+    borderColor: tokens.colors.tint,
+  },
+  sessionTimerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: tokens.spacing.md,
+  },
+  sessionTimerLeft: {
+    flex: 1,
+  },
+  sessionTimerWorkout: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    marginBottom: 2,
+  },
+  sessionTimerTime: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    fontVariant: ['tabular-nums'],
+  },
+  sessionTimerTimeActive: {
+    color: tokens.colors.text,
+  },
+  sessionTimerButtons: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
+  sessionTimerButton: {
+    backgroundColor: tokens.colors.tint,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+  },
+  sessionTimerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  sessionTimerButtonSecondary: {
+    backgroundColor: tokens.colors.bg,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  sessionTimerButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+
+  // Movement Card (Expandable)
+  movementCard: {
+    flexDirection: 'row',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: tokens.spacing.sm,
+    overflow: 'hidden',
+  },
+  movementCardAccent: {
+    width: 3,
+  },
+  movementCardContent: {
+    flex: 1,
+    padding: tokens.spacing.md,
+  },
+  movementCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: tokens.spacing.md,
+  },
+  movementCardTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  movementCardChevron: {
+    fontSize: 14,
+    color: tokens.colors.muted,
+  },
+  movementCardBody: {
+    marginTop: tokens.spacing.md,
+    paddingTop: tokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: tokens.colors.border,
+  },
+  movementCardDetails: {
+    marginBottom: tokens.spacing.md,
+  },
+  movementCardTarget: {
+    fontSize: 14,
+    color: tokens.colors.text,
+  },
+  movementCardNotes: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: tokens.colors.muted,
+    marginTop: tokens.spacing.xs,
+  },
+  movementCardButtons: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
+  movementCardResultsButton: {
+    flex: 1,
+    paddingVertical: tokens.spacing.sm,
+    backgroundColor: tokens.colors.bg,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+  },
+  movementCardResultsButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  movementCardLogButton: {
+    flex: 1,
+    paddingVertical: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+    alignItems: 'center',
+  },
+  movementCardLogButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 
   // Track Picker
@@ -895,10 +1385,31 @@ const styles = StyleSheet.create({
   },
 
   // Week Strip
+  weekStripContainer: {
+    marginBottom: tokens.spacing.md,
+  },
+  weekStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: tokens.spacing.sm,
+  },
+  weekArrow: {
+    padding: tokens.spacing.sm,
+  },
+  weekArrowText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  weekLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
   weekStrip: {
     flexDirection: 'row',
     gap: tokens.spacing.sm,
-    marginBottom: tokens.spacing.md,
   },
   dayCell: {
     flex: 1,
@@ -911,6 +1422,9 @@ const styles = StyleSheet.create({
   },
   dayCellSelected: {
     backgroundColor: tokens.colors.tint,
+    borderColor: tokens.colors.tint,
+  },
+  dayCellToday: {
     borderColor: tokens.colors.tint,
   },
   dayLabel: {
@@ -927,29 +1441,6 @@ const styles = StyleSheet.create({
   },
   dayDateSelected: {
     color: '#FFFFFF',
-  },
-
-  // Session Timer
-  sessionTimer: {
-    marginBottom: tokens.spacing.md,
-  },
-  sessionTimerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sessionTimerLabel: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-    marginBottom: 2,
-  },
-  sessionTimerDuration: {
-    ...tokens.typography.h1,
-    color: tokens.colors.text,
-  },
-  sessionTimerButton: {
-    width: 100,
-    height: 44,
   },
 
   // Workout Tiles
