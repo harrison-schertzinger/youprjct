@@ -12,7 +12,7 @@ import { DayPicker } from '@/components/ui/DayPicker';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
-import { loadWins, markDayAsWin, getTotalDaysWon, getDayOutcome } from '@/lib/dailyOutcomes';
+import { loadWins, markDayAsWin, removeDayWin, getTotalDaysWon, getDayOutcome } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
@@ -88,6 +88,10 @@ export default function YouScreen() {
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
   const isSelectedDayWon = useMemo(() => getDayOutcome(selectedDate, wins) === 'win', [selectedDate, wins]);
   const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
+  const consistencyPercent = useMemo(() => {
+    if (appStreakDays === 0) return 0;
+    return Math.round((totalDaysWon / appStreakDays) * 100);
+  }, [totalDaysWon, appStreakDays]);
 
   // Derived profile values
   const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
@@ -95,7 +99,13 @@ export default function YouScreen() {
   const streakCount = profile?.onAppStreakDays ?? 0;
 
   const handleWinTheDay = async () => {
-    await markDayAsWin(selectedDate);
+    if (isSelectedDayWon) {
+      // Toggle off - remove the win
+      await removeDayWin(selectedDate);
+    } else {
+      // Mark as won
+      await markDayAsWin(selectedDate);
+    }
     setWins(await loadWins());
   };
 
@@ -184,7 +194,7 @@ export default function YouScreen() {
             {/* Consistency */}
             <View style={styles.kpiBlock}>
               <Text style={styles.kpiLabel}>CONSISTENCY</Text>
-              <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>82%</Text>
+              <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>{consistencyPercent}%</Text>
             </View>
             <View style={styles.kpiDivider} />
             {/* Tasks */}
