@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { GlowCard } from '@/components/ui/GlowCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { RoutineListItem } from '@/components/ui/RoutineListItem';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { DayWonButton } from '@/components/ui/DayWonButton';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
@@ -201,9 +201,9 @@ export default function YouScreen() {
         </Card>
 
         {/* Day Won Button */}
-        <Card style={{ marginTop: tokens.spacing.md, padding: tokens.spacing.sm }}>
-          <PrimaryButton label={isSelectedDayWon ? '✓ Day Won' : 'I Won Today'} onPress={handleWinTheDay} />
-        </Card>
+        <View style={styles.dayWonContainer}>
+          <DayWonButton isWon={isSelectedDayWon} onPress={handleWinTheDay} />
+        </View>
 
         <SectionHeader title="Daily Routines" />
 
@@ -304,6 +304,10 @@ export default function YouScreen() {
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: tokens.spacing.xl },
+  dayWonContainer: {
+    marginTop: tokens.spacing.lg,
+    marginBottom: tokens.spacing.sm,
+  },
 
   // Header
   topHeader: {
