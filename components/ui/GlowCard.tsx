@@ -7,10 +7,18 @@ import { tokens } from '@/design/tokens';
 
 export type GlowColor = 'amber' | 'blue' | 'indigo';
 
+// Shadow colors (amplified for visibility)
 const GLOW_COLORS: Record<GlowColor, string> = {
-  amber: 'rgba(245, 158, 11, 0.15)',
-  blue: 'rgba(59, 130, 246, 0.15)',
-  indigo: 'rgba(99, 102, 241, 0.15)',
+  amber: 'rgba(245, 158, 11, 0.4)',
+  blue: 'rgba(59, 130, 246, 0.4)',
+  indigo: 'rgba(99, 102, 241, 0.4)',
+};
+
+// Title text colors (solid accent)
+const TITLE_COLORS: Record<GlowColor, string> = {
+  amber: '#F59E0B',
+  blue: '#3B82F6',
+  indigo: '#6366F1',
 };
 
 type Props = {
@@ -33,6 +41,7 @@ export function GlowCard({
   style,
 }: Props) {
   const glowColor = GLOW_COLORS[glow];
+  const titleColor = TITLE_COLORS[glow];
   const hasItems = totalCount > 0;
 
   return (
@@ -41,17 +50,17 @@ export function GlowCard({
         styles.card,
         {
           shadowColor: glowColor,
-          // iOS shadow with color
+          // iOS shadow with color (amplified)
           shadowOpacity: 1,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 6 },
         },
         style,
       ]}
     >
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>{title.toUpperCase()}</Text>
+        <Text style={[styles.title, { color: titleColor }]}>{title.toUpperCase()}</Text>
         <View style={styles.headerRight}>
           {hasItems && (
             <Text style={styles.progress}>
