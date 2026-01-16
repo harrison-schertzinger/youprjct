@@ -1,7 +1,7 @@
 // RevenueCatRepo: Manages subscription state for You.First
 // Uses lazy require() to avoid crashes if native module not present
 
-import { Platform } from 'react-native';
+import { Platform, NativeModules, TurboModuleRegistry } from 'react-native';
 import Constants from 'expo-constants';
 import { getCurrentUserId } from '@/lib/supabase/AuthRepo';
 
@@ -16,8 +16,37 @@ import type {
 } from 'react-native-purchases';
 
 // Check if running in Expo Go (which doesn't support native modules)
+// Uses multiple indicators for robust detection
 function isExpoGo(): boolean {
-  return Constants.appOwnership === 'expo';
+  // Check appOwnership - can be 'expo' or 'guest' in Expo Go
+  const ownership = Constants.appOwnership;
+  if (ownership === 'expo' || ownership === 'guest') {
+    return true;
+  }
+
+  // Check executionEnvironment for newer Expo versions
+  const execEnv = (Constants as { executionEnvironment?: string }).executionEnvironment;
+  if (execEnv === 'storeClient') {
+    return true;
+  }
+
+  return false;
+}
+
+// Check if RevenueCat native module is available
+// Must check BEFORE requiring the package to avoid NativeEventEmitter crash
+function isRevenueCatNativeModuleAvailable(): boolean {
+  try {
+    // Check for the native module directly
+    // RevenueCat uses 'RNPurchases' as its native module name
+    const nativeModule =
+      TurboModuleRegistry.get('RNPurchases') ||
+      NativeModules.RNPurchases;
+
+    return nativeModule != null;
+  } catch {
+    return false;
+  }
 }
 
 // Lazy getter for RevenueCat SDK
@@ -25,6 +54,12 @@ function isExpoGo(): boolean {
 function getRevenueCat(): typeof Purchases | null {
   // Skip native module loading entirely in Expo Go to prevent crashes
   if (isExpoGo()) {
+    return null;
+  }
+
+  // Check if native module exists before requiring the full package
+  // This prevents NativeEventEmitter crash during module initialization
+  if (!isRevenueCatNativeModuleAvailable()) {
     return null;
   }
 
