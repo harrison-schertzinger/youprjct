@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { PremiumGate } from '@/components/ui/PremiumGate';
@@ -12,9 +13,24 @@ import {
   AddNewRuleButton,
   RuleListItem,
   ChallengeCard,
+  CreateChallengeModal,
   type DisciplineView,
   type Rule,
   type Challenge,
+  type DailyRequirementStatus,
+  type ChallengeColor,
+  type ChallengeDuration,
+  loadChallenge,
+  createChallenge,
+  completeDay,
+  deleteChallenge,
+  loadDailyStatus,
+  toggleRequirement,
+  areAllRequirementsComplete,
+  getTodayISO,
+  loadRules,
+  addRule,
+  deleteRule,
 } from '@/features/discipline';
 
 const DISCIPLINE_BENEFITS = [
@@ -34,26 +50,25 @@ const DISCIPLINE_BENEFITS = [
 
 export default function DisciplineScreen() {
   const [view, setView] = useState<DisciplineView>('challenge');
-  const [rules, setRules] = useState<Rule[]>([
-    { id: '1', title: 'No phone before 9 AM', createdAt: '2026-01-01' },
-    { id: '2', title: 'Cold shower every morning', createdAt: '2026-01-02' },
-  ]);
-  const [challenge, setChallenge] = useState<Challenge | null>({
-    id: '1',
-    title: '40 Days of Excellence',
-    currentDay: 12,
-    totalDays: 40,
-    requirements: [
-      { id: '1', text: 'Train for 45 minutes', completed: true },
-      { id: '2', text: 'No phone before 9 AM', completed: true },
-      { id: '3', text: 'Read 20 pages', completed: false },
-      { id: '4', text: 'Cold shower', completed: false },
-    ],
-  });
+  const [rules, setRules] = useState<Rule[]>([]);
+  const [challenge, setChallenge] = useState<Challenge | null>(null);
+  const [dailyStatus, setDailyStatus] = useState<DailyRequirementStatus | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadData = useCallback(async () => {
-    // TODO: Load rules and challenge from storage when persistence is added
+    try {
+      const [loadedChallenge, loadedDailyStatus, loadedRules] = await Promise.all([
+        loadChallenge(),
+        loadDailyStatus(),
+        loadRules(),
+      ]);
+      setChallenge(loadedChallenge);
+      setDailyStatus(loadedDailyStatus);
+      setRules(loadedRules);
+    } catch (error) {
+      console.error('Failed to load discipline data:', error);
+    }
   }, []);
 
   // Reload data every time screen comes into focus
@@ -74,41 +89,101 @@ export default function DisciplineScreen() {
     setView(index === 0 ? 'challenge' : 'rules');
   };
 
-  const handleAddRule = () => {
-    const newRule: Rule = {
-      id: Date.now().toString(),
-      title: 'New Rule',
-      createdAt: new Date().toISOString(),
-    };
-    setRules([...rules, newRule]);
+  // ============================================================
+  // Challenge handlers
+  // ============================================================
+
+  const handleCreateChallenge = async (
+    title: string,
+    color: ChallengeColor,
+    duration: ChallengeDuration,
+    requirements: string[]
+  ) => {
+    const newChallenge = await createChallenge(title, color, duration, requirements);
+    setChallenge(newChallenge);
+    setDailyStatus({ date: getTodayISO(), completedRequirements: [] });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleDeleteRule = (id: string) => {
-    setRules(rules.filter((rule) => rule.id !== id));
+  const handleToggleRequirement = async (requirementId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updatedStatus = await toggleRequirement(requirementId, dailyStatus);
+    setDailyStatus(updatedStatus);
   };
 
-  const handleToggleRequirement = (requirementId: string) => {
+  const handleCompleteDay = async () => {
     if (!challenge) return;
 
-    const updatedRequirements = challenge.requirements.map((req) =>
-      req.id === requirementId ? { ...req, completed: !req.completed } : req
-    );
+    const today = getTodayISO();
 
-    setChallenge({ ...challenge, requirements: updatedRequirements });
+    // Double check all requirements are complete
+    if (!areAllRequirementsComplete(challenge.requirements, dailyStatus)) {
+      Alert.alert('Not Yet', 'Complete all requirements first to finish the day.');
+      return;
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const updatedChallenge = await completeDay(challenge, today);
+    setChallenge(updatedChallenge);
   };
 
-  const handleStartChallenge = () => {
-    setChallenge({
-      id: Date.now().toString(),
-      title: '40 Days of Excellence',
-      currentDay: 1,
-      totalDays: 40,
-      requirements: [
-        { id: '1', text: 'Train for 45 minutes', completed: false },
-        { id: '2', text: 'No phone before 9 AM', completed: false },
-        { id: '3', text: 'Read 20 pages', completed: false },
-      ],
-    });
+  const handleDeleteChallenge = () => {
+    Alert.alert(
+      'Delete Challenge',
+      'Are you sure you want to delete this challenge? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteChallenge();
+            setChallenge(null);
+            setDailyStatus(null);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          },
+        },
+      ]
+    );
+  };
+
+  // ============================================================
+  // Rules handlers
+  // ============================================================
+
+  const handleAddRule = async () => {
+    Alert.prompt(
+      'New Rule',
+      'Enter your non-negotiable rule:',
+      async (text) => {
+        if (text?.trim()) {
+          const newRule = await addRule(text.trim());
+          setRules((prev) => [...prev, newRule]);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+      },
+      'plain-text',
+      '',
+      'default'
+    );
+  };
+
+  const handleDeleteRule = async (id: string) => {
+    Alert.alert(
+      'Delete Rule',
+      'Are you sure you want to delete this rule?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteRule(id);
+            setRules((prev) => prev.filter((r) => r.id !== id));
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -151,9 +226,13 @@ export default function DisciplineScreen() {
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>My Rules</Text>
-                {rules.map((rule) => (
-                  <RuleListItem key={rule.id} rule={rule} onDelete={handleDeleteRule} />
-                ))}
+                {rules.length === 0 ? (
+                  <Text style={styles.emptyText}>No rules yet. Add your first non-negotiable.</Text>
+                ) : (
+                  rules.map((rule) => (
+                    <RuleListItem key={rule.id} rule={rule} onDelete={handleDeleteRule} />
+                  ))
+                )}
               </View>
             </View>
           ) : (
@@ -161,16 +240,21 @@ export default function DisciplineScreen() {
               {challenge ? (
                 <ChallengeCard
                   challenge={challenge}
+                  dailyStatus={dailyStatus}
                   onToggleRequirement={handleToggleRequirement}
+                  onCompleteDay={handleCompleteDay}
+                  onDelete={handleDeleteChallenge}
                 />
               ) : (
                 <View style={styles.noChallengeContainer}>
+                  <Text style={styles.noChallengeTitle}>No Active Challenge</Text>
                   <Text style={styles.noChallengeText}>
-                    No active challenge. Start one to build discipline!
+                    Start a challenge to build discipline through daily accountability.
+                    Choose 40, 75, or 100 days and define your daily requirements.
                   </Text>
                   <PrimaryButton
                     label="Start New Challenge"
-                    onPress={handleStartChallenge}
+                    onPress={() => setShowCreateModal(true)}
                     style={styles.startButton}
                   />
                 </View>
@@ -178,6 +262,12 @@ export default function DisciplineScreen() {
             </View>
           )}
         </ScrollView>
+
+        <CreateChallengeModal
+          visible={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateChallenge}
+        />
       </ScreenContainer>
     </PremiumGate>
   );
@@ -208,14 +298,27 @@ const styles = StyleSheet.create({
   noChallengeContainer: {
     alignItems: 'center',
     paddingVertical: tokens.spacing.xl * 2,
+    paddingHorizontal: tokens.spacing.md,
+  },
+  noChallengeTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   noChallengeText: {
     ...tokens.typography.body,
     color: tokens.colors.muted,
     textAlign: 'center',
     marginBottom: tokens.spacing.xl,
+    lineHeight: 24,
   },
   startButton: {
     width: '100%',
+  },
+  emptyText: {
+    ...tokens.typography.body,
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    paddingVertical: tokens.spacing.xl,
   },
 });
