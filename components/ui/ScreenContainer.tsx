@@ -1,6 +1,9 @@
 import React from 'react';
-import { SafeAreaView, View, StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView, View, StyleSheet, ViewStyle, KeyboardAvoidingView, Platform } from 'react-native';
 import { tokens } from '@/design/tokens';
+
+// Space to clear the floating tab bar (76px height + 16px margin + buffer)
+const TAB_BAR_CLEARANCE = 100;
 
 type Props = {
   children: React.ReactNode;
@@ -10,7 +13,13 @@ type Props = {
 export function ScreenContainer({ children, style }: Props) {
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={[styles.inner, style]}>{children}</View>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <View style={[styles.inner, style]}>{children}</View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -20,9 +29,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: tokens.colors.bg,
   },
+  flex: {
+    flex: 1,
+  },
   inner: {
     flex: 1,
     paddingHorizontal: tokens.spacing.lg,
     paddingTop: tokens.spacing.lg,
+    paddingBottom: TAB_BAR_CLEARANCE,
   },
 });
