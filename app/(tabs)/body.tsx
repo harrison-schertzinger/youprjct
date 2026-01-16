@@ -41,7 +41,7 @@ const BODY_BENEFITS = [
 ];
 
 export default function BodyScreen() {
-  const [view, setView] = useState<BodyView>('profile');
+  const [view, setView] = useState<BodyView>('training');
   const [selectedDate, setSelectedDate] = useState<string>(() => getTodayISO());
 
   // Data hooks
@@ -61,7 +61,7 @@ export default function BodyScreen() {
   );
 
   const handleViewChange = (index: number) => {
-    setView(index === 0 ? 'profile' : 'training');
+    setView(index === 0 ? 'training' : 'profile');
   };
 
   const handleSelectTrack = async (track: TrainingTrack) => {
@@ -118,17 +118,12 @@ export default function BodyScreen() {
           <KPIBar stats={kpiStats} />
 
           <SegmentedControl
-            segments={['Profile', 'Training']}
-            selectedIndex={view === 'profile' ? 0 : 1}
+            segments={['Training', 'Profile']}
+            selectedIndex={view === 'training' ? 0 : 1}
             onChange={handleViewChange}
           />
 
-          {view === 'profile' ? (
-            <View>
-              <ProfileHeader name="You" streak={12} />
-              <MajorMovementsTiles movements={majorMovements} />
-            </View>
-          ) : (
+          {view === 'training' ? (
             <View>
               <TrackPickerButton
                 activeTrack={
@@ -182,6 +177,11 @@ export default function BodyScreen() {
                   </Text>
                 </View>
               )}
+            </View>
+          ) : (
+            <View>
+              <ProfileHeader name="You" streak={12} />
+              <MajorMovementsTiles movements={majorMovements} />
             </View>
           )}
         </ScrollView>
