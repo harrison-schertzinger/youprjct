@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
-import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
-import { PageLabel } from '@/components/ui/PageLabel';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { tokens } from '@/design/tokens';
@@ -36,6 +35,8 @@ import { getTodayISO } from '@/lib/repositories/TrainingRepo';
 import { logSession } from '@/lib/repositories/ActivityRepo';
 import { logResult, getLeaderboardForExercise, type LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
 import { useToast } from '@/components/ui/Toast';
+import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
+import type { Profile } from '@/lib/training/types';
 
 const BODY_BENEFITS = [
   {
@@ -72,6 +73,10 @@ export default function BodyScreen() {
   const [selectedMovement, setSelectedMovement] = useState<EnrichedMovement | null>(null);
   const [selectedPRMovement, setSelectedPRMovement] = useState<MajorMovement | null>(null);
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+
+  // Profile state
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
 
   // Timer state
   const [timerState, setTimerState] = useState<TimerState>('idle');
@@ -139,13 +144,23 @@ export default function BodyScreen() {
   const activeWorkout = enrichedWorkouts.find((w) => w.id === activeWorkoutId);
 
   // Reload data every time screen comes into focus
+  // Note: Don't call refresh() here as it triggers RefreshControl animation
   useFocusEffect(
     useCallback(() => {
-      refresh();
       reloadWorkouts();
       reloadStats();
-    }, [refresh, reloadWorkouts, reloadStats])
+      // Load profile data
+      Promise.all([getProfile(), getSupabaseProfile()]).then(([localProfile, sbProfile]) => {
+        setProfile(localProfile);
+        setSupabaseProfile(sbProfile);
+      });
+    }, [reloadWorkouts, reloadStats])
   );
+
+  // Derived profile values
+  const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
+  const avatarLetter = displayName.charAt(0).toUpperCase();
+  const streakCount = profile?.onAppStreakDays ?? 0;
 
   const handleViewChange = (index: number) => {
     setView(index === 0 ? 'training' : 'profile');
@@ -216,16 +231,14 @@ export default function BodyScreen() {
     reloadStats();
   };
 
-  // Calculate KPI stats
-  // Note: Full workout history stats could be added via a dedicated hook
-  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
-    const workoutsToday = enrichedWorkouts.length;
-    return [
-      { label: 'STREAK', value: '—', color: tokens.colors.action },
-      { label: 'THIS WEEK', value: `${workoutsToday}`, color: tokens.colors.tint },
-      { label: 'TOTAL TIME', value: '—' },
-    ];
-  }, [enrichedWorkouts]);
+  // Format total time for display
+  const formatTotalTime = (seconds: number): string => {
+    if (seconds === 0) return '—';
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}h`;
+    return `${mins}m`;
+  };
 
   return (
     <PremiumGate
@@ -246,24 +259,53 @@ export default function BodyScreen() {
             />
           }
         >
-          <PageLabel label="BODY" />
-          <KPIBar stats={kpiStats} />
+          {/* Unified Header: Profile + KPI Bar */}
+          <View style={styles.headerRow}>
+            <Link href="/profile" asChild>
+              <TouchableOpacity style={styles.profileContainer}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{avatarLetter}</Text>
+                </View>
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+                </View>
+              </TouchableOpacity>
+            </Link>
+            <View style={styles.kpiBar}>
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>SESSIONS</Text>
+                <Text style={[styles.kpiValue, { color: tokens.colors.action }]}>{trainingStats.totalSessions}</Text>
+              </View>
+              <View style={styles.kpiDivider} />
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>AVG. TIME</Text>
+                <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>{formatTotalTime(trainingStats.avgSessionSeconds)}</Text>
+              </View>
+              <View style={styles.kpiDivider} />
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>TOTAL TIME</Text>
+                <Text style={styles.kpiValue}>{formatTotalTime(trainingStats.totalTimeSeconds)}</Text>
+              </View>
+            </View>
+          </View>
 
           {/* Session Timer - Always visible above segmented control */}
-          <SessionTimer
-            state={timerState}
-            duration={timerDuration}
-            workoutTitle={activeWorkout?.title}
-            onStart={() => {
-              // Start with first workout if no workout selected
-              if (enrichedWorkouts.length > 0) {
-                handleTimerStart(enrichedWorkouts[0].id);
-              }
-            }}
-            onPause={handleTimerPause}
-            onResume={handleTimerResume}
-            onFinish={handleTimerFinish}
-          />
+          <View style={styles.timerWrapper}>
+            <SessionTimer
+              state={timerState}
+              duration={timerDuration}
+              workoutTitle={activeWorkout?.title}
+              onStart={() => {
+                // Start with first workout if no workout selected
+                if (enrichedWorkouts.length > 0) {
+                  handleTimerStart(enrichedWorkouts[0].id);
+                }
+              }}
+              onPause={handleTimerPause}
+              onResume={handleTimerResume}
+              onFinish={handleTimerFinish}
+            />
+          </View>
 
           <SegmentedControl
             segments={['Training', 'Profile']}
@@ -413,6 +455,92 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
   },
+
+  // Unified Header Row
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.sm,
+    marginHorizontal: 8,
+    gap: tokens.spacing.sm,
+  },
+  profileContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: tokens.colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: tokens.colors.card,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  streakBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -6,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  streakBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  kpiBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    paddingVertical: tokens.spacing.xs + 2,
+    paddingHorizontal: tokens.spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  kpiBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  kpiLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+  kpiValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: tokens.colors.text,
+  },
+  kpiDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: tokens.colors.border,
+    marginHorizontal: tokens.spacing.xs,
+  },
+  timerWrapper: {
+    marginHorizontal: 8,
+  },
+
+  // Workout content
   workoutHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
