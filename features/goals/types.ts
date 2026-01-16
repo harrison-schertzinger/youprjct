@@ -12,11 +12,19 @@ export type GoalColor =
   | 'rose'       // Pink
   | 'slate';     // Sophisticated gray
 
+export type GoalStep = {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
+};
+
 export type Goal = {
   id: string;
   title: string;
   outcome: string;           // Specific goal and outcome
   whys: string[];            // 3-5 reasons (Your Fuel)
+  steps: GoalStep[];         // Actionable steps toward the goal
   goalType: GoalType;
   color: GoalColor;
   createdAt: string;

@@ -20,13 +20,14 @@ import {
   Goal,
   GoalType,
   GoalColor,
+  GoalStep,
   GOAL_GRADIENTS,
   GOAL_TYPE_COLORS,
 } from './types';
-import { getGoalAge } from '@/lib/goals';
+import { getGoalAge, getStepProgress } from '@/lib/goals';
 
 // ============================================================
-// GoalCard - Premium gradient card with data bar and why rows
+// GoalCard - Premium gradient card with expandable steps
 // ============================================================
 
 type GoalCardProps = {
@@ -35,6 +36,10 @@ type GoalCardProps = {
   taskStreak?: number;
   onLongPress?: () => void;
   onDelete?: () => void;
+  onEdit?: () => void;
+  onAddStep?: (title: string) => void;
+  onToggleStep?: (stepId: string) => void;
+  onDeleteStep?: (stepId: string) => void;
 };
 
 export function GoalCard({
@@ -43,9 +48,16 @@ export function GoalCard({
   taskStreak = 0,
   onLongPress,
   onDelete,
+  onEdit,
+  onAddStep,
+  onToggleStep,
+  onDeleteStep,
 }: GoalCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const [newStepTitle, setNewStepTitle] = useState('');
   const gradient = GOAL_GRADIENTS[goal.color];
   const age = getGoalAge(goal);
+  const progress = getStepProgress(goal);
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -65,13 +77,28 @@ export function GoalCard({
     }
   };
 
+  const handleAddStep = () => {
+    if (newStepTitle.trim() && onAddStep) {
+      onAddStep(newStepTitle.trim());
+      setNewStepTitle('');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handleToggleStep = (stepId: string) => {
+    if (onToggleStep) {
+      onToggleStep(stepId);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
   return (
     <Pressable
       onLongPress={handleLongPress}
       delayLongPress={500}
       style={({ pressed }) => [
         styles.cardContainer,
-        pressed && styles.cardPressed,
+        pressed && !expanded && styles.cardPressed,
       ]}
     >
       <LinearGradient
@@ -97,49 +124,156 @@ export function GoalCard({
             <Text style={styles.dataValue}>{tasksCompleted}</Text>
             <Text style={styles.dataLabel}>Tasks</Text>
           </View>
-          {onDelete && (
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={(e) => {
-                e.stopPropagation();
-                Alert.alert(
-                  'Delete Goal',
-                  `Are you sure you want to delete "${goal.title}"?`,
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Delete', style: 'destructive', onPress: onDelete },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.deleteText}>×</Text>
-            </Pressable>
-          )}
+          <View style={styles.cardActions}>
+            {onEdit && (
+              <Pressable
+                style={styles.actionBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+              >
+                <Text style={styles.actionIcon}>✎</Text>
+              </Pressable>
+            )}
+            {onDelete && (
+              <Pressable
+                style={styles.actionBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Alert.alert(
+                    'Delete Goal',
+                    `Are you sure you want to delete "${goal.title}"?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: onDelete },
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.deleteText}>×</Text>
+              </Pressable>
+            )}
+          </View>
         </View>
 
-        {/* Title */}
-        <Text style={styles.cardTitle}>{goal.title}</Text>
+        {/* Title Row with Expand Toggle */}
+        <Pressable
+          onPress={() => setExpanded(!expanded)}
+          style={styles.titleRow}
+        >
+          <Text style={styles.cardTitle}>{goal.title}</Text>
+          <Text style={styles.expandChevron}>{expanded ? '▾' : '▸'}</Text>
+        </Pressable>
 
-        {/* Outcome */}
-        {goal.outcome ? (
-          <Text style={styles.cardOutcome}>{goal.outcome}</Text>
-        ) : null}
-
-        {/* Whys (Your Fuel) */}
-        {goal.whys.length > 0 && (
-          <View style={styles.whysContainer}>
-            <Text style={styles.whysLabel}>Your Fuel</Text>
-            {goal.whys.map((why, index) => (
-              <View key={index} style={styles.whyRow}>
-                <Text style={styles.whyBullet}>•</Text>
-                <Text style={styles.whyText}>{why}</Text>
-              </View>
-            ))}
+        {/* Progress Bar (always visible if steps exist) */}
+        {goal.steps.length > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${progress.percentage}%` },
+                ]}
+              />
+            </View>
+            <Text style={styles.progressText}>
+              {progress.completed}/{progress.total} steps
+            </Text>
           </View>
         )}
 
-        {/* Long press hint */}
-        <Text style={styles.longPressHint}>Hold to complete</Text>
+        {/* Expanded Content */}
+        {expanded && (
+          <View style={styles.expandedContent}>
+            {/* Outcome */}
+            {goal.outcome ? (
+              <Text style={styles.cardOutcome}>{goal.outcome}</Text>
+            ) : null}
+
+            {/* Whys (Your Fuel) */}
+            {goal.whys.length > 0 && (
+              <View style={styles.whysContainer}>
+                <Text style={styles.whysLabel}>Your Fuel</Text>
+                {goal.whys.map((why, index) => (
+                  <View key={index} style={styles.whyRow}>
+                    <Text style={styles.whyBullet}>•</Text>
+                    <Text style={styles.whyText}>{why}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Steps Section */}
+            <View style={styles.stepsSection}>
+              <Text style={styles.stepsLabel}>Steps</Text>
+
+              {/* Existing Steps */}
+              {goal.steps.map((step) => (
+                <View key={step.id} style={styles.stepRow}>
+                  <Pressable
+                    style={[
+                      styles.stepCheckbox,
+                      step.completed && styles.stepCheckboxChecked,
+                    ]}
+                    onPress={() => handleToggleStep(step.id)}
+                  >
+                    {step.completed && <Text style={styles.stepCheck}>✓</Text>}
+                  </Pressable>
+                  <Text
+                    style={[
+                      styles.stepTitle,
+                      step.completed && styles.stepTitleCompleted,
+                    ]}
+                  >
+                    {step.title}
+                  </Text>
+                  {onDeleteStep && (
+                    <Pressable
+                      style={styles.stepDeleteBtn}
+                      onPress={() => onDeleteStep(step.id)}
+                    >
+                      <Text style={styles.stepDeleteText}>×</Text>
+                    </Pressable>
+                  )}
+                </View>
+              ))}
+
+              {/* Add Step Input */}
+              {onAddStep && (
+                <View style={styles.addStepRow}>
+                  <TextInput
+                    style={styles.addStepInput}
+                    placeholder="Add a step..."
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                    value={newStepTitle}
+                    onChangeText={setNewStepTitle}
+                    onSubmitEditing={handleAddStep}
+                    returnKeyType="done"
+                  />
+                  <Pressable
+                    style={[
+                      styles.addStepBtn,
+                      !newStepTitle.trim() && styles.addStepBtnDisabled,
+                    ]}
+                    onPress={handleAddStep}
+                    disabled={!newStepTitle.trim()}
+                  >
+                    <Text style={styles.addStepBtnText}>+</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+
+            {/* Long press hint */}
+            <Text style={styles.longPressHint}>Hold to complete goal</Text>
+          </View>
+        )}
+
+        {/* Collapsed hint */}
+        {!expanded && goal.steps.length === 0 && (
+          <Text style={styles.tapHint}>Tap to expand</Text>
+        )}
       </LinearGradient>
     </Pressable>
   );
@@ -229,6 +363,10 @@ type GoalsListProps = {
   onDeleteGoal: (id: string) => void;
   onCompleteGoal: (id: string) => void;
   onUncompleteGoal: (id: string) => void;
+  onEditGoal?: (goal: Goal) => void;
+  onAddStep?: (goalId: string, title: string) => void;
+  onToggleStep?: (goalId: string, stepId: string) => void;
+  onDeleteStep?: (goalId: string, stepId: string) => void;
 };
 
 export function GoalsList({
@@ -239,6 +377,10 @@ export function GoalsList({
   onDeleteGoal,
   onCompleteGoal,
   onUncompleteGoal,
+  onEditGoal,
+  onAddStep,
+  onToggleStep,
+  onDeleteStep,
 }: GoalsListProps) {
   const activeGoals = goals.filter((g) => !g.isCompleted);
   const completedGoals = goals.filter((g) => g.isCompleted);
@@ -258,6 +400,10 @@ export function GoalsList({
           taskStreak={taskStreaks[goal.id] || 0}
           onLongPress={() => onCompleteGoal(goal.id)}
           onDelete={() => onDeleteGoal(goal.id)}
+          onEdit={onEditGoal ? () => onEditGoal(goal) : undefined}
+          onAddStep={onAddStep ? (title) => onAddStep(goal.id, title) : undefined}
+          onToggleStep={onToggleStep ? (stepId) => onToggleStep(goal.id, stepId) : undefined}
+          onDeleteStep={onDeleteStep ? (stepId) => onDeleteStep(goal.id, stepId) : undefined}
         />
       ))}
 
@@ -508,6 +654,178 @@ export function AddGoalModal({ visible, onClose, onSubmit }: AddGoalModalProps) 
 }
 
 // ============================================================
+// EditGoalModal - Modal for editing an existing goal
+// ============================================================
+
+type EditGoalModalProps = {
+  visible: boolean;
+  goal: Goal | null;
+  onClose: () => void;
+  onSubmit: (
+    id: string,
+    updates: {
+      title: string;
+      outcome: string;
+      whys: string[];
+      color: GoalColor;
+    }
+  ) => void;
+};
+
+export function EditGoalModal({ visible, goal, onClose, onSubmit }: EditGoalModalProps) {
+  const [title, setTitle] = useState('');
+  const [outcome, setOutcome] = useState('');
+  const [whys, setWhys] = useState<string[]>(['', '', '']);
+  const [selectedColor, setSelectedColor] = useState<GoalColor>('ocean');
+
+  // Populate form when goal changes
+  React.useEffect(() => {
+    if (goal) {
+      setTitle(goal.title);
+      setOutcome(goal.outcome);
+      setWhys(goal.whys.length > 0 ? [...goal.whys] : ['', '', '']);
+      setSelectedColor(goal.color);
+    }
+  }, [goal]);
+
+  const updateWhy = (index: number, value: string) => {
+    const newWhys = [...whys];
+    newWhys[index] = value;
+    setWhys(newWhys);
+  };
+
+  const addWhyField = () => {
+    if (whys.length < 5) {
+      setWhys([...whys, '']);
+    }
+  };
+
+  const removeWhyField = (index: number) => {
+    if (whys.length > 1) {
+      const newWhys = whys.filter((_, i) => i !== index);
+      setWhys(newWhys);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (!title.trim() || !goal) return;
+
+    const filteredWhys = whys.filter((w) => w.trim());
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    onSubmit(goal.id, {
+      title: title.trim(),
+      outcome: outcome.trim(),
+      whys: filteredWhys,
+      color: selectedColor,
+    });
+
+    onClose();
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
+
+  if (!goal) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+      <Pressable style={styles.overlay} onPress={handleClose}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.modalTitle}>Edit Goal</Text>
+
+              {/* Title Input */}
+              <Text style={styles.inputLabel}>Goal Title</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Run a marathon"
+                placeholderTextColor={tokens.colors.muted}
+                value={title}
+                onChangeText={(text) => setTitle(text.slice(0, 50))}
+                maxLength={50}
+              />
+              <Text style={styles.charCount}>{title.length}/50</Text>
+
+              {/* Outcome Input */}
+              <Text style={styles.inputLabel}>Specific Goal & Outcome</Text>
+              <TextInput
+                style={[styles.input, styles.multilineInput]}
+                placeholder="What does success look like? Be specific."
+                placeholderTextColor={tokens.colors.muted}
+                value={outcome}
+                onChangeText={(text) => setOutcome(text.slice(0, 200))}
+                maxLength={200}
+                multiline
+                numberOfLines={3}
+              />
+              <Text style={styles.charCount}>{outcome.length}/200</Text>
+
+              {/* Whys Input */}
+              <View style={styles.whysSection}>
+                <View style={styles.whysSectionHeader}>
+                  <Text style={styles.inputLabel}>Your Fuel (Why does this matter?)</Text>
+                  {whys.length < 5 && (
+                    <Pressable onPress={addWhyField}>
+                      <Text style={styles.addWhyBtn}>+ Add</Text>
+                    </Pressable>
+                  )}
+                </View>
+                {whys.map((why, index) => (
+                  <View key={index} style={styles.whyInputRow}>
+                    <TextInput
+                      style={[styles.input, styles.whyInput]}
+                      placeholder={`Reason ${index + 1}`}
+                      placeholderTextColor={tokens.colors.muted}
+                      value={why}
+                      onChangeText={(text) => updateWhy(index, text.slice(0, 100))}
+                      maxLength={100}
+                    />
+                    {whys.length > 1 && (
+                      <Pressable
+                        style={styles.removeWhyBtn}
+                        onPress={() => removeWhyField(index)}
+                      >
+                        <Text style={styles.removeWhyText}>×</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+              </View>
+
+              {/* Color Picker */}
+              <ColorPicker
+                selectedColor={selectedColor}
+                onSelectColor={setSelectedColor}
+              />
+
+              {/* Buttons */}
+              <View style={styles.buttons}>
+                <Pressable style={styles.cancelBtn} onPress={handleClose}>
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.submitBtn, !title.trim() && styles.submitDisabled]}
+                  onPress={handleSubmit}
+                  disabled={!title.trim()}
+                >
+                  <Text style={styles.submitText}>Save Changes</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
+    </Modal>
+  );
+}
+
+// ============================================================
 // Styles
 // ============================================================
 
@@ -618,6 +936,160 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
+  },
+  tapHint: {
+    marginTop: tokens.spacing.sm,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.4)',
+    textAlign: 'center',
+  },
+  cardActions: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    gap: tokens.spacing.xs,
+  },
+  actionBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionIcon: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  expandChevron: {
+    fontSize: 18,
+    color: 'rgba(255,255,255,0.6)',
+    marginLeft: tokens.spacing.sm,
+  },
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: tokens.spacing.sm,
+    marginBottom: tokens.spacing.xs,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginRight: tokens.spacing.sm,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  expandedContent: {
+    marginTop: tokens.spacing.sm,
+  },
+  stepsSection: {
+    marginTop: tokens.spacing.md,
+    paddingTop: tokens.spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.2)',
+  },
+  stepsLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.6)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: tokens.spacing.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.sm,
+  },
+  stepCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: tokens.spacing.sm,
+  },
+  stepCheckboxChecked: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  stepCheck: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#333333',
+  },
+  stepTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.9)',
+  },
+  stepTitleCompleted: {
+    textDecorationLine: 'line-through',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  stepDeleteBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: tokens.spacing.xs,
+  },
+  stepDeleteText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  addStepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: tokens.spacing.xs,
+  },
+  addStepInput: {
+    flex: 1,
+    height: 36,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: tokens.radius.sm,
+    paddingHorizontal: tokens.spacing.sm,
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginRight: tokens.spacing.sm,
+  },
+  addStepBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addStepBtnDisabled: {
+    opacity: 0.4,
+  },
+  addStepBtnText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 
   // CompletedGoalCard styles
