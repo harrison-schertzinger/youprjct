@@ -12,7 +12,7 @@ import { DayPicker } from '@/components/ui/DayPicker';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
-import { loadWins, markDayAsWin, removeDayWin, getTotalDaysWon, getDayOutcome } from '@/lib/dailyOutcomes';
+import { loadWins, markDayAsWin, removeDayWin, getDaysWonSinceFirstOpen, getDayOutcome } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
@@ -87,10 +87,10 @@ export default function YouScreen() {
   const appStreakDays = useMemo(() => firstOpenedAt ? daysSince(firstOpenedAt) + 1 : 1, [firstOpenedAt]);
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
   const isSelectedDayWon = useMemo(() => getDayOutcome(selectedDate, wins) === 'win', [selectedDate, wins]);
-  const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
+  const totalDaysWon = useMemo(() => getDaysWonSinceFirstOpen(wins, firstOpenedAt), [wins, firstOpenedAt]);
   const consistencyPercent = useMemo(() => {
     if (appStreakDays === 0) return 0;
-    return Math.round((totalDaysWon / appStreakDays) * 100);
+    return Math.min(100, Math.round((totalDaysWon / appStreakDays) * 100));
   }, [totalDaysWon, appStreakDays]);
 
   // Derived profile values
