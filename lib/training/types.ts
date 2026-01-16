@@ -90,4 +90,5 @@ export type Profile = {
   lastOpenedISO: string; // ISO date string
   createdAtISO: string;
   updatedAtISO: string;
+  streakFixApplied?: boolean; // Migration flag for off-by-one fix
 };

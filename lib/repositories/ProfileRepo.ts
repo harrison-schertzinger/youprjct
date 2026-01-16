@@ -23,7 +23,7 @@ export type SupabaseProfile = {
 const DEFAULT_PROFILE: Profile = {
   id: 'local-user',
   displayName: 'Athlete',
-  onAppStreakDays: 0,
+  onAppStreakDays: 1, // First day counts as day 1
   lastOpenedISO: new Date().toISOString(),
   createdAtISO: new Date().toISOString(),
   updatedAtISO: new Date().toISOString(),
@@ -60,7 +60,19 @@ export async function updateProfile(updates: Partial<Profile>): Promise<Profile>
 // ========== On-App Streak ==========
 
 export async function bumpOnAppStreakIfNeeded(todayISO: string): Promise<Profile> {
-  const profile = await getProfile();
+  let profile = await getProfile();
+
+  // One-time migration: fix off-by-one bug for existing users
+  // Existing profiles have streak that's 1 less than it should be
+  if (!profile.streakFixApplied && profile.onAppStreakDays > 0) {
+    profile = await updateProfile({
+      onAppStreakDays: profile.onAppStreakDays + 1,
+      streakFixApplied: true,
+    });
+  } else if (!profile.streakFixApplied) {
+    // Mark as applied even for new/zero streak users
+    profile = await updateProfile({ streakFixApplied: true });
+  }
 
   const lastOpenedDate = profile.lastOpenedISO.split('T')[0];
 
