@@ -7,6 +7,7 @@ import { PremiumGate } from '@/components/ui/PremiumGate';
 import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { tokens } from '@/design/tokens';
 import {
   TrainingStatsSection,
@@ -293,9 +294,7 @@ export default function BodyScreen() {
               />
 
               {workoutsLoading ? (
-                <View style={styles.loadingContainer}>
-                  <Text style={styles.loadingText}>Loading workouts...</Text>
-                </View>
+                <LoadingState message="Loading workouts" />
               ) : enrichedWorkouts.length > 0 ? (
                 <View>
                   {enrichedWorkouts.map((workout) => (
@@ -429,22 +428,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: tokens.colors.tint,
-  },
-  loadingContainer: {
-    paddingVertical: tokens.spacing.xl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-  },
-  noWorkouts: {
-    paddingVertical: tokens.spacing.xl * 2,
-    alignItems: 'center',
-  },
-  noWorkoutsText: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    textAlign: 'center',
   },
 });
