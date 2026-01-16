@@ -17,13 +17,13 @@ import { tokens } from '@/design/tokens';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Tab bar dimensions
-const TAB_BAR_HEIGHT = 72;
+const TAB_BAR_HEIGHT = 76;
 const TAB_BAR_MARGIN = 16;
 const TAB_BAR_WIDTH = Math.min(SCREEN_WIDTH - TAB_BAR_MARGIN * 2, 400);
 
 // Icon sizes
-const ICON_SIZE_REGULAR = 32;
-const ICON_SIZE_CENTER = 52;
+const ICON_SIZE_REGULAR = 36;
+const ICON_SIZE_CENTER = 58;
 
 // Routes to hide from tab bar
 const HIDDEN_ROUTES = ['index', 'explore'];
@@ -110,7 +110,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               >
                 {icon}
               </View>
-              {isFocused && !isCenter && <View style={styles.activeIndicator} />}
             </TouchableOpacity>
           );
         })}
@@ -158,40 +157,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconContainerCenter: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: tokens.colors.bg,
-    marginTop: -12, // Raise the center button
+    marginTop: -16, // Raise the center button more prominently
     // Add subtle shadow to center button
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 5 },
       },
       android: {
-        elevation: 4,
+        elevation: 6,
       },
     }),
   },
   iconContainerActive: {
     backgroundColor: tokens.colors.bg,
-  },
-  activeIndicator: {
-    position: 'absolute',
-    bottom: 10,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: tokens.colors.text,
   },
 });
