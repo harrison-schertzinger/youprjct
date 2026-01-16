@@ -69,3 +69,74 @@ export async function runMigrationsIfNeeded(): Promise<void> {
     await setSchemaVersion(CURRENT_SCHEMA_VERSION);
   }
 }
+
+// ========== Cache Clearing ==========
+
+/**
+ * Clear all app data from AsyncStorage.
+ * Use when encountering persistent data corruption issues.
+ * This will clear:
+ * - Training data (tracks, exercises, days)
+ * - Results and activity sessions
+ * - Profile data
+ * - Supabase auth session (forces re-auth)
+ */
+export async function clearAllAppData(): Promise<void> {
+  try {
+    // Get all keys that belong to our app
+    const allKeys = await AsyncStorage.getAllKeys();
+
+    // Filter to only our app keys (starting with @ or supabase-)
+    const appKeys = allKeys.filter(
+      (key) => key.startsWith('@') || key.startsWith('supabase')
+    );
+
+    if (appKeys.length > 0) {
+      await AsyncStorage.multiRemove(appKeys);
+      console.log(`Cleared ${appKeys.length} app storage keys`);
+    }
+  } catch (error) {
+    console.error('Failed to clear app data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clear only training-related cache.
+ * Preserves auth session and other data.
+ */
+export async function clearTrainingCache(): Promise<void> {
+  try {
+    const trainingKeys = [
+      '@training:tracks',
+      '@training:exercises',
+      '@training:days',
+      '@training:activeTrackId',
+      '@training:cacheMetadata',
+    ];
+    await AsyncStorage.multiRemove(trainingKeys);
+    console.log('Training cache cleared');
+  } catch (error) {
+    console.error('Failed to clear training cache:', error);
+    throw error;
+  }
+}
+
+/**
+ * Clear Supabase auth session cache.
+ * Forces re-authentication on next app launch.
+ */
+export async function clearSupabaseSession(): Promise<void> {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const supabaseKeys = allKeys.filter((key) => key.startsWith('supabase'));
+
+    if (supabaseKeys.length > 0) {
+      await AsyncStorage.multiRemove(supabaseKeys);
+      console.log(`Cleared ${supabaseKeys.length} Supabase session keys`);
+    }
+  } catch (error) {
+    console.error('Failed to clear Supabase session:', error);
+    throw error;
+  }
+}

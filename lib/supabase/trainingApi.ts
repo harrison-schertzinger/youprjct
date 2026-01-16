@@ -2,7 +2,28 @@
 // Maps database rows to app domain types
 
 import { getSupabase, isSupabaseConfigured } from './client';
+import { clearSupabaseSession } from '../storage';
 import type { TrainingTrack, Exercise, TrainingDay, Workout } from '../training/types';
+
+// ========== Error Detection ==========
+
+/**
+ * Check if an error is a blob resolution error.
+ * These typically indicate corrupted cache data.
+ */
+function isBlobError(error: unknown): boolean {
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message: string }).message;
+    return message.includes('Unable to resolve data for blob');
+  }
+  return false;
+}
+
+/**
+ * Track if we've already attempted recovery this session.
+ * Prevents infinite retry loops.
+ */
+let hasAttemptedRecovery = false;
 
 // ========== Database Row Types ==========
 
@@ -68,6 +89,7 @@ function mapTrainingDay(row: TrainingDayRow): TrainingDay {
 /**
  * Fetch all training tracks from Supabase.
  * Returns null if Supabase not configured or on error.
+ * Attempts automatic recovery if blob errors are detected.
  */
 export async function fetchTracks(): Promise<TrainingTrack[] | null> {
   const supabase = getSupabase();
@@ -80,12 +102,26 @@ export async function fetchTracks(): Promise<TrainingTrack[] | null> {
       .order('created_at', { ascending: true });
 
     if (error) {
+      // Check for blob error and attempt recovery
+      if (isBlobError(error) && !hasAttemptedRecovery) {
+        console.warn('Blob error detected, attempting cache recovery...');
+        hasAttemptedRecovery = true;
+        await clearSupabaseSession();
+        // Don't retry immediately - let the app fall back to seed data
+        // Next app launch will start fresh
+      }
       console.error('Failed to fetch tracks:', error.message);
       return null;
     }
 
     return (data as TrackRow[]).map(mapTrack);
   } catch (err) {
+    // Check for blob error in catch block too
+    if (isBlobError(err) && !hasAttemptedRecovery) {
+      console.warn('Blob error in catch, clearing Supabase cache...');
+      hasAttemptedRecovery = true;
+      await clearSupabaseSession().catch(() => {});
+    }
     console.error('Network error fetching tracks:', err);
     return null;
   }
@@ -94,6 +130,7 @@ export async function fetchTracks(): Promise<TrainingTrack[] | null> {
 /**
  * Fetch all exercises from Supabase.
  * Returns null if Supabase not configured or on error.
+ * Attempts automatic recovery if blob errors are detected.
  */
 export async function fetchExercises(): Promise<Exercise[] | null> {
   const supabase = getSupabase();
@@ -106,12 +143,23 @@ export async function fetchExercises(): Promise<Exercise[] | null> {
       .order('title', { ascending: true });
 
     if (error) {
+      // Check for blob error and attempt recovery
+      if (isBlobError(error) && !hasAttemptedRecovery) {
+        console.warn('Blob error detected in exercises, attempting cache recovery...');
+        hasAttemptedRecovery = true;
+        await clearSupabaseSession();
+      }
       console.error('Failed to fetch exercises:', error.message);
       return null;
     }
 
     return (data as ExerciseRow[]).map(mapExercise);
   } catch (err) {
+    if (isBlobError(err) && !hasAttemptedRecovery) {
+      console.warn('Blob error in catch (exercises), clearing Supabase cache...');
+      hasAttemptedRecovery = true;
+      await clearSupabaseSession().catch(() => {});
+    }
     console.error('Network error fetching exercises:', err);
     return null;
   }
