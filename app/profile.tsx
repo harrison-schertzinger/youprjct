@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Keyboard,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -120,7 +121,11 @@ export default function ProfileScreen() {
         }}
       />
       <ScreenContainer>
-        <View style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.container}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Avatar */}
           <View style={styles.avatarLarge}>
             <Text style={styles.avatarTextLarge}>{avatarInitial}</Text>
@@ -263,17 +268,20 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </Card>
-        </View>
+        </ScrollView>
       </ScreenContainer>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
     alignItems: 'center',
     paddingTop: tokens.spacing.xl * 2,
+    paddingBottom: tokens.spacing.xl * 2,
   },
   avatarLarge: {
     width: 100,
