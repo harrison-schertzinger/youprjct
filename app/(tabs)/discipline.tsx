@@ -7,9 +7,9 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { PremiumGate } from '@/components/ui/PremiumGate';
 import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { tokens } from '@/design/tokens';
 import {
-  SegmentedControl,
   RulesAdherenceCard,
   RulesCalendarGrid,
   RulesCheckInCard,
