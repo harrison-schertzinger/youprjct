@@ -12,8 +12,7 @@ import { DayPicker } from '@/components/ui/DayPicker';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
-import { WeekBattery } from '@/components/ui/WeekBattery';
-import { loadWins, markDayAsWin, getTotalDaysWon, getThisWeekStats, getDayOutcome } from '@/lib/dailyOutcomes';
+import { loadWins, markDayAsWin, getTotalDaysWon, getDayOutcome } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
@@ -89,7 +88,6 @@ export default function YouScreen() {
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
   const isSelectedDayWon = useMemo(() => getDayOutcome(selectedDate, wins) === 'win', [selectedDate, wins]);
   const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
-  const { winsThisWeek, totalDaysThisWeek } = useMemo(() => getThisWeekStats(wins), [wins]);
 
   // Derived profile values
   const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
@@ -162,43 +160,43 @@ export default function YouScreen() {
           />
         }
       >
-        {/* Header: Brand + Profile Avatar with Streak */}
-        <View style={styles.topHeader}>
-          <Text style={styles.brandText}>PERSONAL EXCELLENCE PROJECT</Text>
+        {/* Compact Header: Profile+Streak + KPI Bar */}
+        <View style={styles.headerRow}>
+          {/* Profile Avatar with Streak Badge */}
           <Link href="/profile" asChild>
-            <TouchableOpacity style={styles.avatarContainer}>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
-              </View>
+            <TouchableOpacity style={styles.profileContainer}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{avatarLetter}</Text>
               </View>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+              </View>
             </TouchableOpacity>
           </Link>
-        </View>
-
-        {/* Stats Bar */}
-        <Card style={{ paddingVertical: tokens.spacing.sm }}>
-          <View style={styles.statsRow}>
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>DAYS WON</Text>
-              <Text style={[styles.statValue, { color: tokens.colors.action }]}>{totalDaysWon}</Text>
+          {/* KPI Bar */}
+          <View style={styles.kpiBar}>
+            {/* Days Won */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>DAYS WON</Text>
+              <Text style={[styles.kpiValue, { color: tokens.colors.action }]}>{totalDaysWon}</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>CONSISTENCY</Text>
-              <Text style={[styles.statValue, { color: tokens.colors.tint }]}>82%</Text>
+            <View style={styles.kpiDivider} />
+            {/* Consistency */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>CONSISTENCY</Text>
+              <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>82%</Text>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>THIS WEEK</Text>
-              <WeekBattery wins={winsThisWeek} total={totalDaysThisWeek} />
+            <View style={styles.kpiDivider} />
+            {/* Tasks */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>TASKS</Text>
+              <Text style={styles.kpiValue}>{dailyTasks.filter(t => t.completed).length}/{dailyTasks.length}</Text>
             </View>
           </View>
-        </Card>
+        </View>
 
         {/* Calendar */}
-        <Card style={{ marginTop: tokens.spacing.md }}>
+        <Card style={{ marginTop: tokens.spacing.xs }}>
           <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} firstOpenedAt={firstOpenedAt} />
         </Card>
 
@@ -314,69 +312,90 @@ const styles = StyleSheet.create({
   dayWonContainer: {
     marginTop: tokens.spacing.lg,
     marginBottom: tokens.spacing.sm,
-    marginHorizontal: 8, // Align with cards
+    marginHorizontal: 8,
   },
 
-  // Header
-  topHeader: {
+  // Compact Header Row
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: tokens.spacing.md,
-    marginHorizontal: 8, // Align with cards
-    paddingLeft: tokens.spacing.xs,
+    marginBottom: tokens.spacing.sm,
+    marginHorizontal: 8,
+    gap: tokens.spacing.sm,
   },
-  brandText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: tokens.colors.muted,
-    letterSpacing: 1.2,
-    flex: 1,
-    marginLeft: -2,
-    marginTop: 1,
-  },
-  avatarContainer: {
+  profileContainer: {
     position: 'relative',
-    paddingTop: 6,
-    paddingLeft: 20,
-  },
-  streakBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    backgroundColor: tokens.colors.card,
-    borderRadius: tokens.radius.pill,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    zIndex: 1,
-  },
-  streakBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: tokens.colors.text,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: tokens.colors.text,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     color: tokens.colors.card,
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
   },
-
-  // Stats
-  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statBlock: { flex: 1 },
-  statDivider: { width: 1, height: 32, backgroundColor: tokens.colors.border, marginHorizontal: 10 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: tokens.colors.muted, marginBottom: 2, letterSpacing: 0.5 },
-  statValue: { fontSize: 20, fontWeight: '900' },
+  streakBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -6,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  streakBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  kpiBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    paddingVertical: tokens.spacing.xs + 2,
+    paddingHorizontal: tokens.spacing.sm,
+    // Soft shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  kpiBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  kpiLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+  kpiValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: tokens.colors.text,
+  },
+  kpiDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: tokens.colors.border,
+    marginHorizontal: tokens.spacing.xs,
+  },
 
   // Cards
   emptyText: { fontSize: 14, color: tokens.colors.muted, paddingVertical: tokens.spacing.sm },
