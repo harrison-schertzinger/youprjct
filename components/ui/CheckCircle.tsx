@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
 
 type Props = {
@@ -9,8 +10,13 @@ type Props = {
 };
 
 export function CheckCircle({ checked, onPress, size = 24 }: Props) {
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress?.();
+  };
+
   return (
-    <Pressable onPress={onPress} hitSlop={8}>
+    <Pressable onPress={handlePress} hitSlop={8}>
       <View
         style={[
           styles.circle,
