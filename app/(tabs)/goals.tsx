@@ -6,16 +6,20 @@ import { PremiumGate } from '@/components/ui/PremiumGate';
 import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
-import { GoalsList, AddGoalModal } from '@/features/goals';
+import { GoalsList, AddGoalModal, EditGoalModal } from '@/features/goals';
 import {
   Goal,
   GoalType,
   GoalColor,
   loadGoals,
   addGoal,
+  updateGoal,
   deleteGoal,
   completeGoal,
   uncompleteGoal,
+  addStep,
+  toggleStep,
+  deleteStep,
 } from '@/lib/goals';
 import { loadDailyTasks, DailyTask } from '@/lib/dailyTasks';
 
@@ -38,6 +42,8 @@ export default function GoalsScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -111,6 +117,47 @@ export default function GoalsScreen() {
     }
   }, []);
 
+  const handleEditGoal = useCallback((goal: Goal) => {
+    setEditingGoal(goal);
+    setShowEditModal(true);
+  }, []);
+
+  const handleUpdateGoal = useCallback(
+    async (
+      id: string,
+      updates: { title: string; outcome: string; whys: string[]; color: GoalColor }
+    ) => {
+      const updated = await updateGoal(id, updates);
+      if (updated) {
+        setGoals((prev) => prev.map((g) => (g.id === id ? updated : g)));
+      }
+      setShowEditModal(false);
+      setEditingGoal(null);
+    },
+    []
+  );
+
+  const handleAddStep = useCallback(async (goalId: string, title: string) => {
+    const updated = await addStep(goalId, title);
+    if (updated) {
+      setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
+    }
+  }, []);
+
+  const handleToggleStep = useCallback(async (goalId: string, stepId: string) => {
+    const updated = await toggleStep(goalId, stepId);
+    if (updated) {
+      setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
+    }
+  }, []);
+
+  const handleDeleteStep = useCallback(async (goalId: string, stepId: string) => {
+    const updated = await deleteStep(goalId, stepId);
+    if (updated) {
+      setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
+    }
+  }, []);
+
   // Count goals for KPIs
   const activeGoalsCount = goals.filter((g) => !g.isCompleted).length;
   const completedGoalsCount = goals.filter((g) => g.isCompleted).length;
@@ -157,6 +204,10 @@ export default function GoalsScreen() {
             onDeleteGoal={handleDeleteGoal}
             onCompleteGoal={handleCompleteGoal}
             onUncompleteGoal={handleUncompleteGoal}
+            onEditGoal={handleEditGoal}
+            onAddStep={handleAddStep}
+            onToggleStep={handleToggleStep}
+            onDeleteStep={handleDeleteStep}
           />
 
           <View style={{ height: tokens.spacing.xl }} />
@@ -167,6 +218,17 @@ export default function GoalsScreen() {
           visible={showAddModal}
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddGoal}
+        />
+
+        {/* Edit Goal Modal */}
+        <EditGoalModal
+          visible={showEditModal}
+          goal={editingGoal}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingGoal(null);
+          }}
+          onSubmit={handleUpdateGoal}
         />
       </ScreenContainer>
     </PremiumGate>

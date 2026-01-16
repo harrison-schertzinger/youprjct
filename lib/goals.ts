@@ -1,9 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Goal, GoalType, GoalColor } from '@/features/goals/types';
+import { Goal, GoalType, GoalColor, GoalStep } from '@/features/goals/types';
 
 const GOALS_KEY = '@youprjct:goals';
 
-export type { Goal, GoalType, GoalColor };
+export type { Goal, GoalType, GoalColor, GoalStep };
 
 /**
  * Migrate legacy goals to new schema.
@@ -15,6 +15,7 @@ function migrateGoal(goal: Partial<Goal> & { id: string; title: string }): Goal 
     title: goal.title,
     outcome: goal.outcome || '',
     whys: goal.whys || [],
+    steps: goal.steps || [],
     goalType: goal.goalType || 'other',
     color: goal.color || 'ocean',
     createdAt: goal.createdAt || new Date().toISOString(),
@@ -57,6 +58,7 @@ export async function addGoal(
     title,
     outcome,
     whys,
+    steps: [],
     goalType,
     color,
     createdAt: new Date().toISOString(),
@@ -104,4 +106,65 @@ export function getGoalAge(goal: Goal): number {
   const now = new Date();
   const diffTime = Math.abs(now.getTime() - created.getTime());
   return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// ========== Step CRUD Functions ==========
+
+/**
+ * Add a step to a goal
+ */
+export async function addStep(goalId: string, title: string): Promise<Goal | null> {
+  const goals = await loadGoals();
+  const index = goals.findIndex(g => g.id === goalId);
+  if (index === -1) return null;
+
+  const newStep: GoalStep = {
+    id: `step-${Date.now()}`,
+    title,
+    completed: false,
+    createdAt: new Date().toISOString(),
+  };
+
+  goals[index].steps.push(newStep);
+  await saveGoals(goals);
+  return goals[index];
+}
+
+/**
+ * Toggle a step's completion status
+ */
+export async function toggleStep(goalId: string, stepId: string): Promise<Goal | null> {
+  const goals = await loadGoals();
+  const goalIndex = goals.findIndex(g => g.id === goalId);
+  if (goalIndex === -1) return null;
+
+  const stepIndex = goals[goalIndex].steps.findIndex(s => s.id === stepId);
+  if (stepIndex === -1) return null;
+
+  goals[goalIndex].steps[stepIndex].completed = !goals[goalIndex].steps[stepIndex].completed;
+  await saveGoals(goals);
+  return goals[goalIndex];
+}
+
+/**
+ * Delete a step from a goal
+ */
+export async function deleteStep(goalId: string, stepId: string): Promise<Goal | null> {
+  const goals = await loadGoals();
+  const goalIndex = goals.findIndex(g => g.id === goalId);
+  if (goalIndex === -1) return null;
+
+  goals[goalIndex].steps = goals[goalIndex].steps.filter(s => s.id !== stepId);
+  await saveGoals(goals);
+  return goals[goalIndex];
+}
+
+/**
+ * Calculate step progress for a goal
+ */
+export function getStepProgress(goal: Goal): { completed: number; total: number; percentage: number } {
+  const total = goal.steps.length;
+  const completed = goal.steps.filter(s => s.completed).length;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+  return { completed, total, percentage };
 }
