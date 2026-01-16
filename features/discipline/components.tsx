@@ -341,8 +341,9 @@ type RuleListItemProps = {
 export function RuleListItem({ rule, onDelete }: RuleListItemProps) {
   return (
     <View style={styles.ruleItem}>
+      <View style={styles.ruleAccentBar} />
       <Text style={styles.ruleTitle}>{rule.title}</Text>
-      <TouchableOpacity onPress={() => onDelete(rule.id)}>
+      <TouchableOpacity onPress={() => onDelete(rule.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
         <Text style={styles.deleteIcon}>×</Text>
       </TouchableOpacity>
     </View>
@@ -861,6 +862,604 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
 }
 
 // ============================================================
+// Unified Rules Card (Month Calendar + Check-In)
+// ============================================================
+
+import { generateMonthData, isSameDay, formatDateKey } from '@/utils/calendar';
+
+const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+type RulesCardProps = {
+  rules: Rule[];
+  history: RulesAdherenceHistory;
+  checkIn: TodayRulesCheckIn | null;
+  onToggleRule: (ruleId: string) => void;
+  onCompleteCheckIn: () => void;
+};
+
+export function RulesCard({
+  rules,
+  history,
+  checkIn,
+  onToggleRule,
+  onCompleteCheckIn,
+}: RulesCardProps) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayISO());
+
+  const monthData = React.useMemo(
+    () => generateMonthData(viewYear, viewMonth),
+    [viewYear, viewMonth]
+  );
+
+  const isCurrentMonth = viewYear === today.getFullYear() && viewMonth === today.getMonth();
+  const todayISO = getTodayISO();
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewYear(viewYear - 1);
+      setViewMonth(11);
+    } else {
+      setViewMonth(viewMonth - 1);
+    }
+  };
+
+  const goToNextMonth = () => {
+    if (isCurrentMonth) return;
+    if (viewMonth === 11) {
+      setViewYear(viewYear + 1);
+      setViewMonth(0);
+    } else {
+      setViewMonth(viewMonth + 1);
+    }
+  };
+
+  const handleDayPress = (dateKey: string, isFuture: boolean) => {
+    if (!isFuture) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedDate(dateKey);
+    }
+  };
+
+  // Get adherence data for selected day
+  const selectedAdherence = history[selectedDate];
+  const isSelectedToday = selectedDate === todayISO;
+  const hasCheckedInToday = checkIn?.hasCheckedIn ?? false;
+
+  // Check-in state for today
+  const checkedCount = checkIn?.checkedRules.length ?? 0;
+  const allChecked = checkedCount === rules.length && rules.length > 0;
+
+  return (
+    <View style={rulesCardStyles.card}>
+      {/* Spectrum gradient header - serves as adherence legend */}
+      <LinearGradient
+        colors={['#10B981', '#84CC16', '#EAB308', '#F97316', '#EF4444']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={rulesCardStyles.gradientHeader}
+      >
+        <View style={rulesCardStyles.headerRow}>
+          <Text style={rulesCardStyles.headerLabel}>100%</Text>
+          <Text style={rulesCardStyles.headerTitle}>RULES</Text>
+          <Text style={rulesCardStyles.headerLabel}>0%</Text>
+        </View>
+      </LinearGradient>
+
+      {/* Month navigation */}
+      <View style={rulesCardStyles.monthNav}>
+        <Pressable onPress={goToPrevMonth} style={rulesCardStyles.navArrow}>
+          <Text style={rulesCardStyles.navArrowText}>←</Text>
+        </Pressable>
+        <Text style={rulesCardStyles.monthTitle}>
+          {monthData.monthName} {viewYear !== today.getFullYear() ? viewYear : ''}
+        </Text>
+        <Pressable
+          onPress={goToNextMonth}
+          style={[rulesCardStyles.navArrow, isCurrentMonth && rulesCardStyles.navArrowDisabled]}
+        >
+          <Text style={[rulesCardStyles.navArrowText, isCurrentMonth && rulesCardStyles.navArrowTextDisabled]}>
+            →
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Weekday headers */}
+      <View style={rulesCardStyles.weekdays}>
+        {WEEKDAYS.map((day, idx) => (
+          <Text key={`${day}-${idx}`} style={rulesCardStyles.weekdayText}>{day}</Text>
+        ))}
+      </View>
+
+      {/* Calendar grid */}
+      <View style={rulesCardStyles.calendarGrid}>
+        {monthData.cells.map((cell, idx) => {
+          if (cell.type === 'blank') {
+            return <View key={`blank-${idx}`} style={rulesCardStyles.dayCell} />;
+          }
+
+          const dateKey = cell.dateKey;
+          const isToday = dateKey === todayISO;
+          const isPast = dateKey < todayISO;
+          const isFuture = dateKey > todayISO;
+          const isSelected = dateKey === selectedDate;
+          const adherence = history[dateKey];
+
+          // Calculate adherence percentage
+          let adherencePercent = -1;
+          if (adherence && adherence.totalRules > 0) {
+            adherencePercent = Math.round(
+              (adherence.followedRules.length / adherence.totalRules) * 100
+            );
+          }
+
+          // Determine tile style
+          const getOpacity = () => {
+            if (isFuture) return 0.3;
+            if (adherencePercent === 100) return 1;
+            if (adherencePercent >= 80) return 0.85;
+            if (adherencePercent >= 50) return 0.65;
+            if (adherencePercent > 0) return 0.45;
+            return 0;
+          };
+
+          const showGradient = adherencePercent > 0 && !isFuture;
+
+          return (
+            <Pressable
+              key={dateKey}
+              style={rulesCardStyles.dayCell}
+              onPress={() => handleDayPress(dateKey, isFuture)}
+              disabled={isFuture}
+            >
+              <View
+                style={[
+                  rulesCardStyles.dayTile,
+                  isSelected && rulesCardStyles.dayTileSelected,
+                  isToday && !isSelected && rulesCardStyles.dayTileToday,
+                ]}
+              >
+                {showGradient ? (
+                  <LinearGradient
+                    colors={[RULES_GRADIENT.start, RULES_GRADIENT.end]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[rulesCardStyles.dayTileGradient, { opacity: getOpacity() }]}
+                  >
+                    <Text style={rulesCardStyles.dayTextGradient}>{cell.value}</Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={[rulesCardStyles.dayTileEmpty, isFuture && rulesCardStyles.dayTileFuture]}>
+                    <Text
+                      style={[
+                        rulesCardStyles.dayTextEmpty,
+                        isFuture && rulesCardStyles.dayTextFuture,
+                        isToday && rulesCardStyles.dayTextToday,
+                        isSelected && rulesCardStyles.dayTextSelected,
+                      ]}
+                    >
+                      {cell.value}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* Check-in section */}
+      {rules.length > 0 && (
+        <View style={rulesCardStyles.checkInSection}>
+          <View style={rulesCardStyles.checkInHeader}>
+            <Text style={rulesCardStyles.checkInTitle}>
+              {isSelectedToday ? "Today's Check-In" : formatDateDisplay(selectedDate)}
+            </Text>
+            {isSelectedToday && hasCheckedInToday && (
+              <View style={rulesCardStyles.checkInBadge}>
+                <Text style={rulesCardStyles.checkInBadgeText}>Done</Text>
+              </View>
+            )}
+            {isSelectedToday && !hasCheckedInToday && (
+              <Text style={rulesCardStyles.checkInProgress}>
+                {checkedCount}/{rules.length}
+              </Text>
+            )}
+            {!isSelectedToday && selectedAdherence && (
+              <Text style={rulesCardStyles.checkInProgress}>
+                {selectedAdherence.followedRules.length}/{selectedAdherence.totalRules}
+              </Text>
+            )}
+          </View>
+
+          {/* Today: editable check-in */}
+          {isSelectedToday && !hasCheckedInToday && (
+            <>
+              <View style={rulesCardStyles.rulesList}>
+                {rules.map((rule) => {
+                  const isChecked = checkIn?.checkedRules.includes(rule.id) ?? false;
+                  return (
+                    <TouchableOpacity
+                      key={rule.id}
+                      style={rulesCardStyles.ruleItem}
+                      onPress={() => onToggleRule(rule.id)}
+                    >
+                      <View style={[rulesCardStyles.ruleCheckbox, isChecked && rulesCardStyles.ruleCheckboxChecked]}>
+                        {isChecked && <Text style={rulesCardStyles.ruleCheckmark}>✓</Text>}
+                      </View>
+                      <Text style={[rulesCardStyles.ruleText, isChecked && rulesCardStyles.ruleTextChecked]}>
+                        {rule.title}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity
+                style={[rulesCardStyles.completeButton, !allChecked && rulesCardStyles.completeButtonDisabled]}
+                onPress={onCompleteCheckIn}
+                disabled={!allChecked}
+              >
+                <LinearGradient
+                  colors={allChecked ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={rulesCardStyles.completeButtonGradient}
+                >
+                  <Text style={[rulesCardStyles.completeButtonText, !allChecked && rulesCardStyles.completeButtonTextDisabled]}>
+                    Complete Check-In
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Today: already checked in - show rules with strikethrough (tappable to undo) */}
+          {isSelectedToday && hasCheckedInToday && (
+            <>
+              <View style={rulesCardStyles.rulesList}>
+                {rules.map((rule) => {
+                  const wasChecked = checkIn?.checkedRules.includes(rule.id) ?? false;
+                  return (
+                    <TouchableOpacity
+                      key={rule.id}
+                      style={rulesCardStyles.ruleItemCompleted}
+                      onPress={() => onToggleRule(rule.id)}
+                    >
+                      <View style={[rulesCardStyles.ruleCheckbox, wasChecked && rulesCardStyles.ruleCheckboxChecked]}>
+                        {wasChecked && <Text style={rulesCardStyles.ruleCheckmark}>✓</Text>}
+                      </View>
+                      <Text
+                        style={[
+                          rulesCardStyles.ruleText,
+                          wasChecked && rulesCardStyles.ruleTextCompleted,
+                          !wasChecked && rulesCardStyles.ruleTextMissed,
+                        ]}
+                      >
+                        {rule.title}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={rulesCardStyles.completedSubtext}>Tap a rule to undo</Text>
+            </>
+          )}
+
+          {/* Past day: read-only view */}
+          {!isSelectedToday && selectedAdherence && (
+            <View style={rulesCardStyles.pastDayView}>
+              <Text style={rulesCardStyles.pastDayText}>
+                {selectedAdherence.followedRules.length === selectedAdherence.totalRules
+                  ? 'Perfect adherence this day'
+                  : `${selectedAdherence.followedRules.length} of ${selectedAdherence.totalRules} rules followed`}
+              </Text>
+            </View>
+          )}
+
+          {/* Past day: no data */}
+          {!isSelectedToday && !selectedAdherence && (
+            <View style={rulesCardStyles.pastDayView}>
+              <Text style={rulesCardStyles.pastDayTextEmpty}>No check-in recorded</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* No rules message */}
+      {rules.length === 0 && (
+        <View style={rulesCardStyles.noRulesMessage}>
+          <Text style={rulesCardStyles.noRulesText}>Add rules below to start tracking</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function formatDateDisplay(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+// RulesCard styles
+const RULES_DAY_SIZE = (SCREEN_WIDTH - 32 - 16 - 48) / 7; // Account for card padding and gaps
+
+const rulesCardStyles = StyleSheet.create({
+  card: {
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginHorizontal: 8,
+    marginBottom: tokens.spacing.lg,
+    overflow: 'hidden',
+    // Soft shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  gradientHeader: {
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
+  },
+  headerLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.85)',
+  },
+  monthNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: tokens.spacing.md,
+    paddingTop: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xs,
+  },
+  navArrow: {
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+  },
+  navArrowDisabled: {
+    opacity: 0.3,
+  },
+  navArrowText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  navArrowTextDisabled: {
+    color: tokens.colors.muted,
+  },
+  monthTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+  },
+  weekdays: {
+    flexDirection: 'row',
+    paddingHorizontal: tokens.spacing.md,
+    paddingTop: tokens.spacing.sm,
+    paddingBottom: tokens.spacing.xs,
+  },
+  weekdayText: {
+    width: RULES_DAY_SIZE,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: tokens.spacing.md,
+    paddingBottom: tokens.spacing.md,
+  },
+  dayCell: {
+    width: RULES_DAY_SIZE,
+    height: RULES_DAY_SIZE,
+    padding: 2,
+  },
+  dayTile: {
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  dayTileSelected: {
+    borderWidth: 2,
+    borderColor: tokens.colors.text,
+  },
+  dayTileToday: {
+    borderWidth: 2,
+    borderColor: RULES_GRADIENT.start,
+  },
+  dayTileGradient: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+  },
+  dayTileEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: tokens.colors.border,
+    borderRadius: 6,
+  },
+  dayTileFuture: {
+    backgroundColor: tokens.colors.bg,
+  },
+  dayTextGradient: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  dayTextEmpty: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  dayTextFuture: {
+    color: tokens.colors.border,
+  },
+  dayTextToday: {
+    color: RULES_GRADIENT.start,
+    fontWeight: '700',
+  },
+  dayTextSelected: {
+    color: tokens.colors.text,
+    fontWeight: '700',
+  },
+  checkInSection: {
+    borderTopWidth: 1,
+    borderTopColor: tokens.colors.border,
+    paddingHorizontal: tokens.spacing.lg,
+    paddingVertical: tokens.spacing.md,
+  },
+  checkInHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.sm,
+  },
+  checkInTitle: {
+    ...tokens.typography.h3,
+    color: tokens.colors.text,
+  },
+  checkInBadge: {
+    backgroundColor: tokens.colors.action,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: 3,
+    borderRadius: tokens.radius.pill,
+  },
+  checkInBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  checkInProgress: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    fontWeight: '600',
+  },
+  rulesList: {
+    marginBottom: tokens.spacing.md,
+  },
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.sm,
+  },
+  ruleCheckbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: tokens.colors.border,
+    borderRadius: 6,
+    marginRight: tokens.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ruleCheckboxChecked: {
+    backgroundColor: tokens.colors.action,
+    borderColor: tokens.colors.action,
+  },
+  ruleCheckmark: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  ruleText: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+    flex: 1,
+  },
+  ruleTextChecked: {
+    color: tokens.colors.muted,
+  },
+  ruleItemCompleted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.xs,
+  },
+  ruleTextCompleted: {
+    color: tokens.colors.muted,
+    textDecorationLine: 'line-through',
+    textDecorationStyle: 'solid',
+  },
+  ruleTextMissed: {
+    color: tokens.colors.danger,
+    textDecorationLine: 'line-through',
+  },
+  completeButton: {
+    borderRadius: tokens.radius.sm,
+    overflow: 'hidden',
+  },
+  completeButtonDisabled: {},
+  completeButtonGradient: {
+    paddingVertical: tokens.spacing.md,
+    alignItems: 'center',
+  },
+  completeButtonText: {
+    ...tokens.typography.body,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  completeButtonTextDisabled: {
+    color: tokens.colors.muted,
+  },
+  completedMessage: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.sm,
+  },
+  completedText: {
+    ...tokens.typography.body,
+    fontWeight: '600',
+    color: tokens.colors.action,
+  },
+  completedSubtext: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    marginTop: tokens.spacing.sm,
+    textAlign: 'center',
+  },
+  pastDayView: {
+    paddingVertical: tokens.spacing.sm,
+  },
+  pastDayText: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+  },
+  pastDayTextEmpty: {
+    ...tokens.typography.body,
+    color: tokens.colors.muted,
+    fontStyle: 'italic',
+  },
+  noRulesMessage: {
+    paddingHorizontal: tokens.spacing.lg,
+    paddingVertical: tokens.spacing.xl,
+    alignItems: 'center',
+  },
+  noRulesText: {
+    ...tokens.typography.body,
+    color: tokens.colors.muted,
+  },
+});
+
+// ============================================================
 // Styles
 // ============================================================
 
@@ -1108,25 +1707,31 @@ const styles = StyleSheet.create({
   // Rule Item
   ruleItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'stretch',
     backgroundColor: tokens.colors.card,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    marginBottom: tokens.spacing.sm,
+    overflow: 'hidden',
+  },
+  ruleAccentBar: {
+    width: 4,
+    backgroundColor: '#10B981',
   },
   ruleTitle: {
     ...tokens.typography.body,
     color: tokens.colors.text,
     flex: 1,
+    paddingVertical: tokens.spacing.sm,
+    paddingLeft: tokens.spacing.md,
   },
   deleteIcon: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: tokens.colors.danger,
-    marginLeft: tokens.spacing.md,
+    fontSize: 22,
+    fontWeight: '400',
+    color: tokens.colors.muted,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
   },
 
   // Calendar Tile

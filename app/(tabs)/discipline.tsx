@@ -10,9 +10,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { tokens } from '@/design/tokens';
 import {
-  RulesAdherenceCard,
-  RulesCalendarGrid,
-  RulesCheckInCard,
+  RulesCard,
   AddNewRuleButton,
   RuleListItem,
   ChallengeCard,
@@ -42,7 +40,6 @@ import {
   completeRulesCheckIn,
   calculateRulesStreak,
   calculateBestRulesStreak,
-  getTodayAdherencePercentage,
 } from '@/features/discipline';
 
 const DISCIPLINE_BENEFITS = [
@@ -230,8 +227,6 @@ export default function DisciplineScreen() {
   // Calculate rules stats
   const currentStreak = calculateRulesStreak(rulesHistory);
   const bestStreak = calculateBestRulesStreak(rulesHistory);
-  const todayPercentage = getTodayAdherencePercentage(todayCheckIn, rules.length);
-  const hasCheckedInToday = todayCheckIn?.hasCheckedIn ?? false;
 
   // Calculate KPI stats
   const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
@@ -275,26 +270,13 @@ export default function DisciplineScreen() {
 
           {view === 'rules' ? (
             <View>
-              <RulesAdherenceCard
-                todayPercentage={todayPercentage}
-                currentStreak={currentStreak}
-                bestStreak={bestStreak}
-                hasCheckedInToday={hasCheckedInToday}
+              <RulesCard
+                rules={rules}
+                history={rulesHistory}
+                checkIn={todayCheckIn}
+                onToggleRule={handleToggleRuleCheckIn}
+                onCompleteCheckIn={handleCompleteRulesCheckIn}
               />
-
-              {rules.length > 0 && (
-                <RulesCheckInCard
-                  rules={rules}
-                  checkIn={todayCheckIn}
-                  onToggleRule={handleToggleRuleCheckIn}
-                  onCompleteCheckIn={handleCompleteRulesCheckIn}
-                />
-              )}
-
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>30-Day View</Text>
-                <RulesCalendarGrid history={rulesHistory} />
-              </View>
 
               <AddNewRuleButton onPress={handleAddRule} />
 

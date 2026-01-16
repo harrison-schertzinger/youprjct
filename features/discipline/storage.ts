@@ -352,12 +352,15 @@ export async function toggleRuleCheckIn(
   }
 
   const isChecked = checkIn.checkedRules.includes(ruleId);
+  const newCheckedRules = isChecked
+    ? checkIn.checkedRules.filter((id) => id !== ruleId)
+    : [...checkIn.checkedRules, ruleId];
 
+  // If unchecking a rule after completion, revert hasCheckedIn to allow re-completion
   const updatedCheckIn: TodayRulesCheckIn = {
     ...checkIn,
-    checkedRules: isChecked
-      ? checkIn.checkedRules.filter((id) => id !== ruleId)
-      : [...checkIn.checkedRules, ruleId],
+    checkedRules: newCheckedRules,
+    hasCheckedIn: isChecked ? false : checkIn.hasCheckedIn,
   };
 
   await saveTodayCheckIn(updatedCheckIn);
