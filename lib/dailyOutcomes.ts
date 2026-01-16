@@ -125,6 +125,27 @@ export function getTotalDaysWon(wins: Record<string, 'win'>): number {
 }
 
 /**
+ * Calculate total days won since a given start date.
+ * Only counts wins from startDate to today (inclusive).
+ * @param wins - Preloaded wins record
+ * @param firstOpenedAt - ISO date string of first app open
+ * @returns Number of days won within the active period
+ */
+export function getDaysWonSinceFirstOpen(
+  wins: Record<string, 'win'>,
+  firstOpenedAt: string | null
+): number {
+  if (!firstOpenedAt) return Object.keys(wins).length;
+
+  const startDate = firstOpenedAt.split('T')[0]; // YYYY-MM-DD
+  const today = formatDateKey(new Date());
+
+  return Object.keys(wins).filter((dateKey) => {
+    return dateKey >= startDate && dateKey <= today;
+  }).length;
+}
+
+/**
  * Get consecutive loss streak length for a given date.
  * Counts backwards from the given date to find consecutive losses.
  * @param date - The date to check
