@@ -116,6 +116,50 @@ export async function getDailyTotalsForPeriod(
   return result;
 }
 
+// ========== Training Stats ==========
+
+export type TrainingStats = {
+  totalSessions: number;
+  sessionsThisWeek: number;
+  totalTimeSeconds: number;
+  avgSessionSeconds: number;
+};
+
+export async function getTrainingStats(): Promise<TrainingStats> {
+  const allSessions = await getAllSessions();
+  const workoutSessions = allSessions.filter((s) => s.type === 'workout');
+
+  // Get this week's dates (Monday to Sunday)
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + mondayOffset);
+  const weekStartISO = monday.toISOString().split('T')[0];
+  const weekDates = getWeekDates(weekStartISO);
+
+  const sessionsThisWeek = workoutSessions.filter((s) =>
+    weekDates.includes(s.dateISO)
+  ).length;
+
+  const totalTimeSeconds = workoutSessions.reduce(
+    (sum, s) => sum + s.durationSeconds,
+    0
+  );
+
+  const avgSessionSeconds =
+    workoutSessions.length > 0
+      ? Math.round(totalTimeSeconds / workoutSessions.length)
+      : 0;
+
+  return {
+    totalSessions: workoutSessions.length,
+    sessionsThisWeek,
+    totalTimeSeconds,
+    avgSessionSeconds,
+  };
+}
+
 // ========== Helpers ==========
 
 function getWeekDates(weekStartISO: string): string[] {

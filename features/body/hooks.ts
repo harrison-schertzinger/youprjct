@@ -13,6 +13,7 @@ import {
   getMondayOfWeek,
   forceRefreshFromSupabase,
 } from '@/lib/repositories/TrainingRepo';
+import { getTrainingStats, type TrainingStats } from '@/lib/repositories/ActivityRepo';
 import type { MajorMovement } from './types';
 
 // ========== Enriched Movement Type ==========
@@ -226,6 +227,39 @@ export function useMajorMovements(): { movements: MajorMovement[]; loading: bool
   return {
     movements,
     loading,
+  };
+}
+
+// ========== Training Stats Hook ==========
+
+export function useTrainingStats() {
+  const [stats, setStats] = useState<TrainingStats>({
+    totalSessions: 0,
+    sessionsThisWeek: 0,
+    totalTimeSeconds: 0,
+    avgSessionSeconds: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const fetchedStats = await getTrainingStats();
+      setStats(fetchedStats);
+    } catch (error) {
+      console.error('Failed to load training stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  return {
+    stats,
+    loading,
+    reload: loadStats,
   };
 }
 
