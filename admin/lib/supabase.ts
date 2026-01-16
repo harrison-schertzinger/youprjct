@@ -30,7 +30,7 @@ export type Exercise = {
   sort_direction: 'asc' | 'desc';
   is_major: boolean;
   created_at?: string;
-  updated_at?: string;
+  // Note: exercises table has no updated_at column
 };
 
 export type TrainingTrack = {

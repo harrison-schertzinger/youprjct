@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
   const supabase = createServerClient();
   const body = await request.json();
 
+  // exercises table only has created_at, no updated_at
   const { error } = await supabase.from('exercises').insert({
     id: body.id,
     title: body.title,
@@ -27,7 +28,6 @@ export async function POST(request: NextRequest) {
     sort_direction: body.sort_direction,
     is_major: body.is_major,
     created_at: body.created_at,
-    updated_at: body.updated_at,
   });
 
   if (error) {
@@ -42,6 +42,7 @@ export async function PUT(request: NextRequest) {
   const supabase = createServerClient();
   const body = await request.json();
 
+  // exercises table has no updated_at column
   const { error } = await supabase
     .from('exercises')
     .update({
@@ -49,7 +50,6 @@ export async function PUT(request: NextRequest) {
       score_type: body.score_type,
       sort_direction: body.sort_direction,
       is_major: body.is_major,
-      updated_at: body.updated_at,
     })
     .eq('id', body.id);
 
