@@ -47,6 +47,10 @@ const COLORS = {
     gradient: ['#FFFFFF', '#FAFAFA', '#F5F5F5'] as const,
     border: '#E5E7EB',
   },
+  future: {
+    gradient: ['#F9FAFB', '#F3F4F6', '#E5E7EB'] as const,
+    border: '#E5E7EB',
+  },
   selected: {
     gradient: ['#374151', '#1F2937', '#111827'] as const,
     shadow: '#111827',
@@ -63,6 +67,12 @@ function isPastDay(date: Date, today: Date): boolean {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return d.getTime() < t.getTime();
+}
+
+function isFutureDay(date: Date, today: Date): boolean {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return d.getTime() > t.getTime();
 }
 
 function isBeforeFirstOpen(date: Date, firstOpenedAt: string | null): boolean {
@@ -116,8 +126,17 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
     isWin: boolean,
     isPreSignup: boolean,
     isPast: boolean,
+    isFuture: boolean,
     streakLen: number
   ): DayStyle => {
+    // Future days are always muted (locked)
+    if (isFuture) {
+      return {
+        gradient: COLORS.future.gradient,
+        borderColor: COLORS.future.border,
+        textColor: tokens.colors.muted,
+      };
+    }
     if (isSelected && !isToday) {
       return {
         gradient: COLORS.selected.gradient,
@@ -155,7 +174,7 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
         textColor: '#FFFFFF',
       };
     }
-    // Future/neutral
+    // Neutral (shouldn't reach here normally)
     return {
       gradient: COLORS.neutral.gradient,
       borderColor: COLORS.neutral.border,
@@ -193,17 +212,20 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
 
           const day = cell.value;
           const date = cell.date;
-          const isSelected = isCurrentMonth && day === selectedDay;
           const isToday = isSameDay(date, today);
           const isPast = isPastDay(date, today);
+          const isFuture = isFutureDay(date, today);
           const isPreSignup = isBeforeFirstOpen(date, firstOpenedAt);
+          // Only allow selecting today or past days (not future)
+          const isSelected = isCurrentMonth && day === selectedDay && !isFuture;
+          const canSelect = isCurrentMonth && !isFuture;
 
           const dateKey = cell.dateKey;
           const isWin = !!wins[dateKey];
           const isLoss = isPast && !isWin && !isPreSignup;
           const streakLen = isLoss ? getLossStreakLength(date, wins) : 0;
 
-          const style = getDayStyle(isSelected, isToday, isWin, isPreSignup, isLoss, streakLen);
+          const style = getDayStyle(isSelected, isToday, isWin, isPreSignup, isLoss, isFuture, streakLen);
 
           return (
             <View key={`d-${viewYear}-${viewMonth}-${day}`} style={styles.cell}>
@@ -213,10 +235,11 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
               )}
               <Pressable
                 onPress={() => {
-                  if (isCurrentMonth) {
+                  if (canSelect) {
                     onSelectDay(day);
                   }
                 }}
+                disabled={!canSelect}
                 style={({ pressed }) => [
                   styles.dayBtnOuter,
                   style.shadow && {
@@ -226,7 +249,7 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
                     shadowRadius: 4,
                     elevation: 3,
                   },
-                  pressed && styles.pressed,
+                  pressed && canSelect && styles.pressed,
                 ]}
               >
                 <LinearGradient
