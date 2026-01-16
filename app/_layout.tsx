@@ -10,6 +10,7 @@ import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 import { ensureSession } from '@/lib/supabase/AuthRepo';
 import { configureRevenueCat } from '@/lib/revenuecat';
 import { formatDateKey } from '@/utils/calendar';
+import { ToastProvider } from '@/components/ui/Toast';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -49,13 +50,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        <Stack.Screen name="workout-session" options={{ headerShown: false, presentation: 'card' }} />
-        <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'card' }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <ToastProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          <Stack.Screen name="workout-session" options={{ headerShown: false, presentation: 'card' }} />
+          <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'card' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ToastProvider>
     </ThemeProvider>
   );
 }

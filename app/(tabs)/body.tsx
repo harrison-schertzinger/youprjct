@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
@@ -14,17 +13,27 @@ import {
   TrackPickerButton,
   TrackPickerModal,
   WeekStrip,
-  WorkoutTile,
+  SessionTimer,
+  MovementCard,
+  InlineLogModal,
+  ExerciseLeaderboardModal,
+  PRInputModal,
+  type TimerState,
 } from '@/features/body';
+import type { MajorMovement } from '@/features/body/types';
 import {
   useActiveTrack,
   useTrainingDay,
   useMajorMovements,
   useTrainingStats,
+  type EnrichedMovement,
 } from '@/features/body/hooks';
 import type { BodyView } from '@/features/body/types';
 import type { TrainingTrack } from '@/lib/training/types';
 import { getTodayISO } from '@/lib/repositories/TrainingRepo';
+import { logSession } from '@/lib/repositories/ActivityRepo';
+import { logResult, getLeaderboardForExercise, type LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
+import { useToast } from '@/components/ui/Toast';
 
 const BODY_BENEFITS = [
   {
@@ -44,6 +53,8 @@ const BODY_BENEFITS = [
 export default function BodyScreen() {
   const [view, setView] = useState<BodyView>('training');
   const [selectedDate, setSelectedDate] = useState<string>(() => getTodayISO());
+  const [weekOffset, setWeekOffset] = useState(0);
+  const { showToast } = useToast();
 
   // Data hooks
   const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading, refreshing, refresh } = useActiveTrack();
@@ -53,6 +64,77 @@ export default function BodyScreen() {
 
   // Modals
   const [trackPickerVisible, setTrackPickerVisible] = useState(false);
+  const [logModalVisible, setLogModalVisible] = useState(false);
+  const [leaderboardVisible, setLeaderboardVisible] = useState(false);
+  const [prModalVisible, setPrModalVisible] = useState(false);
+  const [selectedMovement, setSelectedMovement] = useState<EnrichedMovement | null>(null);
+  const [selectedPRMovement, setSelectedPRMovement] = useState<MajorMovement | null>(null);
+  const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+
+  // Timer state
+  const [timerState, setTimerState] = useState<TimerState>('idle');
+  const [timerDuration, setTimerDuration] = useState(0);
+  const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionStartRef = useRef<string | null>(null);
+
+  // Timer effect
+  useEffect(() => {
+    if (timerState === 'running') {
+      timerRef.current = setInterval(() => {
+        setTimerDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timerState]);
+
+  // Timer handlers
+  const handleTimerStart = (workoutId: string) => {
+    setActiveWorkoutId(workoutId);
+    setTimerState('running');
+    setTimerDuration(0);
+    sessionStartRef.current = new Date().toISOString();
+  };
+
+  const handleTimerPause = () => {
+    setTimerState('paused');
+  };
+
+  const handleTimerResume = () => {
+    setTimerState('running');
+  };
+
+  const handleTimerFinish = async () => {
+    // Log the session
+    if (timerDuration > 0) {
+      await logSession('workout', selectedDate, timerDuration, {
+        startedAtISO: sessionStartRef.current || undefined,
+        endedAtISO: new Date().toISOString(),
+      });
+      reloadStats();
+
+      const mins = Math.floor(timerDuration / 60);
+      showToast(`Workout complete: ${mins}m logged`);
+    }
+
+    // Reset timer
+    setTimerState('idle');
+    setTimerDuration(0);
+    setActiveWorkoutId(null);
+    sessionStartRef.current = null;
+  };
+
+  // Get active workout title
+  const activeWorkout = enrichedWorkouts.find((w) => w.id === activeWorkoutId);
 
   // Reload data every time screen comes into focus
   useFocusEffect(
@@ -71,16 +153,59 @@ export default function BodyScreen() {
     await setActiveTrackId(track.id);
   };
 
-  const handleWorkoutPress = (workoutId: string) => {
-    if (!activeTrackId) return;
-    router.push({
-      pathname: '/workout-session',
-      params: {
-        workoutId,
-        date: selectedDate,
-        trackId: activeTrackId,
-      },
-    });
+  const handleMovementLog = (movement: EnrichedMovement) => {
+    setSelectedMovement(movement);
+    setLogModalVisible(true);
+  };
+
+  const handleLogSubmit = async (value: { valueNumber?: number; valueTimeSeconds?: number }) => {
+    if (!selectedMovement || !activeTrackId) return;
+
+    await logResult(
+      selectedMovement.exercise.id,
+      activeTrackId,
+      selectedDate,
+      value
+    );
+
+    showToast('Result logged');
+    setLogModalVisible(false);
+    setSelectedMovement(null);
+  };
+
+  const handleViewResults = async (movement: EnrichedMovement) => {
+    setSelectedMovement(movement);
+
+    // Fetch leaderboard entries
+    const entries = await getLeaderboardForExercise(
+      movement.exercise.id,
+      movement.exercise.sortDirection,
+      10
+    );
+    setLeaderboardEntries(entries);
+    setLeaderboardVisible(true);
+  };
+
+  const handlePRPress = (movement: MajorMovement) => {
+    setSelectedPRMovement(movement);
+    setPrModalVisible(true);
+  };
+
+  const handlePRSubmit = async (value: number) => {
+    if (!selectedPRMovement) return;
+
+    // Log the PR as a result (uses the movement's exercise ID)
+    await logResult(
+      selectedPRMovement.id,
+      activeTrackId || 'manual-entry',
+      getTodayISO(),
+      { valueNumber: value }
+    );
+
+    showToast('PR saved');
+    setPrModalVisible(false);
+    setSelectedPRMovement(null);
+    // Note: majorMovements will update on next refresh/focus
   };
 
   const handleRefresh = async () => {
@@ -121,6 +246,22 @@ export default function BodyScreen() {
           <PageLabel label="BODY" />
           <KPIBar stats={kpiStats} />
 
+          {/* Session Timer - Always visible above segmented control */}
+          <SessionTimer
+            state={timerState}
+            duration={timerDuration}
+            workoutTitle={activeWorkout?.title}
+            onStart={() => {
+              // Start with first workout if no workout selected
+              if (enrichedWorkouts.length > 0) {
+                handleTimerStart(enrichedWorkouts[0].id);
+              }
+            }}
+            onPause={handleTimerPause}
+            onResume={handleTimerResume}
+            onFinish={handleTimerFinish}
+          />
+
           <SegmentedControl
             segments={['Training', 'Profile']}
             selectedIndex={view === 'training' ? 0 : 1}
@@ -144,7 +285,10 @@ export default function BodyScreen() {
 
               <WeekStrip
                 selectedDate={selectedDate}
+                weekOffset={weekOffset}
                 onSelectDate={setSelectedDate}
+                onPrevWeek={() => setWeekOffset((prev) => prev - 1)}
+                onNextWeek={() => setWeekOffset((prev) => prev + 1)}
               />
 
               {workoutsLoading ? (
@@ -153,25 +297,34 @@ export default function BodyScreen() {
                 </View>
               ) : enrichedWorkouts.length > 0 ? (
                 <View>
-                  <Text style={styles.workoutsHeader}>
-                    Workouts for{' '}
-                    {new Date(selectedDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </Text>
                   {enrichedWorkouts.map((workout) => (
-                    <WorkoutTile
-                      key={workout.id}
-                      workout={{
-                        id: workout.id,
-                        title: workout.title,
-                        description: `${workout.movements.length} movement${workout.movements.length !== 1 ? 's' : ''}`,
-                        items: [],
-                      }}
-                      onPress={() => handleWorkoutPress(workout.id)}
-                    />
+                    <View key={workout.id}>
+                      {/* Workout Header */}
+                      <View style={styles.workoutHeaderRow}>
+                        <Text style={styles.workoutTitle}>{workout.title}</Text>
+                        {timerState === 'idle' && (
+                          <Text
+                            style={styles.startWorkoutLink}
+                            onPress={() => handleTimerStart(workout.id)}
+                          >
+                            Start
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Inline Movement Cards */}
+                      {workout.movements.map((movement) => (
+                        <MovementCard
+                          key={movement.id}
+                          exerciseTitle={movement.exercise.title}
+                          targetText={movement.targetText}
+                          notes={movement.notes}
+                          scoreType={movement.exercise.scoreType}
+                          onLog={() => handleMovementLog(movement)}
+                          onViewResults={() => handleViewResults(movement)}
+                        />
+                      ))}
+                    </View>
                   ))}
                 </View>
               ) : (
@@ -190,7 +343,10 @@ export default function BodyScreen() {
                 totalTimeSeconds={trainingStats.totalTimeSeconds}
                 avgSessionSeconds={trainingStats.avgSessionSeconds}
               />
-              <MajorMovementsTiles movements={majorMovements} />
+              <MajorMovementsTiles
+                movements={majorMovements}
+                onMovementPress={handlePRPress}
+              />
             </View>
           )}
         </ScrollView>
@@ -212,6 +368,41 @@ export default function BodyScreen() {
           }}
           onClose={() => setTrackPickerVisible(false)}
         />
+
+        <InlineLogModal
+          visible={logModalVisible}
+          exerciseTitle={selectedMovement?.exercise.title || ''}
+          scoreType={selectedMovement?.exercise.scoreType || 'weight'}
+          onClose={() => {
+            setLogModalVisible(false);
+            setSelectedMovement(null);
+          }}
+          onSubmit={handleLogSubmit}
+        />
+
+        <ExerciseLeaderboardModal
+          visible={leaderboardVisible}
+          exerciseTitle={selectedMovement?.exercise.title || ''}
+          scoreType={selectedMovement?.exercise.scoreType || 'weight'}
+          sortDirection={selectedMovement?.exercise.sortDirection || 'desc'}
+          entries={leaderboardEntries}
+          onClose={() => {
+            setLeaderboardVisible(false);
+            setSelectedMovement(null);
+            setLeaderboardEntries([]);
+          }}
+        />
+
+        <PRInputModal
+          visible={prModalVisible}
+          movementName={selectedPRMovement?.name || ''}
+          currentValue={selectedPRMovement?.bestWeight}
+          onClose={() => {
+            setPrModalVisible(false);
+            setSelectedPRMovement(null);
+          }}
+          onSubmit={handlePRSubmit}
+        />
       </ScreenContainer>
     </PremiumGate>
   );
@@ -221,11 +412,22 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
   },
-  workoutsHeader: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
+  workoutHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: tokens.spacing.lg,
     marginBottom: tokens.spacing.md,
-    marginTop: tokens.spacing.md,
+  },
+  workoutTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  startWorkoutLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.tint,
   },
   loadingContainer: {
     paddingVertical: tokens.spacing.xl,
