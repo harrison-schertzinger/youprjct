@@ -12,8 +12,7 @@ import { DayPicker } from '@/components/ui/DayPicker';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
-import { WeekBattery } from '@/components/ui/WeekBattery';
-import { loadWins, markDayAsWin, getTotalDaysWon, getThisWeekStats, getDayOutcome } from '@/lib/dailyOutcomes';
+import { loadWins, markDayAsWin, getTotalDaysWon, getDayOutcome } from '@/lib/dailyOutcomes';
 import { getOrSetFirstOpenedAt, daysSince } from '@/lib/appStreak';
 import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, loadEveningRoutines, addEveningRoutine, deleteEveningRoutine, loadCompletedRoutines, toggleRoutineCompletion } from '@/lib/routines';
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
@@ -89,7 +88,6 @@ export default function YouScreen() {
   const selectedDate = useMemo(() => new Date(new Date().getFullYear(), new Date().getMonth(), selectedDay), [selectedDay]);
   const isSelectedDayWon = useMemo(() => getDayOutcome(selectedDate, wins) === 'win', [selectedDate, wins]);
   const totalDaysWon = useMemo(() => getTotalDaysWon(wins), [wins]);
-  const { winsThisWeek, totalDaysThisWeek } = useMemo(() => getThisWeekStats(wins), [wins]);
 
   // Derived profile values
   const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
@@ -162,40 +160,39 @@ export default function YouScreen() {
           />
         }
       >
-        {/* Header: Brand + Profile Avatar with Streak */}
-        <View style={styles.topHeader}>
-          <Text style={styles.brandText}>PERSONAL EXCELLENCE PROJECT</Text>
-          <Link href="/profile" asChild>
-            <TouchableOpacity style={styles.avatarContainer}>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+        {/* Compact Header: KPI Bar + Profile */}
+        <View style={styles.headerRow}>
+          <View style={styles.kpiBar}>
+            {/* Streak */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>STREAK</Text>
+              <View style={styles.streakValueRow}>
+                <Text style={styles.fireEmoji}>🔥</Text>
+                <Text style={[styles.kpiValue, styles.streakValue]}>{streakCount}</Text>
               </View>
+            </View>
+            <View style={styles.kpiDivider} />
+            {/* Days Won */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>DAYS WON</Text>
+              <Text style={[styles.kpiValue, { color: tokens.colors.action }]}>{totalDaysWon}</Text>
+            </View>
+            <View style={styles.kpiDivider} />
+            {/* Consistency */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>CONSISTENCY</Text>
+              <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>82%</Text>
+            </View>
+          </View>
+          {/* Profile Avatar */}
+          <Link href="/profile" asChild>
+            <TouchableOpacity style={styles.profileButton}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>{avatarLetter}</Text>
               </View>
             </TouchableOpacity>
           </Link>
         </View>
-
-        {/* Stats Bar */}
-        <Card style={{ paddingVertical: tokens.spacing.sm }}>
-          <View style={styles.statsRow}>
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>DAYS WON</Text>
-              <Text style={[styles.statValue, { color: tokens.colors.action }]}>{totalDaysWon}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>CONSISTENCY</Text>
-              <Text style={[styles.statValue, { color: tokens.colors.tint }]}>82%</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statBlock}>
-              <Text style={styles.statLabel}>THIS WEEK</Text>
-              <WeekBattery wins={winsThisWeek} total={totalDaysThisWeek} />
-            </View>
-          </View>
-        </Card>
 
         {/* Calendar */}
         <Card style={{ marginTop: tokens.spacing.md }}>
@@ -314,69 +311,89 @@ const styles = StyleSheet.create({
   dayWonContainer: {
     marginTop: tokens.spacing.lg,
     marginBottom: tokens.spacing.sm,
-    marginHorizontal: 8, // Align with cards
+    marginHorizontal: 8,
   },
 
-  // Header
-  topHeader: {
+  // Compact Header Row
+  headerRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: tokens.spacing.md,
-    marginHorizontal: 8, // Align with cards
-    paddingLeft: tokens.spacing.xs,
+    marginHorizontal: 8,
+    gap: tokens.spacing.sm,
   },
-  brandText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: tokens.colors.muted,
-    letterSpacing: 1.2,
+  kpiBar: {
     flex: 1,
-    marginLeft: -2,
-    marginTop: 1,
-  },
-  avatarContainer: {
-    position: 'relative',
-    paddingTop: 6,
-    paddingLeft: 20,
-  },
-  streakBadge: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: tokens.colors.card,
-    borderRadius: tokens.radius.pill,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    zIndex: 1,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    // Soft shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  streakBadgeText: {
+  kpiBlock: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  kpiLabel: {
     fontSize: 10,
     fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  kpiValue: {
+    fontSize: 22,
+    fontWeight: '900',
     color: tokens.colors.text,
   },
+  kpiDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: tokens.colors.border,
+    marginHorizontal: tokens.spacing.sm,
+  },
+  streakValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fireEmoji: {
+    fontSize: 18,
+    marginRight: 2,
+  },
+  streakValue: {
+    color: '#F97316',
+  },
+  profileButton: {
+    padding: 2,
+  },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: tokens.colors.text,
     alignItems: 'center',
     justifyContent: 'center',
+    // Subtle shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   avatarText: {
     color: tokens.colors.card,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
   },
-
-  // Stats
-  statsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  statBlock: { flex: 1 },
-  statDivider: { width: 1, height: 32, backgroundColor: tokens.colors.border, marginHorizontal: 10 },
-  statLabel: { fontSize: 11, fontWeight: '700', color: tokens.colors.muted, marginBottom: 2, letterSpacing: 0.5 },
-  statValue: { fontSize: 20, fontWeight: '900' },
 
   // Cards
   emptyText: { fontSize: 14, color: tokens.colors.muted, paddingVertical: tokens.spacing.sm },
