@@ -9,7 +9,8 @@ import { tokens } from '@/design/tokens';
 import {
   SegmentedControl,
   RulesAdherenceCard,
-  MiniGrid,
+  RulesCalendarGrid,
+  RulesCheckInCard,
   AddNewRuleButton,
   RuleListItem,
   ChallengeCard,
@@ -20,6 +21,8 @@ import {
   type DailyRequirementStatus,
   type ChallengeColor,
   type ChallengeDuration,
+  type RulesAdherenceHistory,
+  type TodayRulesCheckIn,
   loadChallenge,
   createChallenge,
   completeDay,
@@ -31,6 +34,13 @@ import {
   loadRules,
   addRule,
   deleteRule,
+  loadRulesAdherenceHistory,
+  loadTodayCheckIn,
+  toggleRuleCheckIn,
+  completeRulesCheckIn,
+  calculateRulesStreak,
+  calculateBestRulesStreak,
+  getTodayAdherencePercentage,
 } from '@/features/discipline';
 
 const DISCIPLINE_BENEFITS = [
@@ -56,16 +66,30 @@ export default function DisciplineScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Rules adherence state
+  const [rulesHistory, setRulesHistory] = useState<RulesAdherenceHistory>({});
+  const [todayCheckIn, setTodayCheckIn] = useState<TodayRulesCheckIn | null>(null);
+
   const loadData = useCallback(async () => {
     try {
-      const [loadedChallenge, loadedDailyStatus, loadedRules] = await Promise.all([
+      const [
+        loadedChallenge,
+        loadedDailyStatus,
+        loadedRules,
+        loadedHistory,
+        loadedCheckIn,
+      ] = await Promise.all([
         loadChallenge(),
         loadDailyStatus(),
         loadRules(),
+        loadRulesAdherenceHistory(),
+        loadTodayCheckIn(),
       ]);
       setChallenge(loadedChallenge);
       setDailyStatus(loadedDailyStatus);
       setRules(loadedRules);
+      setRulesHistory(loadedHistory);
+      setTodayCheckIn(loadedCheckIn);
     } catch (error) {
       console.error('Failed to load discipline data:', error);
     }
@@ -186,6 +210,27 @@ export default function DisciplineScreen() {
     );
   };
 
+  const handleToggleRuleCheckIn = async (ruleId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updatedCheckIn = await toggleRuleCheckIn(ruleId, todayCheckIn);
+    setTodayCheckIn(updatedCheckIn);
+  };
+
+  const handleCompleteRulesCheckIn = async () => {
+    if (!todayCheckIn || rules.length === 0) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const { history, checkIn } = await completeRulesCheckIn(rules, todayCheckIn);
+    setRulesHistory(history);
+    setTodayCheckIn(checkIn);
+  };
+
+  // Calculate rules stats
+  const currentStreak = calculateRulesStreak(rulesHistory);
+  const bestStreak = calculateBestRulesStreak(rulesHistory);
+  const todayPercentage = getTodayAdherencePercentage(todayCheckIn, rules.length);
+  const hasCheckedInToday = todayCheckIn?.hasCheckedIn ?? false;
+
   return (
     <PremiumGate
       feature="Discipline"
@@ -215,11 +260,25 @@ export default function DisciplineScreen() {
 
           {view === 'rules' ? (
             <View>
-              <RulesAdherenceCard todayPercentage={85} bestStreak={12} />
+              <RulesAdherenceCard
+                todayPercentage={todayPercentage}
+                currentStreak={currentStreak}
+                bestStreak={bestStreak}
+                hasCheckedInToday={hasCheckedInToday}
+              />
+
+              {rules.length > 0 && (
+                <RulesCheckInCard
+                  rules={rules}
+                  checkIn={todayCheckIn}
+                  onToggleRule={handleToggleRuleCheckIn}
+                  onCompleteCheckIn={handleCompleteRulesCheckIn}
+                />
+              )}
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>30-Day View</Text>
-                <MiniGrid />
+                <RulesCalendarGrid history={rulesHistory} />
               </View>
 
               <AddNewRuleButton onPress={handleAddRule} />

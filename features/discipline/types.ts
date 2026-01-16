@@ -43,6 +43,46 @@ export type DailyRequirementStatus = {
 
 export type DisciplineView = 'challenge' | 'rules';
 
+// ============================================================
+// Rules Adherence Types
+// ============================================================
+
+// Tracks which rules were followed on a specific day
+export type DailyRulesAdherence = {
+  date: string; // ISO date string
+  followedRules: string[]; // Array of rule IDs that were followed
+  totalRules: number; // Total rules that existed on that day
+};
+
+// History of daily adherence (stored as object for quick lookup)
+export type RulesAdherenceHistory = {
+  [date: string]: DailyRulesAdherence;
+};
+
+// Today's check-in status (separate from history for quick access)
+export type TodayRulesCheckIn = {
+  date: string;
+  checkedRules: string[]; // Rules marked as followed today
+  hasCheckedIn: boolean; // Whether user has done today's check-in
+};
+
+// Rules gradient - uses action/emerald color for consistency
+export const RULES_GRADIENT = {
+  start: '#059669', // emerald-600
+  end: '#065F46',   // emerald-800
+};
+
+// Adherence level thresholds for visual feedback
+export type AdherenceLevel = 'perfect' | 'good' | 'partial' | 'low' | 'none';
+
+export function getAdherenceLevel(percentage: number): AdherenceLevel {
+  if (percentage === 100) return 'perfect';
+  if (percentage >= 80) return 'good';
+  if (percentage >= 50) return 'partial';
+  if (percentage > 0) return 'low';
+  return 'none';
+}
+
 // Challenge color gradients - matches goal gradients for consistency
 export const CHALLENGE_GRADIENTS: Record<ChallengeColor, { start: string; end: string }> = {
   ocean:    { start: '#0077B6', end: '#023E8A' },
