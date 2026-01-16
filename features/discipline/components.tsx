@@ -1707,32 +1707,31 @@ const styles = StyleSheet.create({
   // Rule Item
   ruleItem: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     backgroundColor: tokens.colors.card,
     borderWidth: 1,
     borderColor: tokens.colors.border,
     borderRadius: tokens.radius.sm,
-    paddingVertical: tokens.spacing.sm,
-    paddingRight: tokens.spacing.md,
     marginBottom: tokens.spacing.sm,
     overflow: 'hidden',
   },
   ruleAccentBar: {
     width: 4,
-    alignSelf: 'stretch',
     backgroundColor: '#10B981',
-    marginRight: tokens.spacing.md,
   },
   ruleTitle: {
     ...tokens.typography.body,
     color: tokens.colors.text,
     flex: 1,
+    paddingVertical: tokens.spacing.sm,
+    paddingLeft: tokens.spacing.md,
   },
   deleteIcon: {
     fontSize: 22,
     fontWeight: '400',
     color: tokens.colors.muted,
-    marginLeft: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
   },
 
   // Calendar Tile
