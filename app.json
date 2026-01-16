@@ -11,10 +11,14 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.harrisonschertzinger.youprjct",
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": []
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
+    "privacyPolicyUrl": "https://youprjct.com/privacy",
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
