@@ -216,7 +216,6 @@ export default function YouScreen() {
           <DayWonButton isWon={isSelectedDayWon} onPress={handleWinTheDay} />
         </View>
 
-        <SectionHeader title="Daily Tasks" />
         <DayPicker
           selectedOffset={taskDayOffset}
           maxOffset={3}
