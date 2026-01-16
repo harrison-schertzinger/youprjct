@@ -74,8 +74,13 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.border,
     overflow: 'hidden',
     flexDirection: 'row',
-    ...tokens.shadow.ios,
-    ...tokens.shadow.android,
+    marginHorizontal: 8, // Shadow breathing room
+    // Soft shadow - sun above, casting on 3 sides
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   accentLine: {
     width: 3,

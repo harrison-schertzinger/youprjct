@@ -24,9 +24,9 @@ export function SectionHeader({ title, actionLabel, onPressAction }: Props) {
 
 const styles = StyleSheet.create({
   row: {
-    width: '100%',
     marginTop: tokens.spacing.xl,
     marginBottom: tokens.spacing.md,
+    marginHorizontal: 8, // Align with cards
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
