@@ -11,6 +11,8 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -784,7 +786,10 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
+      <KeyboardAvoidingView
+        style={styles.modalContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalCancel}>Cancel</Text>
@@ -800,6 +805,8 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
         <ScrollView
           style={styles.modalContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.modalScrollContent}
         >
           {/* Title Input */}
           <View style={styles.inputGroup}>
@@ -848,7 +855,7 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
             )}
           </View>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -1434,7 +1441,10 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     flex: 1,
+  },
+  modalScrollContent: {
     padding: tokens.spacing.md,
+    paddingBottom: 100, // Extra padding for keyboard
   },
 
   // Form Inputs
