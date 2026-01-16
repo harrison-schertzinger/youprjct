@@ -7,11 +7,16 @@ import type {
   ChallengeRequirement,
   DailyRequirementStatus,
   Rule,
+  DailyRulesAdherence,
+  RulesAdherenceHistory,
+  TodayRulesCheckIn,
 } from './types';
 
 const CHALLENGE_KEY = '@youprjct:challenge';
 const DAILY_STATUS_KEY = '@youprjct:daily_status';
 const RULES_KEY = '@youprjct:rules';
+const RULES_ADHERENCE_KEY = '@youprjct:rules_adherence';
+const TODAY_CHECKIN_KEY = '@youprjct:today_checkin';
 
 // ============================================================
 // Date utilities
@@ -270,4 +275,215 @@ export function calculateCompletionPercentage(
 ): number {
   if (totalDays === 0) return 0;
   return Math.round((completedDays / totalDays) * 100);
+}
+
+// ============================================================
+// Rules Adherence operations
+// ============================================================
+
+export async function loadRulesAdherenceHistory(): Promise<RulesAdherenceHistory> {
+  try {
+    const raw = await AsyncStorage.getItem(RULES_ADHERENCE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error('Failed to load rules adherence history:', error);
+    return {};
+  }
+}
+
+export async function saveRulesAdherenceHistory(
+  history: RulesAdherenceHistory
+): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RULES_ADHERENCE_KEY, JSON.stringify(history));
+  } catch (error) {
+    console.error('Failed to save rules adherence history:', error);
+  }
+}
+
+export async function loadTodayCheckIn(): Promise<TodayRulesCheckIn | null> {
+  try {
+    const raw = await AsyncStorage.getItem(TODAY_CHECKIN_KEY);
+    if (!raw) return null;
+
+    const checkIn: TodayRulesCheckIn = JSON.parse(raw);
+
+    // Reset if it's a new day
+    if (checkIn.date !== getTodayISO()) {
+      return {
+        date: getTodayISO(),
+        checkedRules: [],
+        hasCheckedIn: false,
+      };
+    }
+
+    return checkIn;
+  } catch (error) {
+    console.error('Failed to load today check-in:', error);
+    return null;
+  }
+}
+
+export async function saveTodayCheckIn(checkIn: TodayRulesCheckIn): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TODAY_CHECKIN_KEY, JSON.stringify(checkIn));
+  } catch (error) {
+    console.error('Failed to save today check-in:', error);
+  }
+}
+
+export async function toggleRuleCheckIn(
+  ruleId: string,
+  currentCheckIn: TodayRulesCheckIn | null
+): Promise<TodayRulesCheckIn> {
+  const today = getTodayISO();
+  const checkIn: TodayRulesCheckIn = currentCheckIn || {
+    date: today,
+    checkedRules: [],
+    hasCheckedIn: false,
+  };
+
+  // Ensure we're working with today
+  if (checkIn.date !== today) {
+    checkIn.date = today;
+    checkIn.checkedRules = [];
+    checkIn.hasCheckedIn = false;
+  }
+
+  const isChecked = checkIn.checkedRules.includes(ruleId);
+
+  const updatedCheckIn: TodayRulesCheckIn = {
+    ...checkIn,
+    checkedRules: isChecked
+      ? checkIn.checkedRules.filter((id) => id !== ruleId)
+      : [...checkIn.checkedRules, ruleId],
+  };
+
+  await saveTodayCheckIn(updatedCheckIn);
+  return updatedCheckIn;
+}
+
+export async function completeRulesCheckIn(
+  rules: Rule[],
+  checkIn: TodayRulesCheckIn
+): Promise<{ history: RulesAdherenceHistory; checkIn: TodayRulesCheckIn }> {
+  const today = getTodayISO();
+
+  // Create today's adherence record
+  const todayAdherence: DailyRulesAdherence = {
+    date: today,
+    followedRules: checkIn.checkedRules,
+    totalRules: rules.length,
+  };
+
+  // Load existing history and add today
+  const history = await loadRulesAdherenceHistory();
+  history[today] = todayAdherence;
+
+  // Clean up old entries (keep last 90 days)
+  const cutoffDate = getDateISO(addDays(new Date(), -90));
+  const cleanedHistory: RulesAdherenceHistory = {};
+  for (const [date, adherence] of Object.entries(history)) {
+    if (date >= cutoffDate) {
+      cleanedHistory[date] = adherence;
+    }
+  }
+
+  await saveRulesAdherenceHistory(cleanedHistory);
+
+  // Mark check-in as complete
+  const updatedCheckIn: TodayRulesCheckIn = {
+    ...checkIn,
+    hasCheckedIn: true,
+  };
+  await saveTodayCheckIn(updatedCheckIn);
+
+  return { history: cleanedHistory, checkIn: updatedCheckIn };
+}
+
+export function calculateRulesStreak(history: RulesAdherenceHistory): number {
+  const sortedDates = Object.keys(history).sort().reverse();
+  if (sortedDates.length === 0) return 0;
+
+  const today = getTodayISO();
+  let streak = 0;
+  let checkDate = today;
+
+  for (const date of sortedDates) {
+    if (date === checkDate) {
+      const adherence = history[date];
+      // Only count as streak if 100% adherence
+      if (adherence.followedRules.length === adherence.totalRules && adherence.totalRules > 0) {
+        streak++;
+        const prevDate = addDays(new Date(checkDate), -1);
+        checkDate = getDateISO(prevDate);
+      } else {
+        break; // Streak broken by imperfect day
+      }
+    } else if (date < checkDate) {
+      break; // Gap in days
+    }
+  }
+
+  return streak;
+}
+
+export function calculateBestRulesStreak(history: RulesAdherenceHistory): number {
+  const sortedDates = Object.keys(history).sort();
+  if (sortedDates.length === 0) return 0;
+
+  let bestStreak = 0;
+  let currentStreak = 0;
+  let expectedDate = sortedDates[0];
+
+  for (const date of sortedDates) {
+    const adherence = history[date];
+    const isPerfect = adherence.followedRules.length === adherence.totalRules && adherence.totalRules > 0;
+
+    if (date === expectedDate && isPerfect) {
+      currentStreak++;
+      bestStreak = Math.max(bestStreak, currentStreak);
+    } else if (isPerfect) {
+      currentStreak = 1;
+    } else {
+      currentStreak = 0;
+    }
+
+    // Move to next expected date
+    expectedDate = getDateISO(addDays(new Date(date), 1));
+  }
+
+  return bestStreak;
+}
+
+export function getTodayAdherencePercentage(
+  checkIn: TodayRulesCheckIn | null,
+  totalRules: number
+): number {
+  if (!checkIn || totalRules === 0) return 0;
+  return Math.round((checkIn.checkedRules.length / totalRules) * 100);
+}
+
+export function getLast30DaysAdherence(
+  history: RulesAdherenceHistory
+): { date: string; percentage: number }[] {
+  const today = new Date();
+  const result: { date: string; percentage: number }[] = [];
+
+  for (let i = 29; i >= 0; i--) {
+    const date = getDateISO(addDays(today, -i));
+    const adherence = history[date];
+
+    if (adherence && adherence.totalRules > 0) {
+      result.push({
+        date,
+        percentage: Math.round((adherence.followedRules.length / adherence.totalRules) * 100),
+      });
+    } else {
+      result.push({ date, percentage: -1 }); // -1 means no data
+    }
+  }
+
+  return result;
 }

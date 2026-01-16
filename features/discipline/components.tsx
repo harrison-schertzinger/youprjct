@@ -17,16 +17,17 @@ import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
 import { Card } from '@/components/ui/Card';
 import {
-  type DisciplineView,
   type Rule,
   type Challenge,
-  type ChallengeRequirement,
   type ChallengeColor,
   type ChallengeDuration,
   type DailyRequirementStatus,
+  type RulesAdherenceHistory,
+  type TodayRulesCheckIn,
   CHALLENGE_GRADIENTS,
   CHALLENGE_COLOR_NAMES,
   CHALLENGE_DURATIONS,
+  RULES_GRADIENT,
 } from './types';
 import {
   getTodayISO,
@@ -35,9 +36,13 @@ import {
   getDayNumber,
   isDateInPast,
   isDateToday,
+  getLast30DaysAdherence,
 } from './storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Tile sizes for grids
+const RULES_TILE_SIZE = (SCREEN_WIDTH - 32 - 36) / 10; // 30-day grid (3 rows of 10)
 
 // ============================================================
 // Segmented Control
@@ -78,22 +83,59 @@ export function SegmentedControl({ segments, selectedIndex, onChange }: Segmente
 }
 
 // ============================================================
-// Rules Adherence Card
+// Rules Adherence Card (Redesigned with gradient bar)
 // ============================================================
 
 type RulesAdherenceCardProps = {
   todayPercentage: number;
+  currentStreak: number;
   bestStreak: number;
+  hasCheckedInToday: boolean;
 };
 
-export function RulesAdherenceCard({ todayPercentage, bestStreak }: RulesAdherenceCardProps) {
+export function RulesAdherenceCard({
+  todayPercentage,
+  currentStreak,
+  bestStreak,
+  hasCheckedInToday,
+}: RulesAdherenceCardProps) {
   return (
     <Card style={styles.adherenceCard}>
+      {/* Header with gradient bar */}
+      <LinearGradient
+        colors={[RULES_GRADIENT.start, RULES_GRADIENT.end]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.rulesColorBar}
+      />
       <Text style={styles.cardTitle}>Rules Adherence</Text>
+
+      {/* Today's progress bar */}
+      <View style={styles.todayProgressSection}>
+        <View style={styles.todayProgressHeader}>
+          <Text style={styles.todayProgressLabel}>Today</Text>
+          <Text style={styles.todayProgressValue}>
+            {hasCheckedInToday ? `${todayPercentage}%` : 'Not checked in'}
+          </Text>
+        </View>
+        <View style={styles.todayProgressBar}>
+          <LinearGradient
+            colors={[RULES_GRADIENT.start, RULES_GRADIENT.end]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[
+              styles.todayProgressFill,
+              { width: hasCheckedInToday ? `${todayPercentage}%` : '0%' },
+            ]}
+          />
+        </View>
+      </View>
+
+      {/* Stats row */}
       <View style={styles.adherenceStats}>
         <View style={styles.adherenceStat}>
-          <Text style={styles.adherenceValue}>{todayPercentage}%</Text>
-          <Text style={styles.adherenceLabel}>Today</Text>
+          <Text style={styles.adherenceValue}>{currentStreak}</Text>
+          <Text style={styles.adherenceLabel}>Current Streak</Text>
         </View>
         <View style={styles.adherenceStat}>
           <Text style={styles.adherenceValue}>{bestStreak}</Text>
@@ -105,18 +147,166 @@ export function RulesAdherenceCard({ todayPercentage, bestStreak }: RulesAdheren
 }
 
 // ============================================================
-// Mini Grid (for Rules)
+// Rules Calendar Grid (30-day view with gradient tiles)
 // ============================================================
 
-export function MiniGrid() {
-  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+type RulesCalendarTileProps = {
+  dayLabel: string;
+  percentage: number; // -1 means no data
+  isToday: boolean;
+};
+
+function RulesCalendarTile({ dayLabel, percentage, isToday }: RulesCalendarTileProps) {
+  const hasData = percentage >= 0;
+
+  // Calculate opacity based on adherence percentage
+  const getOpacity = () => {
+    if (!hasData) return 0.3;
+    if (percentage === 100) return 1;
+    if (percentage >= 80) return 0.85;
+    if (percentage >= 50) return 0.65;
+    if (percentage > 0) return 0.45;
+    return 0.3;
+  };
 
   return (
-    <View style={styles.miniGrid}>
-      {days.map((day) => (
-        <View key={day} style={styles.miniGridCell} />
-      ))}
+    <View style={[styles.rulesCalendarTile, isToday && styles.rulesCalendarTileToday]}>
+      {hasData && percentage > 0 ? (
+        <LinearGradient
+          colors={[RULES_GRADIENT.start, RULES_GRADIENT.end]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.rulesCalendarTileGradient, { opacity: getOpacity() }]}
+        >
+          <Text style={styles.rulesCalendarTileText}>{dayLabel}</Text>
+        </LinearGradient>
+      ) : (
+        <View style={styles.rulesCalendarTileEmpty}>
+          <Text style={[styles.rulesCalendarTileTextEmpty, isToday && styles.rulesCalendarTileTextToday]}>
+            {dayLabel}
+          </Text>
+        </View>
+      )}
     </View>
+  );
+}
+
+type RulesCalendarGridProps = {
+  history: RulesAdherenceHistory;
+};
+
+export function RulesCalendarGrid({ history }: RulesCalendarGridProps) {
+  const last30Days = getLast30DaysAdherence(history);
+  const today = getTodayISO();
+
+  return (
+    <View style={styles.rulesCalendarGrid}>
+      {last30Days.map(({ date, percentage }, index) => {
+        const dayNumber = new Date(date).getDate();
+        const isToday = date === today;
+        return (
+          <RulesCalendarTile
+            key={date}
+            dayLabel={dayNumber.toString()}
+            percentage={percentage}
+            isToday={isToday}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+// ============================================================
+// Rules Check-In Card
+// ============================================================
+
+type RulesCheckInCardProps = {
+  rules: Rule[];
+  checkIn: TodayRulesCheckIn | null;
+  onToggleRule: (ruleId: string) => void;
+  onCompleteCheckIn: () => void;
+};
+
+export function RulesCheckInCard({
+  rules,
+  checkIn,
+  onToggleRule,
+  onCompleteCheckIn,
+}: RulesCheckInCardProps) {
+  const hasCheckedIn = checkIn?.hasCheckedIn ?? false;
+  const checkedCount = checkIn?.checkedRules.length ?? 0;
+  const allChecked = checkedCount === rules.length && rules.length > 0;
+
+  if (rules.length === 0) {
+    return null;
+  }
+
+  return (
+    <Card style={styles.checkInCard}>
+      <View style={styles.checkInHeader}>
+        <Text style={styles.checkInTitle}>Daily Check-In</Text>
+        {hasCheckedIn ? (
+          <View style={styles.checkInBadge}>
+            <Text style={styles.checkInBadgeText}>Done</Text>
+          </View>
+        ) : (
+          <Text style={styles.checkInSubtitle}>
+            {checkedCount}/{rules.length} rules followed
+          </Text>
+        )}
+      </View>
+
+      {!hasCheckedIn && (
+        <>
+          <View style={styles.checkInRulesList}>
+            {rules.map((rule) => {
+              const isChecked = checkIn?.checkedRules.includes(rule.id) ?? false;
+              return (
+                <TouchableOpacity
+                  key={rule.id}
+                  style={styles.checkInRuleItem}
+                  onPress={() => onToggleRule(rule.id)}
+                >
+                  <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                    {isChecked && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <Text style={[styles.checkInRuleText, isChecked && styles.checkInRuleTextChecked]}>
+                    {rule.title}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.checkInButton, !allChecked && styles.checkInButtonDisabled]}
+            onPress={onCompleteCheckIn}
+            disabled={!allChecked}
+          >
+            <LinearGradient
+              colors={allChecked ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.checkInButtonGradient}
+            >
+              <Text style={[styles.checkInButtonText, !allChecked && styles.checkInButtonTextDisabled]}>
+                Complete Check-In
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {hasCheckedIn && (
+        <View style={styles.checkInCompleteMessage}>
+          <Text style={styles.checkInCompleteText}>
+            {checkedCount === rules.length ? 'Perfect adherence today!' : `${checkedCount}/${rules.length} rules followed`}
+          </Text>
+          <Text style={styles.checkInCompleteSubtext}>Come back tomorrow</Text>
+        </View>
+      )}
+    </Card>
   );
 }
 
@@ -269,13 +459,7 @@ type ChallengeCalendarGridProps = {
 };
 
 export function ChallengeCalendarGrid({ challenge, onCompleteToday }: ChallengeCalendarGridProps) {
-  const today = getTodayISO();
   const startDate = new Date(challenge.startDate);
-
-  // Calculate grid dimensions based on total days
-  const columns = 10;
-  const rows = Math.ceil(challenge.totalDays / columns);
-
   const tiles: React.ReactNode[] = [];
 
   for (let i = 0; i < challenge.totalDays; i++) {
@@ -391,7 +575,7 @@ export function ChallengeCard({
       {/* Today's Requirements */}
       {!isTodayCompleted && currentDayNumber <= challenge.totalDays && (
         <View style={styles.requirementsSection}>
-          <Text style={styles.sectionLabel}>Today's Requirements</Text>
+          <Text style={styles.sectionLabel}>Today&apos;s Requirements</Text>
           {challenge.requirements.map((req) => {
             const isChecked = dailyStatus?.completedRequirements.includes(req.id) ?? false;
             return (
@@ -713,11 +897,48 @@ const styles = StyleSheet.create({
   // Adherence Card
   adherenceCard: {
     marginBottom: tokens.spacing.lg,
+    overflow: 'hidden',
+  },
+  rulesColorBar: {
+    height: 4,
+    borderRadius: 2,
+    marginBottom: tokens.spacing.md,
   },
   cardTitle: {
     ...tokens.typography.h2,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.md,
+  },
+  todayProgressSection: {
+    marginBottom: tokens.spacing.lg,
+  },
+  todayProgressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.xs,
+  },
+  todayProgressLabel: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  todayProgressValue: {
+    ...tokens.typography.small,
+    color: tokens.colors.text,
+    fontWeight: '700',
+  },
+  todayProgressBar: {
+    height: 8,
+    backgroundColor: tokens.colors.border,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  todayProgressFill: {
+    height: '100%',
+    borderRadius: 4,
   },
   adherenceStats: {
     flexDirection: 'row',
@@ -736,18 +957,127 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
   },
 
-  // Mini Grid
-  miniGrid: {
+  // Rules Calendar Grid
+  rulesCalendarGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 4,
     marginBottom: tokens.spacing.lg,
   },
-  miniGridCell: {
-    width: 32,
-    height: 32,
+  rulesCalendarTile: {
+    width: RULES_TILE_SIZE,
+    height: RULES_TILE_SIZE,
+  },
+  rulesCalendarTileToday: {
+    borderWidth: 2,
+    borderColor: tokens.colors.text,
+    borderRadius: 6,
+  },
+  rulesCalendarTileGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rulesCalendarTileEmpty: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 4,
     backgroundColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rulesCalendarTileText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  rulesCalendarTileTextEmpty: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  rulesCalendarTileTextToday: {
+    color: tokens.colors.text,
+    fontWeight: '700',
+  },
+
+  // Check-In Card
+  checkInCard: {
+    marginBottom: tokens.spacing.lg,
+  },
+  checkInHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.md,
+  },
+  checkInTitle: {
+    ...tokens.typography.h2,
+    color: tokens.colors.text,
+  },
+  checkInSubtitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+  },
+  checkInBadge: {
+    backgroundColor: tokens.colors.action,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+    borderRadius: tokens.radius.pill,
+  },
+  checkInBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  checkInRulesList: {
+    marginBottom: tokens.spacing.md,
+  },
+  checkInRuleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.sm,
+  },
+  checkInRuleText: {
+    ...tokens.typography.body,
+    color: tokens.colors.text,
+    flex: 1,
+  },
+  checkInRuleTextChecked: {
+    color: tokens.colors.muted,
+  },
+  checkInButton: {
     borderRadius: tokens.radius.sm,
+    overflow: 'hidden',
+  },
+  checkInButtonDisabled: {},
+  checkInButtonGradient: {
+    paddingVertical: tokens.spacing.md,
+    alignItems: 'center',
+  },
+  checkInButtonText: {
+    ...tokens.typography.body,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  checkInButtonTextDisabled: {
+    color: tokens.colors.muted,
+  },
+  checkInCompleteMessage: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+  },
+  checkInCompleteText: {
+    ...tokens.typography.body,
+    fontWeight: '700',
+    color: tokens.colors.action,
+    marginBottom: 4,
+  },
+  checkInCompleteSubtext: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
   },
 
   // Add Rule Button
