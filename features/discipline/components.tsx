@@ -1116,31 +1116,35 @@ export function RulesCard({
             </>
           )}
 
-          {/* Today: already checked in - show rules with strikethrough */}
+          {/* Today: already checked in - show rules with strikethrough (tappable to undo) */}
           {isSelectedToday && hasCheckedInToday && (
             <>
               <View style={rulesCardStyles.rulesList}>
                 {rules.map((rule) => {
                   const wasChecked = checkIn?.checkedRules.includes(rule.id) ?? false;
                   return (
-                    <View key={rule.id} style={rulesCardStyles.ruleItemCompleted}>
-                      <View style={[rulesCardStyles.ruleCheckbox, rulesCardStyles.ruleCheckboxChecked]}>
-                        <Text style={rulesCardStyles.ruleCheckmark}>✓</Text>
+                    <TouchableOpacity
+                      key={rule.id}
+                      style={rulesCardStyles.ruleItemCompleted}
+                      onPress={() => onToggleRule(rule.id)}
+                    >
+                      <View style={[rulesCardStyles.ruleCheckbox, wasChecked && rulesCardStyles.ruleCheckboxChecked]}>
+                        {wasChecked && <Text style={rulesCardStyles.ruleCheckmark}>✓</Text>}
                       </View>
                       <Text
                         style={[
                           rulesCardStyles.ruleText,
-                          rulesCardStyles.ruleTextCompleted,
+                          wasChecked && rulesCardStyles.ruleTextCompleted,
                           !wasChecked && rulesCardStyles.ruleTextMissed,
                         ]}
                       >
                         {rule.title}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
-              <Text style={rulesCardStyles.completedSubtext}>Come back tomorrow</Text>
+              <Text style={rulesCardStyles.completedSubtext}>Tap a rule to undo</Text>
             </>
           )}
 
