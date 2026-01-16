@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { PremiumGate } from '@/components/ui/PremiumGate';
 import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { tokens } from '@/design/tokens';
 import {
   RulesAdherenceCard,
@@ -301,7 +301,13 @@ export default function DisciplineScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>My Rules</Text>
                 {rules.length === 0 ? (
-                  <Text style={styles.emptyText}>No rules yet. Add your first non-negotiable.</Text>
+                  <EmptyState
+                    icon="📜"
+                    title="No Rules Yet"
+                    message="Define your non-negotiables—the standards you refuse to break."
+                    actionLabel="Add First Rule"
+                    onAction={handleAddRule}
+                  />
                 ) : (
                   rules.map((rule) => (
                     <RuleListItem key={rule.id} rule={rule} onDelete={handleDeleteRule} />
@@ -320,18 +326,13 @@ export default function DisciplineScreen() {
                   onDelete={handleDeleteChallenge}
                 />
               ) : (
-                <View style={styles.noChallengeContainer}>
-                  <Text style={styles.noChallengeTitle}>No Active Challenge</Text>
-                  <Text style={styles.noChallengeText}>
-                    Start a challenge to build discipline through daily accountability.
-                    Choose 40, 75, or 100 days and define your daily requirements.
-                  </Text>
-                  <PrimaryButton
-                    label="Start New Challenge"
-                    onPress={() => setShowCreateModal(true)}
-                    style={styles.startButton}
-                  />
-                </View>
+                <EmptyState
+                  icon="🎯"
+                  title="No Active Challenge"
+                  message="Build discipline through daily accountability. Choose 40, 75, or 100 days."
+                  actionLabel="Start Challenge"
+                  onAction={() => setShowCreateModal(true)}
+                />
               )}
             </View>
           )}
@@ -358,31 +359,5 @@ const styles = StyleSheet.create({
     ...tokens.typography.h2,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.md,
-  },
-  noChallengeContainer: {
-    alignItems: 'center',
-    paddingVertical: tokens.spacing.xl * 2,
-    paddingHorizontal: tokens.spacing.md,
-  },
-  noChallengeTitle: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-  },
-  noChallengeText: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    marginBottom: tokens.spacing.xl,
-    lineHeight: 24,
-  },
-  startButton: {
-    width: '100%',
-  },
-  emptyText: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    paddingVertical: tokens.spacing.xl,
   },
 });

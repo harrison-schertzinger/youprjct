@@ -6,6 +6,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
 import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
 import { PageLabel } from '@/components/ui/PageLabel';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { tokens } from '@/design/tokens';
 import {
   TrainingStatsSection,
@@ -328,11 +329,11 @@ export default function BodyScreen() {
                   ))}
                 </View>
               ) : (
-                <View style={styles.noWorkouts}>
-                  <Text style={styles.noWorkoutsText}>
-                    No workouts scheduled for this day
-                  </Text>
-                </View>
+                <EmptyState
+                  icon="📋"
+                  title="Rest Day"
+                  message="No workouts scheduled. Use this time to recover or select a different day."
+                />
               )}
             </View>
           ) : (
