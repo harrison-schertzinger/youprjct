@@ -341,8 +341,9 @@ type RuleListItemProps = {
 export function RuleListItem({ rule, onDelete }: RuleListItemProps) {
   return (
     <View style={styles.ruleItem}>
+      <View style={styles.ruleAccentBar} />
       <Text style={styles.ruleTitle}>{rule.title}</Text>
-      <TouchableOpacity onPress={() => onDelete(rule.id)}>
+      <TouchableOpacity onPress={() => onDelete(rule.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
         <Text style={styles.deleteIcon}>×</Text>
       </TouchableOpacity>
     </View>
@@ -933,14 +934,18 @@ export function RulesCard({
 
   return (
     <View style={rulesCardStyles.card}>
-      {/* Flush gradient header */}
+      {/* Spectrum gradient header - serves as adherence legend */}
       <LinearGradient
-        colors={[RULES_GRADIENT.start, RULES_GRADIENT.end]}
+        colors={['#10B981', '#84CC16', '#EAB308', '#F97316', '#EF4444']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={rulesCardStyles.gradientHeader}
       >
-        <Text style={rulesCardStyles.headerTitle}>RULES</Text>
+        <View style={rulesCardStyles.headerRow}>
+          <Text style={rulesCardStyles.headerLabel}>100%</Text>
+          <Text style={rulesCardStyles.headerTitle}>RULES</Text>
+          <Text style={rulesCardStyles.headerLabel}>0%</Text>
+        </View>
       </LinearGradient>
 
       {/* Month navigation */}
@@ -1111,14 +1116,32 @@ export function RulesCard({
             </>
           )}
 
-          {/* Today: already checked in */}
+          {/* Today: already checked in - show rules with strikethrough */}
           {isSelectedToday && hasCheckedInToday && (
-            <View style={rulesCardStyles.completedMessage}>
-              <Text style={rulesCardStyles.completedText}>
-                {checkedCount === rules.length ? 'Perfect adherence!' : `${checkedCount}/${rules.length} rules followed`}
-              </Text>
+            <>
+              <View style={rulesCardStyles.rulesList}>
+                {rules.map((rule) => {
+                  const wasChecked = checkIn?.checkedRules.includes(rule.id) ?? false;
+                  return (
+                    <View key={rule.id} style={rulesCardStyles.ruleItemCompleted}>
+                      <View style={[rulesCardStyles.ruleCheckbox, rulesCardStyles.ruleCheckboxChecked]}>
+                        <Text style={rulesCardStyles.ruleCheckmark}>✓</Text>
+                      </View>
+                      <Text
+                        style={[
+                          rulesCardStyles.ruleText,
+                          rulesCardStyles.ruleTextCompleted,
+                          !wasChecked && rulesCardStyles.ruleTextMissed,
+                        ]}
+                      >
+                        {rule.title}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
               <Text style={rulesCardStyles.completedSubtext}>Come back tomorrow</Text>
-            </View>
+            </>
           )}
 
           {/* Past day: read-only view */}
@@ -1176,14 +1199,24 @@ const rulesCardStyles = StyleSheet.create({
     elevation: 3,
   },
   gradientHeader: {
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.lg,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 1.5,
+  },
+  headerLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   monthNav: {
     flexDirection: 'row',
@@ -1353,6 +1386,20 @@ const rulesCardStyles = StyleSheet.create({
   ruleTextChecked: {
     color: tokens.colors.muted,
   },
+  ruleItemCompleted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.xs,
+  },
+  ruleTextCompleted: {
+    color: tokens.colors.muted,
+    textDecorationLine: 'line-through',
+    textDecorationStyle: 'solid',
+  },
+  ruleTextMissed: {
+    color: tokens.colors.danger,
+    textDecorationLine: 'line-through',
+  },
   completeButton: {
     borderRadius: tokens.radius.sm,
     overflow: 'hidden',
@@ -1382,7 +1429,8 @@ const rulesCardStyles = StyleSheet.create({
   completedSubtext: {
     ...tokens.typography.small,
     color: tokens.colors.muted,
-    marginTop: 2,
+    marginTop: tokens.spacing.sm,
+    textAlign: 'center',
   },
   pastDayView: {
     paddingVertical: tokens.spacing.sm,
@@ -1656,13 +1704,20 @@ const styles = StyleSheet.create({
   ruleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: tokens.colors.card,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    paddingVertical: tokens.spacing.sm,
+    paddingRight: tokens.spacing.md,
+    marginBottom: tokens.spacing.sm,
+    overflow: 'hidden',
+  },
+  ruleAccentBar: {
+    width: 4,
+    alignSelf: 'stretch',
+    backgroundColor: '#10B981',
+    marginRight: tokens.spacing.md,
   },
   ruleTitle: {
     ...tokens.typography.body,
@@ -1670,10 +1725,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   deleteIcon: {
-    fontSize: 28,
-    fontWeight: '300',
-    color: tokens.colors.danger,
-    marginLeft: tokens.spacing.md,
+    fontSize: 22,
+    fontWeight: '400',
+    color: tokens.colors.muted,
+    marginLeft: tokens.spacing.sm,
   },
 
   // Calendar Tile
