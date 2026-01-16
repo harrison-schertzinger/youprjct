@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Pressable, Text, StyleSheet, Animated, View } from 'react-native';
+import { Pressable, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
@@ -11,41 +11,26 @@ type Props = {
 
 /**
  * Premium "Day Won" button - the central action of the app.
- * Features emerald gradient, subtle pulse animation, and strong haptic feedback.
+ * Features blue gradient matching calendar "today", subtle pulse animation, and strong haptic feedback.
  */
 export function DayWonButton({ isWon, onPress }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const glowAnim = useRef(new Animated.Value(0.3)).current;
 
   // Subtle pulse animation when day is not yet won
   useEffect(() => {
     if (!isWon) {
       const pulse = Animated.loop(
         Animated.sequence([
-          Animated.parallel([
-            Animated.timing(pulseAnim, {
-              toValue: 1.02,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(glowAnim, {
-              toValue: 0.6,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(pulseAnim, {
-              toValue: 1,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(glowAnim, {
-              toValue: 0.3,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
+          Animated.timing(pulseAnim, {
+            toValue: 1.01,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
         ])
       );
       pulse.start();
@@ -53,9 +38,8 @@ export function DayWonButton({ isWon, onPress }: Props) {
     } else {
       // Reset when won
       pulseAnim.setValue(1);
-      glowAnim.setValue(0);
     }
-  }, [isWon, pulseAnim, glowAnim]);
+  }, [isWon, pulseAnim]);
 
   const handlePress = () => {
     if (!isWon) {
@@ -73,9 +57,9 @@ export function DayWonButton({ isWon, onPress }: Props) {
         onPress={handlePress}
       >
         <LinearGradient
-          colors={['#D1FAE5', '#A7F3D0', '#6EE7B7']}
+          colors={['#E0E7FF', '#DDD6FE', '#D8D5FE']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={styles.wonButton}
         >
           <Text style={styles.wonCheckmark}>✓</Text>
@@ -90,20 +74,11 @@ export function DayWonButton({ isWon, onPress }: Props) {
       style={({ pressed }) => [styles.container, pressed && styles.pressed]}
       onPress={handlePress}
     >
-      <Animated.View
-        style={[
-          styles.glowWrapper,
-          {
-            transform: [{ scale: pulseAnim }],
-            opacity: glowAnim,
-          },
-        ]}
-      />
       <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: pulseAnim }] }]}>
         <LinearGradient
-          colors={['#10B981', '#059669', '#047857']}
+          colors={['#6366F1', '#5B6EF5', '#5558E8']}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={styles.gradient}
         >
           <Text style={styles.buttonText}>Win The Day</Text>
@@ -115,39 +90,29 @@ export function DayWonButton({ isWon, onPress }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
   pressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
-  glowWrapper: {
-    position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: tokens.radius.md + 4,
-    backgroundColor: '#10B981',
-  },
   buttonWrapper: {
-    width: '100%',
+    alignSelf: 'stretch',
     borderRadius: tokens.radius.md,
-    overflow: 'hidden',
-    // Shadow for depth
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    // Tight shadow - sun directly above, casting evenly on 3 sides
+    shadowColor: '#3730A3',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
   },
   gradient: {
     paddingVertical: tokens.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: tokens.radius.md,
+    overflow: 'hidden',
   },
   buttonText: {
     fontSize: 18,
@@ -156,29 +121,29 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   wonButton: {
-    width: '100%',
+    alignSelf: 'stretch',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     gap: tokens.spacing.sm,
-    // Subtle shadow
-    shadowColor: '#059669',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    // Tight shadow matching main button
+    shadowColor: '#3730A3',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 2,
   },
   wonCheckmark: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#047857',
+    color: '#4338CA',
   },
   wonText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#047857',
+    color: '#4338CA',
     letterSpacing: 0.5,
   },
 });
