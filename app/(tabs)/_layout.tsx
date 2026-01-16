@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Image } from 'react-native';
 
 import { FloatingTabBar } from '@/components/ui/FloatingTabBar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -19,16 +20,7 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen name="explore" options={{ href: null }} />
 
-      {/* Main tabs */}
-      <Tabs.Screen
-        name="you"
-        options={{
-          title: 'You',
-          tabBarIcon: ({ color, size }) => (
-            <IconSymbol size={size} name="person.fill" color={color} />
-          ),
-        }}
-      />
+      {/* Main tabs - Order: Discipline | Goals | You (center) | Mind | Body */}
       <Tabs.Screen
         name="discipline"
         options={{
@@ -39,11 +31,28 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="body"
+        name="goals"
         options={{
-          title: 'Body',
+          title: 'Goals',
           tabBarIcon: ({ color, size }) => (
-            <IconSymbol size={size} name="figure.strengthtraining.traditional" color={color} />
+            <IconSymbol size={size} name="target" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="you"
+        options={{
+          title: 'You',
+          tabBarIcon: ({ focused, size }) => (
+            <Image
+              source={require('@/assets/images/you-icon.png')}
+              style={{
+                width: size,
+                height: size,
+                opacity: focused ? 1 : 0.6,
+              }}
+              resizeMode="contain"
+            />
           ),
         }}
       />
@@ -57,11 +66,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="goals"
+        name="body"
         options={{
-          title: 'Goals',
+          title: 'Body',
           tabBarIcon: ({ color, size }) => (
-            <IconSymbol size={size} name="target" color={color} />
+            <IconSymbol size={size} name="figure.strengthtraining.traditional" color={color} />
           ),
         }}
       />
