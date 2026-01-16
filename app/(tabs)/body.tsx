@@ -62,7 +62,7 @@ export default function BodyScreen() {
   // Data hooks
   const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading, refreshing, refresh } = useActiveTrack();
   const { enrichedWorkouts, loading: workoutsLoading, reload: reloadWorkouts } = useTrainingDay(activeTrackId, selectedDate);
-  const { movements: majorMovements, loading: movementsLoading } = useMajorMovements();
+  const { movements: majorMovements, loading: movementsLoading, reload: reloadMajorMovements } = useMajorMovements();
   const { stats: trainingStats, reload: reloadStats } = useTrainingStats();
 
   // Modals
@@ -222,7 +222,8 @@ export default function BodyScreen() {
     showToast('PR saved');
     setPrModalVisible(false);
     setSelectedPRMovement(null);
-    // Note: majorMovements will update on next refresh/focus
+    // Reload major movements to show the new PR
+    reloadMajorMovements();
   };
 
   const handleRefresh = async () => {

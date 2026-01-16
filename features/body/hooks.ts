@@ -14,6 +14,7 @@ import {
   forceRefreshFromSupabase,
 } from '@/lib/repositories/TrainingRepo';
 import { getTrainingStats, type TrainingStats } from '@/lib/repositories/ActivityRepo';
+import { getUserPRs } from '@/lib/repositories/ResultsRepo';
 import type { MajorMovement } from './types';
 
 // ========== Enriched Movement Type ==========
@@ -195,26 +196,38 @@ export function useExercises() {
 
 // ========== Major Movements Hook ==========
 
-export function useMajorMovements(): { movements: MajorMovement[]; loading: boolean } {
+export function useMajorMovements(): { movements: MajorMovement[]; loading: boolean; reload: () => void } {
   const [movements, setMovements] = useState<MajorMovement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
 
   useEffect(() => {
     loadMajorMovements();
-  }, []);
+  }, [reloadTrigger]);
 
   const loadMajorMovements = async () => {
     try {
-      const exercises = await getMajorExercises();
+      const [exercises, prs] = await Promise.all([
+        getMajorExercises(),
+        getUserPRs(),
+      ]);
 
-      // Map to MajorMovement type (without real data for lastLogged, bestWeight, trend yet)
-      const mapped: MajorMovement[] = exercises.map((ex) => ({
-        id: ex.id,
-        name: ex.title,
-        lastLogged: undefined,
-        bestWeight: undefined,
-        trend: 'stable',
-      }));
+      // Create a map of exercise ID to PR data for quick lookup
+      const prMap = new Map(prs.map((pr) => [pr.exerciseId, pr]));
+
+      // Map to MajorMovement type with actual PR data
+      const mapped: MajorMovement[] = exercises.map((ex) => {
+        const pr = prMap.get(ex.id);
+        return {
+          id: ex.id,
+          name: ex.title,
+          lastLogged: pr?.lastLoggedDateISO
+            ? formatRelativeDate(pr.lastLoggedDateISO)
+            : undefined,
+          bestWeight: pr?.bestValue,
+          trend: 'stable',
+        };
+      });
 
       setMovements(mapped);
     } catch (error) {
@@ -224,10 +237,28 @@ export function useMajorMovements(): { movements: MajorMovement[]; loading: bool
     }
   };
 
+  const reload = useCallback(() => {
+    setReloadTrigger((prev) => prev + 1);
+  }, []);
+
   return {
     movements,
     loading,
+    reload,
   };
+}
+
+// Helper to format relative date for PR display
+function formatRelativeDate(dateISO: string): string {
+  const date = new Date(dateISO);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ========== Training Stats Hook ==========

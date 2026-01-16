@@ -1,5 +1,5 @@
 // Body feature components
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -82,20 +82,68 @@ type MovementTileProps = {
   onPress: () => void;
 };
 
+// Round to nearest 5 lbs (common in weightlifting)
+function roundToFive(value: number): number {
+  return Math.round(value / 5) * 5;
+}
+
+// Generate percentage breakdown for a PR weight
+function getPercentages(maxWeight: number): { percent: number; weight: number }[] {
+  const percentages = [95, 90, 85, 80, 75, 70, 65];
+  return percentages.map((p) => ({
+    percent: p,
+    weight: roundToFive(maxWeight * (p / 100)),
+  }));
+}
+
 export function MovementTile({ movement, onPress }: MovementTileProps) {
+  const [expanded, setExpanded] = useState(false);
   const hasValue = movement.bestWeight !== undefined;
 
+  const handlePress = () => {
+    if (hasValue) {
+      setExpanded(!expanded);
+    } else {
+      onPress();
+    }
+  };
+
+  const percentages = hasValue ? getPercentages(movement.bestWeight!) : [];
+
   return (
-    <Pressable style={styles.prTile} onPress={onPress}>
-      <Text style={styles.prMovementName}>{movement.name}</Text>
+    <Pressable
+      style={[styles.prTile, expanded && styles.prTileExpanded]}
+      onPress={handlePress}
+    >
+      <View style={styles.prTileHeader}>
+        <Text style={styles.prMovementName}>{movement.name}</Text>
+        {hasValue && (
+          <Text style={styles.prExpandIcon}>{expanded ? '▾' : '▸'}</Text>
+        )}
+      </View>
       {hasValue ? (
         <>
           <View style={styles.prValueRow}>
             <Text style={styles.prValue}>{movement.bestWeight}</Text>
             <Text style={styles.prUnit}>lbs</Text>
           </View>
-          {movement.lastLogged && (
+          {!expanded && movement.lastLogged && (
             <Text style={styles.prLastLogged}>{movement.lastLogged}</Text>
+          )}
+          {expanded && (
+            <View style={styles.prPercentageSection}>
+              <View style={styles.prPercentageGrid}>
+                {percentages.map(({ percent, weight }) => (
+                  <View key={percent} style={styles.prPercentageRow}>
+                    <Text style={styles.prPercentageLabel}>{percent}%</Text>
+                    <Text style={styles.prPercentageValue}>{weight}</Text>
+                  </View>
+                ))}
+              </View>
+              <Pressable style={styles.prEditButton} onPress={onPress}>
+                <Text style={styles.prEditButtonText}>Edit PR</Text>
+              </Pressable>
+            </View>
           )}
         </>
       ) : (
@@ -149,7 +197,14 @@ export function PRInputModal({
   onClose,
   onSubmit,
 }: PRInputModalProps) {
-  const [value, setValue] = useState(currentValue?.toString() || '');
+  const [value, setValue] = useState('');
+
+  // Reset value when modal opens or currentValue changes
+  useEffect(() => {
+    if (visible) {
+      setValue(currentValue?.toString() || '');
+    }
+  }, [visible, currentValue]);
 
   const handleSubmit = () => {
     const numValue = parseInt(value) || 0;
@@ -1145,11 +1200,23 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.border,
     padding: tokens.spacing.md,
   },
+  prTileExpanded: {
+    width: '100%',
+  },
+  prTileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   prMovementName: {
     fontSize: 12,
     fontWeight: '600',
     color: tokens.colors.muted,
     marginBottom: tokens.spacing.xs,
+  },
+  prExpandIcon: {
+    fontSize: 12,
+    color: tokens.colors.muted,
   },
   prValueRow: {
     flexDirection: 'row',
@@ -1176,6 +1243,46 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: tokens.colors.tint,
     marginTop: tokens.spacing.sm,
+  },
+  prPercentageSection: {
+    marginTop: tokens.spacing.md,
+    paddingTop: tokens.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: tokens.colors.border,
+  },
+  prPercentageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: tokens.spacing.xs,
+  },
+  prPercentageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.bg,
+    borderRadius: tokens.radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.sm,
+    minWidth: 80,
+  },
+  prPercentageLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    width: 32,
+  },
+  prPercentageValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  prEditButton: {
+    marginTop: tokens.spacing.md,
+    alignSelf: 'flex-start',
+  },
+  prEditButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.tint,
   },
   emptyPRText: {
     fontSize: 14,
