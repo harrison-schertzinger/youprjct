@@ -22,8 +22,8 @@ const TAB_BAR_MARGIN = 16;
 const TAB_BAR_WIDTH = Math.min(SCREEN_WIDTH - TAB_BAR_MARGIN * 2, 400);
 
 // Icon sizes
-const ICON_SIZE_REGULAR = 28;
-const ICON_SIZE_CENTER = 44;
+const ICON_SIZE_REGULAR = 32;
+const ICON_SIZE_CENTER = 52;
 
 // Routes to hide from tab bar
 const HIDDEN_ROUTES = ['index', 'explore'];
@@ -75,10 +75,17 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
           };
 
           // Get the icon - pass larger size for center tab
+          // Selected tabs turn blue (tint), unselected are muted
           const iconSize = isCenter ? ICON_SIZE_CENTER : ICON_SIZE_REGULAR;
+          const iconColor = isCenter
+            ? tokens.colors.text // Center icon always black
+            : isFocused
+              ? tokens.colors.tint // Selected = blue
+              : tokens.colors.muted; // Unselected = muted
+
           const icon = options.tabBarIcon?.({
             focused: isFocused,
-            color: isFocused ? tokens.colors.text : tokens.colors.muted,
+            color: iconColor,
             size: iconSize,
           });
 

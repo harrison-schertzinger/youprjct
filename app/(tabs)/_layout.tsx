@@ -43,13 +43,12 @@ export default function TabLayout() {
         name="you"
         options={{
           title: 'You',
-          tabBarIcon: ({ focused, size }) => (
+          tabBarIcon: ({ size }) => (
             <Image
               source={require('@/assets/images/you-icon.png')}
               style={{
                 width: size,
                 height: size,
-                opacity: focused ? 1 : 0.6,
               }}
               resizeMode="contain"
             />
