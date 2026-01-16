@@ -1,14 +1,15 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Link } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PremiumGate } from '@/components/ui/PremiumGate';
-import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
-import { PageLabel } from '@/components/ui/PageLabel';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { tokens } from '@/design/tokens';
+import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
+import type { Profile } from '@/lib/training/types';
 import {
   RulesCard,
   AddNewRuleButton,
@@ -69,6 +70,10 @@ export default function DisciplineScreen() {
   const [rulesHistory, setRulesHistory] = useState<RulesAdherenceHistory>({});
   const [todayCheckIn, setTodayCheckIn] = useState<TodayRulesCheckIn | null>(null);
 
+  // Profile state
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
+
   const loadData = useCallback(async () => {
     try {
       const [
@@ -98,8 +103,18 @@ export default function DisciplineScreen() {
   useFocusEffect(
     useCallback(() => {
       loadData();
+      // Load profile data
+      Promise.all([getProfile(), getSupabaseProfile()]).then(([localProfile, sbProfile]) => {
+        setProfile(localProfile);
+        setSupabaseProfile(sbProfile);
+      });
     }, [loadData])
   );
+
+  // Derived profile values
+  const displayName = supabaseProfile?.display_name ?? profile?.displayName ?? 'Athlete';
+  const avatarLetter = displayName.charAt(0).toUpperCase();
+  const streakCount = profile?.onAppStreakDays ?? 0;
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
@@ -227,19 +242,9 @@ export default function DisciplineScreen() {
   // Calculate rules stats
   const currentStreak = calculateRulesStreak(rulesHistory);
   const bestStreak = calculateBestRulesStreak(rulesHistory);
-
-  // Calculate KPI stats
-  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
-    const challengeDisplay = challenge
-      ? `Day ${challenge.completedDays.length}/${challenge.totalDays}`
-      : '—';
-
-    return [
-      { label: 'STREAK', value: `${currentStreak}d`, color: tokens.colors.action },
-      { label: 'BEST', value: `${bestStreak}d`, color: tokens.colors.tint },
-      { label: 'CHALLENGE', value: challengeDisplay },
-    ];
-  }, [currentStreak, bestStreak, challenge]);
+  const challengeDisplay = challenge
+    ? `${challenge.completedDays.length}/${challenge.totalDays}`
+    : '—';
 
   return (
     <PremiumGate
@@ -260,8 +265,35 @@ export default function DisciplineScreen() {
             />
           }
         >
-          <PageLabel label="DISCIPLINE" />
-          <KPIBar stats={kpiStats} />
+          {/* Unified Header: Profile + KPI Bar */}
+          <View style={styles.headerRow}>
+            <Link href="/profile" asChild>
+              <TouchableOpacity style={styles.profileContainer}>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{avatarLetter}</Text>
+                </View>
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+                </View>
+              </TouchableOpacity>
+            </Link>
+            <View style={styles.kpiBar}>
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>STREAK</Text>
+                <Text style={[styles.kpiValue, { color: tokens.colors.action }]}>{currentStreak}d</Text>
+              </View>
+              <View style={styles.kpiDivider} />
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>BEST</Text>
+                <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>{bestStreak}d</Text>
+              </View>
+              <View style={styles.kpiDivider} />
+              <View style={styles.kpiBlock}>
+                <Text style={styles.kpiLabel}>CHALLENGE</Text>
+                <Text style={styles.kpiValue}>{challengeDisplay}</Text>
+              </View>
+            </View>
+          </View>
 
           <SegmentedControl
             segments={['Challenge', 'Rules']}
@@ -335,6 +367,89 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
   },
+
+  // Unified Header Row
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.sm,
+    marginHorizontal: 8,
+    gap: tokens.spacing.sm,
+  },
+  profileContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: tokens.colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: tokens.colors.card,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  streakBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -6,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  streakBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.text,
+  },
+  kpiBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    paddingVertical: tokens.spacing.xs + 2,
+    paddingHorizontal: tokens.spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  kpiBlock: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  kpiLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+  kpiValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: tokens.colors.text,
+  },
+  kpiDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: tokens.colors.border,
+    marginHorizontal: tokens.spacing.xs,
+  },
+
+  // Content sections
   section: {
     marginBottom: tokens.spacing.lg,
   },
