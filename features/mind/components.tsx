@@ -529,15 +529,13 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.spacing.xl,
   },
   timerText: {
-    fontSize: 64,
-    fontWeight: '200',
+    fontSize: 56,
+    fontWeight: '400',
     color: tokens.colors.text,
-    letterSpacing: -2,
     fontVariant: ['tabular-nums'],
   },
   timerTextActive: {
     color: MIND_ACCENT,
-    fontWeight: '300',
   },
   bookSelector: {
     flexDirection: 'row',
