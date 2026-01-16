@@ -21,6 +21,8 @@ import {
 } from '@/lib/repositories/ProfileRepo';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useMembership } from '@/hooks/useMembership';
+import { clearAllAppData, clearTrainingCache } from '@/lib/storage';
+import { useToast } from '@/components/ui/Toast';
 import type { Profile } from '@/lib/training/types';
 
 export default function ProfileScreen() {
@@ -30,8 +32,10 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   const { isPremium, isLoading: membershipLoading } = useMembership();
+  const { showToast } = useToast();
 
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
@@ -81,6 +85,30 @@ export default function ProfileScreen() {
   const avatarInitial = displayName.charAt(0).toUpperCase();
   const hasSupabaseProfile = supabaseProfile !== null;
   const supabaseAvailable = isSupabaseConfigured();
+
+  const handleClearTrainingCache = async () => {
+    setIsClearing(true);
+    try {
+      await clearTrainingCache();
+      showToast('Training cache cleared', 'success');
+    } catch (error) {
+      showToast('Failed to clear cache', 'error');
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    setIsClearing(true);
+    try {
+      await clearAllAppData();
+      showToast('All data cleared - restart app', 'info');
+    } catch (error) {
+      showToast('Failed to clear data', 'error');
+    } finally {
+      setIsClearing(false);
+    }
+  };
 
   return (
     <>
@@ -207,6 +235,34 @@ export default function ProfileScreen() {
               </Text>
             </View>
           )}
+
+          {/* Troubleshooting Section */}
+          <Card style={styles.troubleshootingCard}>
+            <Text style={styles.troubleshootingTitle}>Troubleshooting</Text>
+            <Text style={styles.troubleshootingSubtitle}>
+              Use these options if you encounter sync issues
+            </Text>
+            <View style={styles.troubleshootingButtons}>
+              <TouchableOpacity
+                style={styles.troubleshootButton}
+                onPress={handleClearTrainingCache}
+                disabled={isClearing}
+              >
+                <Text style={styles.troubleshootButtonText}>
+                  {isClearing ? 'Clearing...' : 'Reset Training Data'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.troubleshootButton, styles.destructiveButton]}
+                onPress={handleClearAllData}
+                disabled={isClearing}
+              >
+                <Text style={[styles.troubleshootButtonText, styles.destructiveText]}>
+                  Clear All Data
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
         </View>
       </ScreenContainer>
     </>
@@ -342,5 +398,45 @@ const styles = StyleSheet.create({
     ...tokens.typography.body,
     color: tokens.colors.muted,
     textAlign: 'center',
+  },
+  troubleshootingCard: {
+    width: '100%',
+    marginTop: tokens.spacing.xl * 2,
+  },
+  troubleshootingTitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: tokens.spacing.xs,
+  },
+  troubleshootingSubtitle: {
+    ...tokens.typography.small,
+    color: tokens.colors.muted,
+    marginBottom: tokens.spacing.md,
+  },
+  troubleshootingButtons: {
+    gap: tokens.spacing.sm,
+  },
+  troubleshootButton: {
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    backgroundColor: tokens.colors.bg,
+    alignItems: 'center',
+  },
+  troubleshootButtonText: {
+    ...tokens.typography.small,
+    color: tokens.colors.text,
+    fontWeight: '600',
+  },
+  destructiveButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#EF4444',
+  },
+  destructiveText: {
+    color: '#EF4444',
   },
 });
