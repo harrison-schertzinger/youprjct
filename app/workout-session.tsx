@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { tokens } from '@/design/tokens';
 import type { EnrichedMovement } from '@/features/body/hooks';
 import { useTrainingDay } from '@/features/body/hooks';
@@ -266,9 +267,7 @@ export default function WorkoutSessionScreen() {
   if (loading || !timerRestored) {
     return (
       <ScreenContainer>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading workout...</Text>
-        </View>
+        <LoadingState fullScreen />
       </ScreenContainer>
     );
   }
@@ -376,15 +375,6 @@ export default function WorkoutSessionScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
   },
   errorContainer: {
     flex: 1,
