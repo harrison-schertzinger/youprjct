@@ -7,15 +7,8 @@ import { tokens } from '@/design/tokens';
 
 export type GlowColor = 'amber' | 'blue' | 'indigo';
 
-// Shadow colors (amplified for visibility)
-const GLOW_COLORS: Record<GlowColor, string> = {
-  amber: 'rgba(245, 158, 11, 0.4)',
-  blue: 'rgba(59, 130, 246, 0.4)',
-  indigo: 'rgba(99, 102, 241, 0.4)',
-};
-
-// Title text colors (solid accent)
-const TITLE_COLORS: Record<GlowColor, string> = {
+// Accent colors for title and left border
+const ACCENT_COLORS: Record<GlowColor, string> = {
   amber: '#F59E0B',
   blue: '#3B82F6',
   indigo: '#6366F1',
@@ -40,43 +33,35 @@ export function GlowCard({
   onAdd,
   style,
 }: Props) {
-  const glowColor = GLOW_COLORS[glow];
-  const titleColor = TITLE_COLORS[glow];
+  const accentColor = ACCENT_COLORS[glow];
   const hasItems = totalCount > 0;
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          shadowColor: glowColor,
-          // iOS shadow with color (amplified)
-          shadowOpacity: 1,
-          shadowRadius: 16,
-          shadowOffset: { width: 0, height: 6 },
-        },
-        style,
-      ]}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: titleColor }]}>{title.toUpperCase()}</Text>
-        <View style={styles.headerRight}>
-          {hasItems && (
-            <Text style={styles.progress}>
-              {completedCount}/{totalCount}
-            </Text>
-          )}
-          {onAdd && (
-            <Pressable style={styles.addButton} onPress={onAdd} hitSlop={8}>
-              <Text style={styles.addButtonText}>+</Text>
-            </Pressable>
-          )}
-        </View>
-      </View>
+    <View style={[styles.card, style]}>
+      {/* Thin left accent line */}
+      <View style={[styles.accentLine, { backgroundColor: accentColor }]} />
 
-      {/* Content */}
-      <View style={styles.content}>{children}</View>
+      <View style={styles.cardContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: accentColor }]}>{title.toUpperCase()}</Text>
+          <View style={styles.headerRight}>
+            {hasItems && (
+              <Text style={styles.progress}>
+                {completedCount}/{totalCount}
+              </Text>
+            )}
+            {onAdd && (
+              <Pressable style={styles.addButton} onPress={onAdd} hitSlop={8}>
+                <Text style={styles.addButtonText}>+</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>{children}</View>
+      </View>
     </View>
   );
 }
@@ -88,8 +73,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.border,
     overflow: 'hidden',
-    // Android elevation (glow color doesn't apply on Android, but elevation still works)
-    elevation: 4,
+    flexDirection: 'row',
+    ...tokens.shadow.ios,
+    ...tokens.shadow.android,
+  },
+  accentLine: {
+    width: 3,
+  },
+  cardContent: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
