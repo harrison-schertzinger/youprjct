@@ -53,18 +53,17 @@ const styles = StyleSheet.create({
     width: 1,
     height: 32,
     backgroundColor: tokens.colors.border,
-    marginHorizontal: 10,
+    marginHorizontal: tokens.spacing.sm,
   },
   label: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...tokens.typography.caption,
     color: tokens.colors.muted,
     marginBottom: 2,
     letterSpacing: 0.5,
   },
   value: {
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: '800',
     color: tokens.colors.text,
   },
 });

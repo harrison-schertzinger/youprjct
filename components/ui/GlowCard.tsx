@@ -92,19 +92,17 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.spacing.sm,
   },
   title: {
-    fontSize: 11,
-    fontWeight: '700',
+    ...tokens.typography.caption,
     color: tokens.colors.muted,
     letterSpacing: 0.5,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: tokens.spacing.sm,
   },
   progress: {
-    fontSize: 12,
-    fontWeight: '600',
+    ...tokens.typography.tiny,
     color: tokens.colors.muted,
   },
   addButton: {
