@@ -1,16 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient, type TrainingTrack, type Exercise, type TrainingDay, type Workout, type ScheduledMovement } from '@/lib/supabase';
-
-// Helper to get Monday of a given week
-function getMondayOfWeek(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return d.toISOString().split('T')[0];
-}
+import type { TrainingTrack, Exercise, TrainingDay, Workout } from '@/lib/supabase';
 
 // Helper to get week dates
 function getWeekDates(mondayISO: string): string[] {
@@ -40,8 +31,6 @@ export default function PlannerPage() {
   const [workoutTitle, setWorkoutTitle] = useState('');
   const [movements, setMovements] = useState<{ exerciseId: string; targetText: string; notes: string }[]>([]);
 
-  const supabase = createBrowserClient();
-
   // Calculate current week's Monday
   const today = new Date();
   const currentMonday = new Date(today);
@@ -62,42 +51,45 @@ export default function PlannerPage() {
   async function loadInitialData() {
     setLoading(true);
 
-    const [tracksRes, exercisesRes] = await Promise.all([
-      supabase.from('training_tracks').select('*').order('title'),
-      supabase.from('exercises').select('*').order('title'),
-    ]);
+    try {
+      const [tracksRes, exercisesRes] = await Promise.all([
+        fetch('/api/tracks'),
+        fetch('/api/exercises'),
+      ]);
 
-    if (tracksRes.data) {
-      setTracks(tracksRes.data);
-      if (tracksRes.data.length > 0 && !selectedTrackId) {
-        setSelectedTrackId(tracksRes.data[0].id);
+      if (tracksRes.ok) {
+        const tracksData = await tracksRes.json();
+        setTracks(tracksData || []);
+        if (tracksData.length > 0 && !selectedTrackId) {
+          setSelectedTrackId(tracksData[0].id);
+        }
       }
-    }
 
-    if (exercisesRes.data) {
-      setExercises(exercisesRes.data);
+      if (exercisesRes.ok) {
+        const exercisesData = await exercisesRes.json();
+        setExercises(exercisesData || []);
+      }
+    } catch (error) {
+      console.error('Error loading initial data:', error);
     }
 
     setLoading(false);
   }
 
   async function loadTrainingDays() {
-    const { data, error } = await supabase
-      .from('training_days')
-      .select('*')
-      .eq('track_id', selectedTrackId)
-      .eq('week_start_iso', mondayISO);
+    try {
+      const res = await fetch(`/api/training-days?track_id=${selectedTrackId}&week_start_iso=${mondayISO}`);
+      if (!res.ok) throw new Error('Failed to load training days');
+      const data = await res.json();
 
-    if (error) {
+      const dayMap: Record<string, TrainingDay> = {};
+      (data || []).forEach((day: TrainingDay) => {
+        dayMap[day.date_iso] = day;
+      });
+      setTrainingDays(dayMap);
+    } catch (error) {
       console.error('Error loading training days:', error);
-      return;
     }
-
-    const dayMap: Record<string, TrainingDay> = {};
-    (data || []).forEach((day) => {
-      dayMap[day.date_iso] = day;
-    });
-    setTrainingDays(dayMap);
   }
 
   function openWorkoutEditor(dateISO: string) {
@@ -158,45 +150,53 @@ export default function PlannerPage() {
 
     const existingDay = trainingDays[editingDay];
 
-    if (existingDay) {
-      // Update existing day
-      const { error } = await supabase
-        .from('training_days')
-        .update({
-          workouts: [workout],
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingDay.id);
+    try {
+      if (existingDay) {
+        // Update existing day
+        const res = await fetch('/api/training-days', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: existingDay.id,
+            workouts: [workout],
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error updating training day:', error);
-        alert('Failed to save workout');
-        setSaving(false);
-        return;
-      }
-    } else {
-      // Create new day
-      const { error } = await supabase.from('training_days').insert({
-        id: `day-${Date.now()}`,
-        track_id: selectedTrackId,
-        date_iso: editingDay,
-        week_start_iso: mondayISO,
-        workouts: [workout],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to update training day');
+        }
+      } else {
+        // Create new day
+        const res = await fetch('/api/training-days', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `day-${Date.now()}`,
+            track_id: selectedTrackId,
+            date_iso: editingDay,
+            week_start_iso: mondayISO,
+            workouts: [workout],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error creating training day:', error);
-        alert('Failed to save workout');
-        setSaving(false);
-        return;
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to create training day');
+        }
       }
+
+      setEditingDay(null);
+      loadTrainingDays();
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save workout');
     }
 
     setSaving(false);
-    setEditingDay(null);
-    loadTrainingDays();
   }
 
   async function clearDay(dateISO: string) {
@@ -205,15 +205,17 @@ export default function PlannerPage() {
 
     if (!confirm('Clear this day\'s workout?')) return;
 
-    const { error } = await supabase.from('training_days').delete().eq('id', day.id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/training-days?id=${day.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to clear day');
+      }
+      loadTrainingDays();
+    } catch (error) {
       console.error('Error clearing day:', error);
-      alert('Failed to clear day');
-      return;
+      alert(error instanceof Error ? error.message : 'Failed to clear day');
     }
-
-    loadTrainingDays();
   }
 
   if (loading) {

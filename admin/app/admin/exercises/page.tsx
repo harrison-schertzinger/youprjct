@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient, type Exercise } from '@/lib/supabase';
+import type { Exercise } from '@/lib/supabase';
 
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -15,23 +15,19 @@ export default function ExercisesPage() {
     is_major: false,
   });
 
-  const supabase = createBrowserClient();
-
   useEffect(() => {
     loadExercises();
   }, []);
 
   async function loadExercises() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('exercises')
-      .select('*')
-      .order('title');
-
-    if (error) {
-      console.error('Error loading exercises:', error);
-    } else {
+    try {
+      const res = await fetch('/api/exercises');
+      if (!res.ok) throw new Error('Failed to load exercises');
+      const data = await res.json();
       setExercises(data || []);
+    } catch (error) {
+      console.error('Error loading exercises:', error);
     }
     setLoading(false);
   }
@@ -39,59 +35,70 @@ export default function ExercisesPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (editingId) {
-      // Update existing
-      const { error } = await supabase
-        .from('exercises')
-        .update({
-          title: formData.title,
-          score_type: formData.score_type,
-          sort_direction: formData.sort_direction,
-          is_major: formData.is_major,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingId);
+    try {
+      if (editingId) {
+        // Update existing
+        const res = await fetch('/api/exercises', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingId,
+            title: formData.title,
+            score_type: formData.score_type,
+            sort_direction: formData.sort_direction,
+            is_major: formData.is_major,
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error updating exercise:', error);
-        alert('Failed to update exercise');
-        return;
-      }
-    } else {
-      // Create new
-      const { error } = await supabase.from('exercises').insert({
-        id: `exercise-${Date.now()}`,
-        title: formData.title,
-        score_type: formData.score_type,
-        sort_direction: formData.sort_direction,
-        is_major: formData.is_major,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to update exercise');
+        }
+      } else {
+        // Create new
+        const res = await fetch('/api/exercises', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `exercise-${Date.now()}`,
+            title: formData.title,
+            score_type: formData.score_type,
+            sort_direction: formData.sort_direction,
+            is_major: formData.is_major,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error creating exercise:', error);
-        alert('Failed to create exercise');
-        return;
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to create exercise');
+        }
       }
+
+      resetForm();
+      loadExercises();
+    } catch (error) {
+      console.error('Error saving exercise:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save exercise');
     }
-
-    resetForm();
-    loadExercises();
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this exercise?')) return;
 
-    const { error } = await supabase.from('exercises').delete().eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/exercises?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to delete exercise');
+      }
+      loadExercises();
+    } catch (error) {
       console.error('Error deleting exercise:', error);
-      alert('Failed to delete exercise');
-      return;
+      alert(error instanceof Error ? error.message : 'Failed to delete exercise');
     }
-
-    loadExercises();
   }
 
   function handleEdit(exercise: Exercise) {

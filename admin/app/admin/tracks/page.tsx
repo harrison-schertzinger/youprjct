@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient, type TrainingTrack } from '@/lib/supabase';
+import type { TrainingTrack } from '@/lib/supabase';
 
 export default function TracksPage() {
   const [tracks, setTracks] = useState<TrainingTrack[]>([]);
@@ -12,23 +12,19 @@ export default function TracksPage() {
     title: '',
   });
 
-  const supabase = createBrowserClient();
-
   useEffect(() => {
     loadTracks();
   }, []);
 
   async function loadTracks() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('training_tracks')
-      .select('*')
-      .order('title');
-
-    if (error) {
-      console.error('Error loading tracks:', error);
-    } else {
+    try {
+      const res = await fetch('/api/tracks');
+      if (!res.ok) throw new Error('Failed to load tracks');
+      const data = await res.json();
       setTracks(data || []);
+    } catch (error) {
+      console.error('Error loading tracks:', error);
     }
     setLoading(false);
   }
@@ -36,39 +32,48 @@ export default function TracksPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (editingId) {
-      // Update existing
-      const { error } = await supabase
-        .from('training_tracks')
-        .update({
-          title: formData.title,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingId);
+    try {
+      if (editingId) {
+        // Update existing
+        const res = await fetch('/api/tracks', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingId,
+            title: formData.title,
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error updating track:', error);
-        alert('Failed to update track');
-        return;
-      }
-    } else {
-      // Create new
-      const { error } = await supabase.from('training_tracks').insert({
-        id: `track-${Date.now()}`,
-        title: formData.title,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to update track');
+        }
+      } else {
+        // Create new
+        const res = await fetch('/api/tracks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: `track-${Date.now()}`,
+            title: formData.title,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }),
+        });
 
-      if (error) {
-        console.error('Error creating track:', error);
-        alert('Failed to create track');
-        return;
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to create track');
+        }
       }
+
+      resetForm();
+      loadTracks();
+    } catch (error) {
+      console.error('Error saving track:', error);
+      alert(error instanceof Error ? error.message : 'Failed to save track');
     }
-
-    resetForm();
-    loadTracks();
   }
 
   async function handleDelete(id: string) {
@@ -76,15 +81,17 @@ export default function TracksPage() {
       return;
     }
 
-    const { error } = await supabase.from('training_tracks').delete().eq('id', id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/tracks?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to delete track');
+      }
+      loadTracks();
+    } catch (error) {
       console.error('Error deleting track:', error);
-      alert('Failed to delete track');
-      return;
+      alert(error instanceof Error ? error.message : 'Failed to delete track');
     }
-
-    loadTracks();
   }
 
   function handleEdit(track: TrainingTrack) {
