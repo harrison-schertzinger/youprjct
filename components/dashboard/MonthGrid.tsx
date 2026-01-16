@@ -21,9 +21,9 @@ const COLORS = {
     shadow: '#059669',
   },
   today: {
-    gradient: ['#93C5FD', '#5B8DEF', '#3B82F6'] as const,
-    shadow: '#3B82F6',
-    glow: 'rgba(91, 141, 239, 0.4)',
+    gradient: ['#6366F1', '#5B6EF5', '#5558E8'] as const,
+    shadow: '#4338CA',
+    glow: 'rgba(99, 102, 241, 0.4)',
   },
   preSignup: {
     gradient: ['#D1D5DB', '#9CA3AF', '#6B7280'] as const,
