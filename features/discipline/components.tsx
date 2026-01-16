@@ -40,6 +40,7 @@ import {
   isDateToday,
   getLast30DaysAdherence,
 } from './storage';
+import { generateMonthData } from '@/utils/calendar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -864,8 +865,6 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
 // ============================================================
 // Unified Rules Card (Month Calendar + Check-In)
 // ============================================================
-
-import { generateMonthData, isSameDay, formatDateKey } from '@/utils/calendar';
 
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
