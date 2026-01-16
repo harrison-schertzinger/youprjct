@@ -26,7 +26,7 @@ export default function TabLayout() {
         options={{
           title: 'Discipline',
           tabBarIcon: ({ color, size }) => (
-            <IconSymbol size={size} name="checkmark.circle.fill" color={color} />
+            <IconSymbol size={size} name="mountain.2.fill" color={color} />
           ),
         }}
       />
