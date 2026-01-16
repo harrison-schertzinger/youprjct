@@ -61,15 +61,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...tokens.typography.h3,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.xs,
     textAlign: 'center',
   },
   message: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...tokens.typography.small,
     color: tokens.colors.muted,
     textAlign: 'center',
     lineHeight: 20,

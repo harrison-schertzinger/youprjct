@@ -39,8 +39,7 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.sm,
   },
   message: {
-    fontSize: 14,
-    fontWeight: '500',
+    ...tokens.typography.small,
     color: tokens.colors.muted,
   },
 });

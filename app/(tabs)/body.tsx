@@ -420,8 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.md,
   },
   workoutTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...tokens.typography.h3,
     color: tokens.colors.text,
   },
   startWorkoutLink: {
