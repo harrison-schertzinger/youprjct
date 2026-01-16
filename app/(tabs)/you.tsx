@@ -160,18 +160,21 @@ export default function YouScreen() {
           />
         }
       >
-        {/* Compact Header: KPI Bar + Profile */}
+        {/* Compact Header: Profile+Streak + KPI Bar */}
         <View style={styles.headerRow}>
-          <View style={styles.kpiBar}>
-            {/* Streak */}
-            <View style={styles.kpiBlock}>
-              <Text style={styles.kpiLabel}>STREAK</Text>
-              <View style={styles.streakValueRow}>
-                <Text style={styles.fireEmoji}>🔥</Text>
-                <Text style={[styles.kpiValue, styles.streakValue]}>{streakCount}</Text>
+          {/* Profile Avatar with Streak Badge */}
+          <Link href="/profile" asChild>
+            <TouchableOpacity style={styles.profileContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{avatarLetter}</Text>
               </View>
-            </View>
-            <View style={styles.kpiDivider} />
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakBadgeText}>🔥{streakCount}</Text>
+              </View>
+            </TouchableOpacity>
+          </Link>
+          {/* KPI Bar */}
+          <View style={styles.kpiBar}>
             {/* Days Won */}
             <View style={styles.kpiBlock}>
               <Text style={styles.kpiLabel}>DAYS WON</Text>
@@ -183,19 +186,17 @@ export default function YouScreen() {
               <Text style={styles.kpiLabel}>CONSISTENCY</Text>
               <Text style={[styles.kpiValue, { color: tokens.colors.tint }]}>82%</Text>
             </View>
+            <View style={styles.kpiDivider} />
+            {/* Tasks */}
+            <View style={styles.kpiBlock}>
+              <Text style={styles.kpiLabel}>TASKS</Text>
+              <Text style={styles.kpiValue}>{dailyTasks.filter(t => t.completed).length}/{dailyTasks.length}</Text>
+            </View>
           </View>
-          {/* Profile Avatar */}
-          <Link href="/profile" asChild>
-            <TouchableOpacity style={styles.profileButton}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{avatarLetter}</Text>
-              </View>
-            </TouchableOpacity>
-          </Link>
         </View>
 
         {/* Calendar */}
-        <Card style={{ marginTop: tokens.spacing.md }}>
+        <Card style={{ marginTop: tokens.spacing.xs }}>
           <MonthGrid selectedDay={selectedDay} onSelectDay={setSelectedDay} wins={wins} firstOpenedAt={firstOpenedAt} />
         </Card>
 
@@ -318,9 +319,43 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: tokens.spacing.md,
+    marginBottom: tokens.spacing.sm,
     marginHorizontal: 8,
     gap: tokens.spacing.sm,
+  },
+  profileContainer: {
+    position: 'relative',
+  },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: tokens.colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: tokens.colors.card,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  streakBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -6,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  streakBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.text,
   },
   kpiBar: {
     flex: 1,
@@ -330,8 +365,8 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.xs + 2,
+    paddingHorizontal: tokens.spacing.sm,
     // Soft shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -341,58 +376,25 @@ const styles = StyleSheet.create({
   },
   kpiBlock: {
     flex: 1,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   kpiLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     color: tokens.colors.muted,
-    letterSpacing: 0.5,
-    marginBottom: 2,
+    letterSpacing: 0.3,
+    marginBottom: 1,
   },
   kpiValue: {
-    fontSize: 22,
-    fontWeight: '900',
+    fontSize: 17,
+    fontWeight: '800',
     color: tokens.colors.text,
   },
   kpiDivider: {
     width: 1,
-    height: 28,
+    height: 24,
     backgroundColor: tokens.colors.border,
-    marginHorizontal: tokens.spacing.sm,
-  },
-  streakValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fireEmoji: {
-    fontSize: 18,
-    marginRight: 2,
-  },
-  streakValue: {
-    color: '#F97316',
-  },
-  profileButton: {
-    padding: 2,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: tokens.colors.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Subtle shadow
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  avatarText: {
-    color: tokens.colors.card,
-    fontSize: 17,
-    fontWeight: '700',
+    marginHorizontal: tokens.spacing.xs,
   },
 
   // Cards
