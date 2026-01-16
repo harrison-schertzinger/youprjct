@@ -21,6 +21,7 @@ import { Goal, loadGoals } from '@/lib/goals';
 import { getTotalsByTypeForDate, getTotalsByTypeForWeek } from '@/lib/repositories/ActivityRepo';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
 import type { Profile } from '@/lib/training/types';
+import { TimeInvestmentChart, ConsistencyChart } from '@/components/charts';
 
 type ModalType = 'morning' | 'evening' | 'task' | null;
 
@@ -358,6 +359,12 @@ export default function YouScreen() {
 
         {/* Personal Mastery Dashboard */}
         <SectionHeader title="Personal Mastery Dashboard" />
+
+        {/* Charts */}
+        <TimeInvestmentChart />
+        <View style={{ height: tokens.spacing.md }} />
+        <ConsistencyChart />
+        <View style={{ height: tokens.spacing.md }} />
 
         {/* TIME Group */}
         <View style={styles.dashboardGroup}>
