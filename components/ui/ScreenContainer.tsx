@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    paddingHorizontal: tokens.spacing.lg,
+    paddingHorizontal: tokens.spacing.sm + 2, // 12px - tighter base, elements add their own margin
     paddingTop: tokens.spacing.lg,
     paddingBottom: TAB_BAR_CLEARANCE,
   },

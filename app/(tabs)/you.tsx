@@ -314,16 +314,17 @@ const styles = StyleSheet.create({
   dayWonContainer: {
     marginTop: tokens.spacing.lg,
     marginBottom: tokens.spacing.sm,
+    marginHorizontal: 8, // Align with cards
   },
 
   // Header
   topHeader: {
-    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: tokens.spacing.md,
-    paddingLeft: tokens.spacing.md,
+    marginHorizontal: 8, // Align with cards
+    paddingLeft: tokens.spacing.xs,
   },
   brandText: {
     fontSize: 15,
