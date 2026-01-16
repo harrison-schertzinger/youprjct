@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -8,7 +8,7 @@ import { GlowCard } from '@/components/ui/GlowCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { RoutineListItem } from '@/components/ui/RoutineListItem';
 import { DayWonButton } from '@/components/ui/DayWonButton';
-// DayPicker removed - was non-functional (didn't filter tasks by date)
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
@@ -22,6 +22,10 @@ import type { Profile } from '@/lib/training/types';
 import { TimeInvestmentChart, ConsistencyChart } from '@/components/charts';
 
 type ModalType = 'morning' | 'evening' | 'task' | null;
+
+// Task day segments: Yesterday (-1), Today (0), Tomorrow (1)
+const TASK_DAY_SEGMENTS = ['Yesterday', 'Today', 'Tomorrow'];
+const TASK_DAY_OFFSETS = [-1, 0, 1];
 
 export default function YouScreen() {
   const [selectedDay, setSelectedDay] = useState(new Date().getDate());
@@ -37,11 +41,27 @@ export default function YouScreen() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalType, setModalType] = useState<ModalType>(null);
 
+  // Task day selection: 0=Yesterday, 1=Today, 2=Tomorrow (segment index)
+  const [taskDayIndex, setTaskDayIndex] = useState(1); // Default to "Today"
+  const taskDayOffset = TASK_DAY_OFFSETS[taskDayIndex]; // Convert to offset: -1, 0, or 1
+
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Load tasks when day selection changes
+  const loadTasksForDay = useCallback(async (offset: number) => {
+    const tasks = await loadDailyTasks(offset);
+    setDailyTasks(tasks);
+  }, []);
+
+  // Load tasks when taskDayOffset changes
+  useEffect(() => {
+    loadTasksForDay(taskDayOffset);
+  }, [taskDayOffset, loadTasksForDay]);
 
   const loadAllData = useCallback(async () => {
     const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
@@ -56,7 +76,7 @@ export default function YouScreen() {
     setMorningCompleted(morningDone);
     setEveningCompleted(eveningDone);
 
-    const [tasks, goalsData] = await Promise.all([loadDailyTasks(), loadGoals()]);
+    const [tasks, goalsData] = await Promise.all([loadDailyTasks(taskDayOffset), loadGoals()]);
     setDailyTasks(tasks);
     setGoals(goalsData);
 
@@ -67,7 +87,9 @@ export default function YouScreen() {
     ]);
     setProfile(localProfile);
     setSupabaseProfile(sbProfile);
-  }, []);
+
+    setInitialLoading(false);
+  }, [taskDayOffset]);
 
   // Reload data every time the screen comes into focus
   useFocusEffect(
@@ -97,12 +119,17 @@ export default function YouScreen() {
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const streakCount = profile?.onAppStreakDays ?? 0;
 
+  // Task card title based on selected day
+  const taskCardTitle = useMemo(() => {
+    if (taskDayIndex === 0) return "Yesterday's Tasks";
+    if (taskDayIndex === 1) return "Today's Tasks";
+    return "Tomorrow's Tasks";
+  }, [taskDayIndex]);
+
   const handleWinTheDay = async () => {
     if (isSelectedDayWon) {
-      // Toggle off - remove the win
       await removeDayWin(selectedDate);
     } else {
-      // Mark as won
       await markDayAsWin(selectedDate);
     }
     setWins(await loadWins());
@@ -137,24 +164,35 @@ export default function YouScreen() {
   }, []);
 
   const handleAddTask = useCallback(async (title: string, _label?: string, goal?: Goal) => {
-    const newTask = await addDailyTask(title, goal?.id, goal?.title);
+    const newTask = await addDailyTask(title, goal?.id, goal?.title, taskDayOffset);
     setDailyTasks(prev => [...prev, newTask]);
-  }, []);
+  }, [taskDayOffset]);
 
   const handleDeleteTask = useCallback(async (id: string) => {
-    await deleteDailyTask(id);
+    await deleteDailyTask(id, taskDayOffset);
     setDailyTasks(prev => prev.filter(t => t.id !== id));
-  }, []);
+  }, [taskDayOffset]);
 
   const handleToggleTask = useCallback(async (id: string) => {
-    setDailyTasks(await toggleDailyTaskCompletion(id));
-  }, []);
+    setDailyTasks(await toggleDailyTaskCompletion(id, taskDayOffset));
+  }, [taskDayOffset]);
 
   const handleModalSubmit = useCallback((title: string, label?: string, goal?: Goal) => {
     if (modalType === 'morning') handleAddMorning(title, label);
     else if (modalType === 'evening') handleAddEvening(title, label);
     else if (modalType === 'task') handleAddTask(title, label, goal);
   }, [modalType, handleAddMorning, handleAddEvening, handleAddTask]);
+
+  // Show loading state on initial load to prevent glitchy transitions
+  if (initialLoading) {
+    return (
+      <ScreenContainer>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={tokens.colors.muted} />
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
@@ -215,6 +253,15 @@ export default function YouScreen() {
           <DayWonButton isWon={isSelectedDayWon} onPress={handleWinTheDay} />
         </View>
 
+        {/* Task Day Picker - above routines for cohesive flow */}
+        <View style={styles.taskDayPickerContainer}>
+          <SegmentedControl
+            segments={TASK_DAY_SEGMENTS}
+            selectedIndex={taskDayIndex}
+            onChange={setTaskDayIndex}
+          />
+        </View>
+
         {/* Morning */}
         <GlowCard
           glow="amber"
@@ -243,14 +290,16 @@ export default function YouScreen() {
         {/* Tasks */}
         <GlowCard
           glow="blue"
-          title="Today's Tasks"
+          title={taskCardTitle}
           completedCount={dailyTasks.filter(t => t.completed).length}
           totalCount={dailyTasks.length}
           onAdd={() => setModalType('task')}
           style={{ marginTop: tokens.spacing.md }}
         >
           {dailyTasks.length === 0 ? (
-            <Text style={styles.emptyText}>Add a task to get started</Text>
+            <Text style={styles.emptyText}>
+              {taskDayIndex === 2 ? 'Plan tomorrow\'s tasks' : 'No tasks for this day'}
+            </Text>
           ) : (
             dailyTasks.map((t, index) => (
               <View key={t.id} style={index === dailyTasks.length - 1 ? styles.lastItem : undefined}>
@@ -305,16 +354,26 @@ export default function YouScreen() {
 
       <AddItemModal visible={modalType === 'morning'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title="Add Morning Routine" placeholder="e.g., Meditation, Exercise..." showLabelInput labelPlaceholder="Duration or note (optional)" />
       <AddItemModal visible={modalType === 'evening'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title="Add Evening Routine" placeholder="e.g., Journal, Read..." showLabelInput labelPlaceholder="Duration or note (optional)" />
-      <AddItemModal visible={modalType === 'task'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title="Add Task" placeholder="e.g., Complete project..." goals={goals} />
+      <AddItemModal visible={modalType === 'task'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title={taskDayIndex === 2 ? "Plan Tomorrow's Task" : "Add Task"} placeholder="e.g., Complete project..." goals={goals} />
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: tokens.spacing.xl },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   dayWonContainer: {
     marginTop: tokens.spacing.lg,
     marginBottom: tokens.spacing.sm,
+    marginHorizontal: 8,
+  },
+  taskDayPickerContainer: {
+    marginTop: tokens.spacing.lg,
+    marginBottom: tokens.spacing.xs,
     marginHorizontal: 8,
   },
 
