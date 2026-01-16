@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
+import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
+import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
 import {
   TimerCard,
@@ -24,6 +26,17 @@ import {
   calculateInsights,
 } from '@/features/mind/storage';
 import type { Book, ReadingSession, InsightStats, MindView } from '@/features/mind/types';
+
+// Format minutes to display string
+function formatMinutes(minutes: number): string {
+  if (minutes === 0) return '0m';
+  const hours = Math.floor(minutes / 60);
+  const mins = Math.round(minutes % 60);
+  if (hours > 0) {
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+  }
+  return `${mins}m`;
+}
 
 const MIND_BENEFITS = [
   {
@@ -203,6 +216,29 @@ export default function MindScreen() {
     await loadData();
   };
 
+  // Calculate today's reading time
+  const todayISO = new Date().toISOString().split('T')[0];
+  const todayMinutes = useMemo(() => {
+    return sessions
+      .filter((s) => s.date === todayISO)
+      .reduce((sum, s) => sum + Math.round(s.durationSeconds / 60), 0);
+  }, [sessions, todayISO]);
+
+  // Calculate 7-day average
+  const avgMinutes7Day = useMemo(() => {
+    if (insights.sessions7Days === 0) return 0;
+    return Math.round(insights.totalMinutes7Days / 7);
+  }, [insights]);
+
+  // Calculate KPI stats
+  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
+    return [
+      { label: 'TODAY', value: formatMinutes(todayMinutes), color: tokens.colors.action },
+      { label: '7-DAY AVG', value: formatMinutes(avgMinutes7Day), color: tokens.colors.tint },
+      { label: 'TOTAL', value: formatMinutes(insights.totalMinutesAllTime) },
+    ];
+  }, [todayMinutes, avgMinutes7Day, insights.totalMinutesAllTime]);
+
   return (
     <PremiumGate
       feature="Mind"
@@ -221,8 +257,8 @@ export default function MindScreen() {
             />
           }
         >
-          <Text style={styles.title}>Mind</Text>
-          <Text style={styles.subtitle}>Reading and reflection</Text>
+          <PageLabel label="MIND" />
+          <KPIBar stats={kpiStats} />
 
           <TimerCard
             isActive={sessionActive}
@@ -282,15 +318,5 @@ export default function MindScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
-  },
-  title: {
-    ...tokens.typography.h1,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.xs,
-  },
-  subtitle: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    marginBottom: tokens.spacing.xl,
   },
 });

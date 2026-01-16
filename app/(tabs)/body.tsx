@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
+import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
+import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
 import {
   ProfileHeader,
@@ -83,6 +85,17 @@ export default function BodyScreen() {
     reloadWorkouts();
   };
 
+  // Calculate KPI stats
+  // Note: Full workout history stats could be added via a dedicated hook
+  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
+    const workoutsToday = enrichedWorkouts.length;
+    return [
+      { label: 'STREAK', value: '—', color: tokens.colors.action },
+      { label: 'THIS WEEK', value: `${workoutsToday}`, color: tokens.colors.tint },
+      { label: 'TOTAL TIME', value: '—' },
+    ];
+  }, [enrichedWorkouts]);
+
   return (
     <PremiumGate
       feature="Body"
@@ -101,8 +114,8 @@ export default function BodyScreen() {
             />
           }
         >
-          <Text style={styles.title}>Body</Text>
-          <Text style={styles.subtitle}>Training, recovery, readiness</Text>
+          <PageLabel label="BODY" />
+          <KPIBar stats={kpiStats} />
 
           <SegmentedControl
             segments={['Profile', 'Training']}
@@ -198,16 +211,6 @@ export default function BodyScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
-  },
-  title: {
-    ...tokens.typography.h1,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.xs,
-  },
-  subtitle: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    marginBottom: tokens.spacing.xl,
   },
   workoutsHeader: {
     ...tokens.typography.h2,

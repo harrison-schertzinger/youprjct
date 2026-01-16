@@ -1,10 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { PremiumGate } from '@/components/ui/PremiumGate';
+import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
+import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
 import {
   SegmentedControl,
@@ -231,6 +233,19 @@ export default function DisciplineScreen() {
   const todayPercentage = getTodayAdherencePercentage(todayCheckIn, rules.length);
   const hasCheckedInToday = todayCheckIn?.hasCheckedIn ?? false;
 
+  // Calculate KPI stats
+  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
+    const challengeDisplay = challenge
+      ? `Day ${challenge.completedDays.length}/${challenge.totalDays}`
+      : '—';
+
+    return [
+      { label: 'STREAK', value: `${currentStreak}d`, color: tokens.colors.action },
+      { label: 'BEST', value: `${bestStreak}d`, color: tokens.colors.tint },
+      { label: 'CHALLENGE', value: challengeDisplay },
+    ];
+  }, [currentStreak, bestStreak, challenge]);
+
   return (
     <PremiumGate
       feature="Discipline"
@@ -249,8 +264,8 @@ export default function DisciplineScreen() {
             />
           }
         >
-          <Text style={styles.title}>Discipline</Text>
-          <Text style={styles.subtitle}>Daily actions that compound</Text>
+          <PageLabel label="DISCIPLINE" />
+          <KPIBar stats={kpiStats} />
 
           <SegmentedControl
             segments={['Challenge', 'Rules']}
@@ -335,16 +350,6 @@ export default function DisciplineScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: tokens.spacing.xl,
-  },
-  title: {
-    ...tokens.typography.h1,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.xs,
-  },
-  subtitle: {
-    ...tokens.typography.body,
-    color: tokens.colors.muted,
-    marginBottom: tokens.spacing.xl,
   },
   section: {
     marginBottom: tokens.spacing.lg,
