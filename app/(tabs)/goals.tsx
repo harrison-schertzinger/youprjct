@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { PremiumGate } from '@/components/ui/PremiumGate';
+import { KPIBar, type KPIStat } from '@/components/ui/KPIBar';
+import { PageLabel } from '@/components/ui/PageLabel';
 import { tokens } from '@/design/tokens';
 import { GoalsList, AddGoalModal } from '@/features/goals';
 import {
@@ -109,8 +111,19 @@ export default function GoalsScreen() {
     }
   }, []);
 
-  // Count active goals for header display
+  // Count goals for KPIs
   const activeGoalsCount = goals.filter((g) => !g.isCompleted).length;
+  const completedGoalsCount = goals.filter((g) => g.isCompleted).length;
+  const tasksCompletedThisWeek = dailyTasks.filter((t) => t.completed).length;
+
+  // Calculate KPI stats
+  const kpiStats = useMemo((): [KPIStat, KPIStat, KPIStat] => {
+    return [
+      { label: 'ACTIVE', value: activeGoalsCount, color: tokens.colors.action },
+      { label: 'COMPLETED', value: completedGoalsCount, color: tokens.colors.tint },
+      { label: 'THIS WEEK', value: tasksCompletedThisWeek },
+    ];
+  }, [activeGoalsCount, completedGoalsCount, tasksCompletedThisWeek]);
 
   return (
     <PremiumGate
@@ -130,22 +143,11 @@ export default function GoalsScreen() {
             />
           }
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Goals</Text>
-              <Text style={styles.headerSubtitle}>
-                {activeGoalsCount > 0
-                  ? `${activeGoalsCount} active goal${activeGoalsCount !== 1 ? 's' : ''}`
-                  : 'What you\'re aiming at'}
-              </Text>
-            </View>
-            {goals.length > 0 && (
-              <Pressable style={styles.addBtn} onPress={() => setShowAddModal(true)}>
-                <Text style={styles.addBtnText}>+</Text>
-              </Pressable>
-            )}
-          </View>
+          <PageLabel
+            label="GOALS"
+            action={goals.length > 0 ? { icon: '+', onPress: () => setShowAddModal(true) } : undefined}
+          />
+          <KPIBar stats={kpiStats} />
 
           {/* Goals List */}
           <GoalsList
@@ -174,36 +176,5 @@ export default function GoalsScreen() {
 const styles = StyleSheet.create({
   scroll: {
     paddingBottom: tokens.spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: tokens.spacing.lg,
-  },
-  headerTitle: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: tokens.colors.text,
-    letterSpacing: -0.6,
-  },
-  headerSubtitle: {
-    marginTop: 6,
-    fontSize: 16,
-    fontWeight: '600',
-    color: tokens.colors.muted,
-  },
-  addBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 });
