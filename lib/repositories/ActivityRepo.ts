@@ -70,6 +70,52 @@ export async function getTotalsByTypeForWeek(
   return weekSessions.reduce((total, s) => total + s.durationSeconds, 0);
 }
 
+// ========== Daily Totals for Charts ==========
+
+export type DailyTotal = {
+  date: string;
+  label: string;
+  seconds: number;
+};
+
+export async function getDailyTotalsForPeriod(
+  type: ActivityType,
+  days: number
+): Promise<DailyTotal[]> {
+  const allSessions = await getAllSessions();
+  const result: DailyTotal[] = [];
+
+  const today = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateISO = date.toISOString().split('T')[0];
+
+    // Get day label based on period length
+    let label: string;
+    if (days <= 7) {
+      label = date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
+    } else if (days <= 31) {
+      label = String(date.getDate());
+    } else {
+      label = date.toLocaleDateString('en-US', { month: 'short' }).slice(0, 3);
+    }
+
+    const dayTotal = allSessions
+      .filter((s) => s.type === type && s.dateISO === dateISO)
+      .reduce((sum, s) => sum + s.durationSeconds, 0);
+
+    result.push({
+      date: dateISO,
+      label,
+      seconds: dayTotal,
+    });
+  }
+
+  return result;
+}
+
 // ========== Helpers ==========
 
 function getWeekDates(weekStartISO: string): string[] {

@@ -155,3 +155,47 @@ export function getLossStreakLength(
 
   return streakLength;
 }
+
+/**
+ * Get daily win data for a period (for charts).
+ * @param wins - Preloaded wins record
+ * @param days - Number of days to look back
+ * @returns Array of daily data with label and isWin
+ */
+export type DailyWinData = {
+  date: string;
+  label: string;
+  isWin: boolean;
+};
+
+export function getDailyWinsForPeriod(
+  wins: Record<string, 'win'>,
+  days: number
+): DailyWinData[] {
+  const result: DailyWinData[] = [];
+  const today = new Date();
+
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateKey = formatDateKey(date);
+
+    // Get day label based on period length
+    let label: string;
+    if (days <= 7) {
+      label = date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
+    } else if (days <= 31) {
+      label = String(date.getDate());
+    } else {
+      label = date.toLocaleDateString('en-US', { month: 'short' }).slice(0, 3);
+    }
+
+    result.push({
+      date: dateKey,
+      label,
+      isWin: wins[dateKey] === 'win',
+    });
+  }
+
+  return result;
+}
