@@ -8,7 +8,7 @@ import { GlowCard } from '@/components/ui/GlowCard';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { RoutineListItem } from '@/components/ui/RoutineListItem';
 import { DayWonButton } from '@/components/ui/DayWonButton';
-import { DayPicker } from '@/components/ui/DayPicker';
+// DayPicker removed - was non-functional (didn't filter tasks by date)
 import { AddItemModal } from '@/components/ui/AddItemModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
@@ -36,7 +36,6 @@ export default function YouScreen() {
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [modalType, setModalType] = useState<ModalType>(null);
-  const [taskDayOffset, setTaskDayOffset] = useState(0); // 0 = today, 1 = tomorrow, etc.
 
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -216,12 +215,6 @@ export default function YouScreen() {
           <DayWonButton isWon={isSelectedDayWon} onPress={handleWinTheDay} />
         </View>
 
-        <DayPicker
-          selectedOffset={taskDayOffset}
-          maxOffset={3}
-          onSelectOffset={setTaskDayOffset}
-        />
-
         {/* Morning */}
         <GlowCard
           glow="amber"
@@ -250,7 +243,7 @@ export default function YouScreen() {
         {/* Tasks */}
         <GlowCard
           glow="blue"
-          title={taskDayOffset === 0 ? "Today's Tasks" : "Tasks"}
+          title="Today's Tasks"
           completedCount={dailyTasks.filter(t => t.completed).length}
           totalCount={dailyTasks.length}
           onAdd={() => setModalType('task')}

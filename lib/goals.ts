@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getItem, setItem } from './storage';
 import { Goal, GoalType, GoalColor, GoalStep } from '@/features/goals/types';
 
 const GOALS_KEY = '@youprjct:goals';
@@ -25,24 +25,14 @@ function migrateGoal(goal: Partial<Goal> & { id: string; title: string }): Goal 
 }
 
 export async function loadGoals(): Promise<Goal[]> {
-  try {
-    const raw = await AsyncStorage.getItem(GOALS_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    // Migrate any legacy goals
-    return parsed.map(migrateGoal);
-  } catch (error) {
-    console.error('Failed to load goals:', error);
-    return [];
-  }
+  const goals = await getItem<Goal[]>(GOALS_KEY);
+  if (!goals) return [];
+  // Migrate any legacy goals
+  return goals.map(migrateGoal);
 }
 
 export async function saveGoals(goals: Goal[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(GOALS_KEY, JSON.stringify(goals));
-  } catch (error) {
-    console.error('Failed to save goals:', error);
-  }
+  await setItem(GOALS_KEY, goals);
 }
 
 export async function addGoal(
@@ -54,7 +44,7 @@ export async function addGoal(
 ): Promise<Goal> {
   const goals = await loadGoals();
   const newGoal: Goal = {
-    id: `goal-${Date.now()}`,
+    id: `goal-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     title,
     outcome,
     whys,
@@ -119,7 +109,7 @@ export async function addStep(goalId: string, title: string): Promise<Goal | nul
   if (index === -1) return null;
 
   const newStep: GoalStep = {
-    id: `step-${Date.now()}`,
+    id: `step-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     title,
     completed: false,
     createdAt: new Date().toISOString(),

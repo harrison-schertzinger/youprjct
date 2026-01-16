@@ -29,7 +29,7 @@ export async function logResult(
   value: { valueNumber?: number; valueTimeSeconds?: number }
 ): Promise<Result> {
   const result: Result = {
-    id: `result-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `result-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     userId: LOCAL_USER_ID,
     exerciseId,
     trackId,

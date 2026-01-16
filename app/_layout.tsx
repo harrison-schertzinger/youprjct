@@ -11,6 +11,7 @@ import { ensureSession } from '@/lib/supabase/AuthRepo';
 import { configureRevenueCat } from '@/lib/revenuecat';
 import { formatDateKey } from '@/utils/calendar';
 import { ToastProvider } from '@/components/ui/Toast';
+import { cleanupOldDateKeys } from '@/lib/storage';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -45,6 +46,11 @@ export default function RootLayout() {
     const today = formatDateKey(new Date());
     bumpOnAppStreakIfNeeded(today).catch((error) => {
       console.error('Failed to bump on-app streak:', error);
+    });
+
+    // Clean up old date-keyed storage entries (keeps last 30 days)
+    cleanupOldDateKeys(30).catch((error) => {
+      console.error('Failed to cleanup old storage keys:', error);
     });
   }, []);
 

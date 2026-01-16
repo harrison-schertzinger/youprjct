@@ -140,3 +140,56 @@ export async function clearSupabaseSession(): Promise<void> {
     throw error;
   }
 }
+
+// ========== Date-Keyed Storage Cleanup ==========
+
+/**
+ * Clean up old date-keyed storage entries (dailyTasks, routine completions).
+ * Keeps data for the last `daysToKeep` days (default 30).
+ * Call this periodically (e.g., on app launch) to prevent unbounded growth.
+ */
+export async function cleanupOldDateKeys(daysToKeep: number = 30): Promise<number> {
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+
+    // Calculate cutoff date
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+    const cutoffISO = cutoffDate.toISOString().split('T')[0]; // YYYY-MM-DD
+
+    // Patterns for date-keyed storage:
+    // - @youprjct:dailyTasks:YYYY-MM-DD
+    // - @youprjct:routines:morning:completed:YYYY-MM-DD
+    // - @youprjct:routines:evening:completed:YYYY-MM-DD
+    const dateKeyPatterns = [
+      /^@youprjct:dailyTasks:(\d{4}-\d{2}-\d{2})$/,
+      /^@youprjct:routines:(?:morning|evening):completed:(\d{4}-\d{2}-\d{2})$/,
+    ];
+
+    const keysToRemove: string[] = [];
+
+    for (const key of allKeys) {
+      for (const pattern of dateKeyPatterns) {
+        const match = key.match(pattern);
+        if (match) {
+          const dateStr = match[1];
+          // Compare date strings (YYYY-MM-DD format allows string comparison)
+          if (dateStr < cutoffISO) {
+            keysToRemove.push(key);
+          }
+          break; // Key matched, no need to check other patterns
+        }
+      }
+    }
+
+    if (keysToRemove.length > 0) {
+      await AsyncStorage.multiRemove(keysToRemove);
+      console.log(`Cleaned up ${keysToRemove.length} old date-keyed entries`);
+    }
+
+    return keysToRemove.length;
+  } catch (error) {
+    console.error('Failed to cleanup old date keys:', error);
+    return 0;
+  }
+}

@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getItem, setItem } from './storage';
 
 export type DailyTask = {
   id: string;
@@ -19,20 +19,14 @@ function getTasksKey(): string {
 }
 
 export async function loadDailyTasks(): Promise<DailyTask[]> {
-  try {
-    const raw = await AsyncStorage.getItem(getTasksKey());
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch (error) {
-    console.error('Failed to load daily tasks:', error);
-    return [];
-  }
+  const tasks = await getItem<DailyTask[]>(getTasksKey());
+  return tasks || [];
 }
 
 export async function addDailyTask(title: string, goalId?: string, goalName?: string): Promise<DailyTask> {
   const tasks = await loadDailyTasks();
   const newTask: DailyTask = {
-    id: `task-${Date.now()}`,
+    id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     title,
     goalId,
     goalName,
@@ -40,18 +34,18 @@ export async function addDailyTask(title: string, goalId?: string, goalName?: st
     createdAt: new Date().toISOString(),
   };
   tasks.push(newTask);
-  await AsyncStorage.setItem(getTasksKey(), JSON.stringify(tasks));
+  await setItem(getTasksKey(), tasks);
   return newTask;
 }
 
 export async function deleteDailyTask(id: string): Promise<void> {
   const tasks = await loadDailyTasks();
-  await AsyncStorage.setItem(getTasksKey(), JSON.stringify(tasks.filter(t => t.id !== id)));
+  await setItem(getTasksKey(), tasks.filter(t => t.id !== id));
 }
 
 export async function toggleDailyTaskCompletion(id: string): Promise<DailyTask[]> {
   const tasks = await loadDailyTasks();
   const updated = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-  await AsyncStorage.setItem(getTasksKey(), JSON.stringify(updated));
+  await setItem(getTasksKey(), updated);
   return updated;
 }
