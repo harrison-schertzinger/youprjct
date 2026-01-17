@@ -22,8 +22,9 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Bypass premium gate in development for testing
-const DEV_BYPASS_PREMIUM = __DEV__;
+// Bypass premium gate in development or internal testing builds
+// For App Store submission, ensure EXPO_PUBLIC_INTERNAL_TESTING is NOT set
+const DEV_BYPASS_PREMIUM = __DEV__ || process.env.EXPO_PUBLIC_INTERNAL_TESTING === 'true';
 
 /**
  * PremiumGate wraps a screen and shows a locked state for non-premium users.

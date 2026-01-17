@@ -12,10 +12,17 @@
       "distribution": "internal"
     },
     "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_INTERNAL_TESTING": "true"
+      }
+    },
+    "appstore": {
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "appstore": {}
   }
 }
