@@ -55,7 +55,6 @@ export default function LandingPage() {
 
           {/* Sub-headline */}
           <p className="text-xl md:text-2xl text-brand-muted max-w-2xl mx-auto mb-12 leading-relaxed animate-fade-in-up delay-100">
-            Order your thoughts and you order your life.
             A premium system for those who refuse to leave their potential on the table.
           </p>
 
