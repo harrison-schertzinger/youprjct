@@ -3,14 +3,20 @@
 import { useState, useEffect } from 'react';
 import type { TrainingTrack, Exercise, TrainingDay, Workout } from '@/lib/supabase';
 
-// Helper to get week dates
+// Helper to get week dates (timezone-safe)
 function getWeekDates(mondayISO: string): string[] {
-  const monday = new Date(mondayISO);
+  // Parse as local date to avoid timezone issues
+  const [year, month, day] = mondayISO.split('-').map(Number);
+  const monday = new Date(year, month - 1, day);
   const dates: string[] = [];
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    // Format as YYYY-MM-DD in local time
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
   }
   return dates;
 }
