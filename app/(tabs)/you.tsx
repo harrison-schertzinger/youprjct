@@ -64,31 +64,35 @@ export default function YouScreen() {
   }, [taskDayOffset, loadTasksForDay]);
 
   const loadAllData = useCallback(async () => {
-    const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
-    setWins(winsData);
-    setFirstOpenedAt(firstOpened);
+    try {
+      const [winsData, firstOpened] = await Promise.all([loadWins(), getOrSetFirstOpenedAt()]);
+      setWins(winsData);
+      setFirstOpenedAt(firstOpened);
 
-    const [morning, evening, morningDone, eveningDone] = await Promise.all([
-      loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
-    ]);
-    setMorningRoutines(morning);
-    setEveningRoutines(evening);
-    setMorningCompleted(morningDone);
-    setEveningCompleted(eveningDone);
+      const [morning, evening, morningDone, eveningDone] = await Promise.all([
+        loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
+      ]);
+      setMorningRoutines(morning);
+      setEveningRoutines(evening);
+      setMorningCompleted(morningDone);
+      setEveningCompleted(eveningDone);
 
-    const [tasks, goalsData] = await Promise.all([loadDailyTasks(taskDayOffset), loadGoals()]);
-    setDailyTasks(tasks);
-    setGoals(goalsData);
+      const [tasks, goalsData] = await Promise.all([loadDailyTasks(taskDayOffset), loadGoals()]);
+      setDailyTasks(tasks);
+      setGoals(goalsData);
 
-    // Load profile data
-    const [localProfile, sbProfile] = await Promise.all([
-      getProfile(),
-      getSupabaseProfile(),
-    ]);
-    setProfile(localProfile);
-    setSupabaseProfile(sbProfile);
-
-    setInitialLoading(false);
+      // Load profile data
+      const [localProfile, sbProfile] = await Promise.all([
+        getProfile(),
+        getSupabaseProfile(),
+      ]);
+      setProfile(localProfile);
+      setSupabaseProfile(sbProfile);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setInitialLoading(false);
+    }
   }, [taskDayOffset]);
 
   // Reload data every time the screen comes into focus

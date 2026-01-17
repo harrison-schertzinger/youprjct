@@ -65,10 +65,14 @@ export default function GoalsScreen() {
     useCallback(() => {
       loadData();
       // Load profile data
-      Promise.all([getProfile(), getSupabaseProfile()]).then(([localProfile, sbProfile]) => {
-        setProfile(localProfile);
-        setSupabaseProfile(sbProfile);
-      });
+      Promise.all([getProfile(), getSupabaseProfile()])
+        .then(([localProfile, sbProfile]) => {
+          setProfile(localProfile);
+          setSupabaseProfile(sbProfile);
+        })
+        .catch((error) => {
+          console.error('Failed to load profile:', error);
+        });
     }, [loadData])
   );
 

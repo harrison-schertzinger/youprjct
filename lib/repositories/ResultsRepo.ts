@@ -8,6 +8,9 @@ import { getProfile } from './ProfileRepo';
 
 const LOCAL_USER_ID = 'local-user';
 
+// Simple mutex to prevent race conditions on concurrent writes
+let writeQueue: Promise<void> = Promise.resolve();
+
 // ========== Leaderboard Entry Type ==========
 
 export type LeaderboardEntry = {
@@ -39,9 +42,13 @@ export async function logResult(
     createdAtISO: new Date().toISOString(),
   };
 
-  const allResults = await getAllResults();
-  allResults.push(result);
-  await setItem(StorageKeys.RESULTS, allResults);
+  // Queue write to prevent race conditions
+  writeQueue = writeQueue.then(async () => {
+    const allResults = await getAllResults();
+    allResults.push(result);
+    await setItem(StorageKeys.RESULTS, allResults);
+  });
+  await writeQueue;
 
   return result;
 }

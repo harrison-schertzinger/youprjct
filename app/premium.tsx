@@ -146,7 +146,7 @@ export default function PremiumScreen() {
             <View style={styles.iconContainer}>
               <Text style={styles.icon}>★</Text>
             </View>
-            <Text style={styles.title}>You're a Pro!</Text>
+            <Text style={styles.title}>You&apos;re a Pro!</Text>
             <Text style={styles.subtitle}>
               Thank you for supporting You. First
             </Text>
@@ -241,7 +241,7 @@ export default function PremiumScreen() {
                 style={styles.redeemButton}
               />
               <Text style={styles.redeemHint}>
-                After redeeming, tap "Restore Purchases" to sync your membership.
+                After redeeming, tap &quot;Restore Purchases&quot; to sync your membership.
               </Text>
             </Card>
           )}

@@ -6,6 +6,9 @@ import type { ActivitySession, ActivityType } from '../training/types';
 
 const LOCAL_USER_ID = 'local-user';
 
+// Simple mutex to prevent race conditions on concurrent writes
+let writeQueue: Promise<void> = Promise.resolve();
+
 // ========== Log Session ==========
 
 export async function logSession(
@@ -15,7 +18,7 @@ export async function logSession(
   options?: { startedAtISO?: string; endedAtISO?: string }
 ): Promise<ActivitySession> {
   const session: ActivitySession = {
-    id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `activity-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     userId: LOCAL_USER_ID,
     type,
     dateISO,
@@ -25,9 +28,13 @@ export async function logSession(
     createdAtISO: new Date().toISOString(),
   };
 
-  const allSessions = await getAllSessions();
-  allSessions.push(session);
-  await setItem(StorageKeys.ACTIVITY_SESSIONS, allSessions);
+  // Queue write to prevent race conditions
+  writeQueue = writeQueue.then(async () => {
+    const allSessions = await getAllSessions();
+    allSessions.push(session);
+    await setItem(StorageKeys.ACTIVITY_SESSIONS, allSessions);
+  });
+  await writeQueue;
 
   return session;
 }
