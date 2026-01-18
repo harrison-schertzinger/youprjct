@@ -20,7 +20,6 @@ import {
   Goal,
   GoalType,
   GoalColor,
-  GoalStep,
   GOAL_GRADIENTS,
   GOAL_TYPE_COLORS,
 } from './types';
@@ -173,7 +172,7 @@ export function GoalCard({
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${progress.percentage}%` },
+                  { width: `${Math.max(progress.percentage, 3)}%` },
                 ]}
               />
             </View>

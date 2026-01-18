@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
@@ -21,7 +21,7 @@ import {
   PRInputModal,
   type TimerState,
 } from '@/features/body';
-import type { MajorMovement } from '@/features/body/types';
+import type { MajorMovement, BodyView } from '@/features/body/types';
 import {
   useActiveTrack,
   useTrainingDay,
@@ -29,14 +29,12 @@ import {
   useTrainingStats,
   type EnrichedMovement,
 } from '@/features/body/hooks';
-import type { BodyView } from '@/features/body/types';
-import type { TrainingTrack } from '@/lib/training/types';
+import type { TrainingTrack, Profile } from '@/lib/training/types';
 import { getTodayISO } from '@/lib/repositories/TrainingRepo';
 import { logSession } from '@/lib/repositories/ActivityRepo';
 import { logResult, getLeaderboardForExercise, type LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
 import { useToast } from '@/components/ui/Toast';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
-import type { Profile } from '@/lib/training/types';
 
 const BODY_BENEFITS = [
   {
@@ -60,9 +58,9 @@ export default function BodyScreen() {
   const { showToast } = useToast();
 
   // Data hooks
-  const { tracks, activeTrack, activeTrackId, setActiveTrackId, loading: tracksLoading, refreshing, refresh } = useActiveTrack();
+  const { tracks, activeTrack, activeTrackId, setActiveTrackId, refreshing, refresh } = useActiveTrack();
   const { enrichedWorkouts, loading: workoutsLoading, reload: reloadWorkouts } = useTrainingDay(activeTrackId, selectedDate);
-  const { movements: majorMovements, loading: movementsLoading, reload: reloadMajorMovements } = useMajorMovements();
+  const { movements: majorMovements, reload: reloadMajorMovements } = useMajorMovements();
   const { stats: trainingStats, reload: reloadStats } = useTrainingStats();
 
   // Modals

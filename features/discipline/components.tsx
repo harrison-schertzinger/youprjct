@@ -40,6 +40,7 @@ import {
   isDateToday,
   getLast30DaysAdherence,
 } from './storage';
+import { generateMonthData } from '@/utils/calendar';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -127,7 +128,7 @@ export function RulesAdherenceCard({
             end={{ x: 1, y: 0 }}
             style={[
               styles.todayProgressFill,
-              { width: hasCheckedInToday ? `${todayPercentage}%` : '0%' },
+              { width: hasCheckedInToday ? `${Math.max(todayPercentage, 3)}%` : '0%' },
             ]}
           />
         </View>
@@ -560,7 +561,7 @@ export function ChallengeCard({
             colors={[gradient.start, gradient.end]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[styles.challengeProgressFill, { width: `${progressPercent}%` }]}
+            style={[styles.challengeProgressFill, { width: `${Math.max(progressPercent, 3)}%` }]}
           />
         </View>
         <Text style={styles.challengeProgressText}>{progressPercent}%</Text>
@@ -865,8 +866,6 @@ export function CreateChallengeModal({ visible, onClose, onCreate }: CreateChall
 // Unified Rules Card (Month Calendar + Check-In)
 // ============================================================
 
-import { generateMonthData, isSameDay, formatDateKey } from '@/utils/calendar';
-
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 type RulesCardProps = {
@@ -982,7 +981,6 @@ export function RulesCard({
 
           const dateKey = cell.dateKey;
           const isToday = dateKey === todayISO;
-          const isPast = dateKey < todayISO;
           const isFuture = dateKey > todayISO;
           const isSelected = dateKey === selectedDate;
           const adherence = history[dateKey];
