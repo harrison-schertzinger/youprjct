@@ -102,7 +102,7 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Journey</span>
             <h2 className="text-display-md mt-4">
-              From idea to system<span className="text-brand-accent">.</span>
+              You<span className="text-brand-accent">.</span>Prjct
             </h2>
           </div>
 
@@ -140,19 +140,31 @@ export default function AboutPage() {
             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
 
             <div className="relative text-center">
-              <h2 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight">
+              <h2 className="text-6xl md:text-8xl font-bold mb-10 tracking-tight">
                 <span className="text-brand-muted">.uoY</span>
               </h2>
-              <p className="text-xl md:text-2xl text-brand-muted leading-relaxed max-w-2xl mx-auto mb-8">
-                Only readable in the mirror. Because there&apos;s a moment when you look in the mirror and see the same eyes that looked back at you when you were 12 years old.
-              </p>
-              <p className="text-lg text-brand-muted leading-relaxed max-w-2xl mx-auto">
-                The past you is hoping you make their sacrifice worth it. The future you is begging you to act in alignment with your dreams. Everything depends on <span className="text-brand-text font-semibold">You</span>. Who you see in the mirror.
-              </p>
-              <p className="mt-8 text-brand-accent font-medium">
-                The teacher, master, leader—they all can point the way.<br />
-                But you must walk the way.
-              </p>
+
+              <div className="space-y-6 max-w-2xl mx-auto">
+                <p className="text-xl md:text-2xl text-brand-text leading-relaxed">
+                  Who you see is what matters.
+                </p>
+                <p className="text-lg text-brand-muted leading-relaxed">
+                  Who you see in the mirror—and what you believe is possible for your life—that&apos;s what shapes everything. Not what others think. Not what the world expects. <span className="text-brand-text">You.</span>
+                </p>
+                <p className="text-lg text-brand-muted leading-relaxed">
+                  The past version of you made sacrifices hoping this moment would come. The future version of you is waiting to see if you&apos;ll show up. Both are watching. Both are real.
+                </p>
+                <p className="text-lg text-brand-muted leading-relaxed">
+                  That&apos;s why it&apos;s written backwards. <span className="text-brand-text font-medium">.uoY</span>—only readable in the mirror. Because the only opinion that can truly change your life is the one staring back at you.
+                </p>
+              </div>
+
+              <div className="mt-10 pt-8 border-t border-brand-border/50">
+                <p className="text-brand-accent font-medium text-lg">
+                  Teachers can point the way. Mentors can light it.<br />
+                  <span className="text-brand-text">But you must walk it.</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
