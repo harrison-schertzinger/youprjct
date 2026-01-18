@@ -174,7 +174,7 @@ export default function LandingPage() {
             <div className="group relative rounded-3xl bg-brand-surface border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
               <div className="aspect-[4/5] relative">
                 <Image
-                  src="/images/founders/harrison.jpg"
+                  src="/images/founders/Harrison.JPEG"
                   alt="Harrison Schertzinger - Co-Founder"
                   fill
                   className="object-cover object-top"
@@ -254,85 +254,46 @@ export default function LandingPage() {
 
           {/* Feature Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* You - with screenshot */}
-            <div className="group p-6 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-emerald transition-all duration-300 hover:shadow-[0_0_60px_rgba(16,185,129,0.2)]">
-              {/* Screenshot */}
-              <div className="relative w-full aspect-[9/16] mb-6 rounded-2xl overflow-hidden bg-brand-card">
-                <Image
-                  src="/images/App screenshots/you-page.PNG"
-                  alt="You. Dashboard"
-                  fill
-                  className="object-cover object-top"
-                />
+            {/* You */}
+            <div className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-emerald transition-all duration-300 hover:shadow-[0_0_60px_rgba(16,185,129,0.2)]">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-emerald/20 to-brand-emerald/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-brand-emerald/20">
+                <svg className="w-7 h-7 text-brand-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-emerald/20 to-brand-emerald/5 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform border border-brand-emerald/20">
-                  <svg className="w-6 h-6 text-brand-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-brand-emerald transition-colors">You</h3>
-                  <p className="text-brand-muted text-sm">
-                    Win the day. Track your consistency with a visual calendar. Morning and evening routines. Tasks linked to goals.
-                  </p>
-                </div>
-              </div>
+              <h3 className="text-xl font-semibold mb-3 group-hover:text-brand-emerald transition-colors">You</h3>
+              <p className="text-brand-muted">
+                Win the day. Track your consistency with a visual calendar. Morning and evening routines. Tasks linked to goals.
+              </p>
             </div>
 
-            {/* Discipline - with screenshot */}
-            <div className="group p-6 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-accent transition-all duration-300 hover:shadow-[0_0_60px_rgba(59,130,246,0.2)]">
-              {/* Screenshot */}
-              <div className="relative w-full aspect-[9/16] mb-6 rounded-2xl overflow-hidden bg-brand-card">
-                <Image
-                  src="/images/App screenshots/challenge-page.PNG"
-                  alt="Discipline Challenges"
-                  fill
-                  className="object-cover object-top"
-                />
+            {/* Discipline */}
+            <div className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-accent transition-all duration-300 hover:shadow-[0_0_60px_rgba(59,130,246,0.2)]">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-accent/20 to-brand-accent/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-brand-accent/20">
+                <svg className="w-7 h-7 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-accent/20 to-brand-accent/5 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform border border-brand-accent/20">
-                  <svg className="w-6 h-6 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-brand-accent transition-colors">Discipline</h3>
-                  <p className="text-brand-muted text-sm">
-                    Challenges with progress calendars. Daily rules to honor. Build the habits that build you.
-                  </p>
-                </div>
-              </div>
+              <h3 className="text-xl font-semibold mb-3 group-hover:text-brand-accent transition-colors">Discipline</h3>
+              <p className="text-brand-muted">
+                Challenges with progress calendars. Daily rules to honor. Build the habits that build you.
+              </p>
             </div>
 
-            {/* Body - with screenshot */}
-            <div className="group p-6 rounded-3xl bg-brand-surface border border-brand-border hover:border-orange-500 transition-all duration-300 hover:shadow-[0_0_60px_rgba(249,115,22,0.2)]">
-              {/* Screenshot */}
-              <div className="relative w-full aspect-[9/16] mb-6 rounded-2xl overflow-hidden bg-brand-card">
-                <Image
-                  src="/images/App screenshots/body-page.PNG"
-                  alt="Body Training"
-                  fill
-                  className="object-cover object-top"
-                />
+            {/* Body */}
+            <div className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-orange-500 transition-all duration-300 hover:shadow-[0_0_60px_rgba(249,115,22,0.2)]">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-orange-500/20">
+                <svg className="w-7 h-7 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform border border-orange-500/20">
-                  <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-orange-500 transition-colors">Body</h3>
-                  <p className="text-brand-muted text-sm">
-                    Structured training tracks. PR tracking. Workout timer. Log your sessions and watch yourself evolve.
-                  </p>
-                </div>
-              </div>
+              <h3 className="text-xl font-semibold mb-3 group-hover:text-orange-500 transition-colors">Body</h3>
+              <p className="text-brand-muted">
+                Structured training tracks. PR tracking. Workout timer. Log your sessions and watch yourself evolve.
+              </p>
             </div>
 
-            {/* Goals - icon only */}
+            {/* Goals */}
             <div className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-purple-500 transition-all duration-300 hover:shadow-[0_0_60px_rgba(168,85,247,0.2)]">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-purple-500/20">
                 <svg className="w-7 h-7 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -345,31 +306,17 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Mind - with photo */}
-            <div className="group p-6 rounded-3xl bg-brand-surface border border-brand-border hover:border-cyan-500 transition-all duration-300 hover:shadow-[0_0_60px_rgba(6,182,212,0.2)]">
-              {/* Photo instead of screenshot */}
-              <div className="relative w-full aspect-[4/3] mb-6 rounded-2xl overflow-hidden bg-brand-card">
-                <Image
-                  src="/images/harrison-books.jpg"
-                  alt="Mind - Reading and Learning"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-brand-bg/60 to-transparent" />
+            {/* Mind */}
+            <div className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-cyan-500 transition-all duration-300 hover:shadow-[0_0_60px_rgba(6,182,212,0.2)]">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform border border-cyan-500/20">
+                <svg className="w-7 h-7 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform border border-cyan-500/20">
-                  <svg className="w-6 h-6 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 group-hover:text-cyan-500 transition-colors">Mind</h3>
-                  <p className="text-brand-muted text-sm">
-                    Reading timer. Book tracking. Feed the mind that feeds your ambition.
-                  </p>
-                </div>
-              </div>
+              <h3 className="text-xl font-semibold mb-3 group-hover:text-cyan-500 transition-colors">Mind</h3>
+              <p className="text-brand-muted">
+                Reading timer. Book tracking. Feed the mind that feeds your ambition.
+              </p>
             </div>
 
             {/* Coming Soon - Community */}

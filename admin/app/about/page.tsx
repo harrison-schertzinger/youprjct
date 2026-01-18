@@ -188,7 +188,7 @@ export default function AboutPage() {
             <div className="group">
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
-                  src="/images/founders/harrison.jpg"
+                  src="/images/founders/Harrison.JPEG"
                   alt="Harrison Schertzinger"
                   fill
                   className="object-cover object-top"
