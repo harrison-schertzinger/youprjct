@@ -124,7 +124,7 @@ export default function AboutPage() {
             </div>
             <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border">
               <div className="text-orange-500 font-mono text-sm mb-2">04</div>
-              <h3 className="font-semibold mb-2">You. First</h3>
+              <h3 className="font-semibold mb-2">You.Prjct</h3>
               <p className="text-sm text-brand-muted">The system. Vision meets relentless action. The dream since college.</p>
             </div>
           </div>
