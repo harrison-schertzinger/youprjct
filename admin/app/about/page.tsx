@@ -187,21 +187,12 @@ export default function AboutPage() {
             {/* Harrison */}
             <div className="group">
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
-                {/* Placeholder - replace with actual image */}
-                <div className="absolute inset-0 flex items-center justify-center text-brand-muted">
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-brand-border mx-auto mb-4 flex items-center justify-center text-4xl font-bold">H</div>
-                    <p className="text-sm">harrison.jpg</p>
-                  </div>
-                </div>
-                {/* Uncomment when image is added:
                 <Image
                   src="/images/founders/harrison.jpg"
                   alt="Harrison Schertzinger"
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                 />
-                */}
               </div>
               <h3 className="text-2xl font-bold mb-2">Harrison Schertzinger</h3>
               <p className="text-brand-accent text-sm font-medium mb-3">App Developer & Business Development</p>
@@ -213,21 +204,12 @@ export default function AboutPage() {
             {/* Henry */}
             <div className="group">
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
-                {/* Placeholder - replace with actual image */}
-                <div className="absolute inset-0 flex items-center justify-center text-brand-muted">
-                  <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-brand-border mx-auto mb-4 flex items-center justify-center text-4xl font-bold">H</div>
-                    <p className="text-sm">henry.jpg</p>
-                  </div>
-                </div>
-                {/* Uncomment when image is added:
                 <Image
                   src="/images/founders/henry.jpg"
                   alt="Henry Schertzinger"
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                 />
-                */}
               </div>
               <h3 className="text-2xl font-bold mb-2">Henry Schertzinger</h3>
               <p className="text-brand-emerald text-sm font-medium mb-3">Marketing</p>
