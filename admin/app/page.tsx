@@ -21,6 +21,12 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-8">
             <Link
+              href="/about"
+              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+            >
+              About
+            </Link>
+            <Link
               href="/privacy"
               className="text-sm text-brand-muted hover:text-brand-text transition-colors"
             >
