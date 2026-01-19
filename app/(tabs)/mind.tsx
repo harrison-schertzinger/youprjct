@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
+import { AddTimeModal } from '@/components/ui/AddTimeModal';
 import { tokens } from '@/design/tokens';
 import {
   TimerCard,
@@ -27,6 +28,7 @@ import {
 import type { Book, ReadingSession, InsightStats, MindView } from '@/features/mind/types';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
 import type { Profile } from '@/lib/training/types';
+import { usePersistedTimer } from '@/hooks/usePersistedTimer';
 
 // Format minutes to display string
 function formatMinutes(minutes: number): string {
@@ -68,16 +70,14 @@ export default function MindScreen() {
   });
   const [refreshing, setRefreshing] = useState(false);
 
-  // Session timer state
-  const [sessionActive, setSessionActive] = useState(false);
-  const [sessionDuration, setSessionDuration] = useState(0);
-  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+  // Session timer (persisted across background/foreground)
+  const timer = usePersistedTimer('reading');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Modals
   const [bookPickerVisible, setBookPickerVisible] = useState(false);
   const [endSessionVisible, setEndSessionVisible] = useState(false);
+  const [addTimeVisible, setAddTimeVisible] = useState(false);
 
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -127,43 +127,21 @@ export default function MindScreen() {
     setRefreshing(false);
   }, [loadData]);
 
-  // Timer effect
-  useEffect(() => {
-    if (sessionActive) {
-      timerRef.current = setInterval(() => {
-        setSessionDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [sessionActive]);
-
   const handleViewChange = (index: number) => {
     const views: MindView[] = ['list', 'history', 'insights'];
     setView(views[index]);
   };
 
-  const handleStartSession = () => {
-    setSessionActive(true);
-    setSessionDuration(0);
-    setSessionStartTime(Date.now());
+  const handleStartSession = async () => {
+    await timer.start();
   };
 
-  const handleEndSession = () => {
-    setSessionActive(false);
+  const handleEndSession = async () => {
     setEndSessionVisible(true);
   };
 
   const handleSaveSession = async (reflection: string) => {
+    const finalDuration = await timer.stop();
     const now = Date.now();
     const dateStr = new Date(now).toISOString().split('T')[0];
 
@@ -171,9 +149,9 @@ export default function MindScreen() {
       id: `session-${Date.now()}`,
       bookId: selectedBook?.id,
       bookTitle: selectedBook?.title,
-      startTime: sessionStartTime,
+      startTime: timer.startTime || now - finalDuration * 1000,
       endTime: now,
-      durationSeconds: sessionDuration,
+      durationSeconds: finalDuration,
       reflection: reflection || undefined,
       date: dateStr,
     };
@@ -182,7 +160,10 @@ export default function MindScreen() {
     await loadData();
 
     setEndSessionVisible(false);
-    setSessionDuration(0);
+  };
+
+  const handleAddTime = (seconds: number) => {
+    timer.addManualTime(seconds);
   };
 
   const handleSelectBook = (book: Book) => {
@@ -301,12 +282,13 @@ export default function MindScreen() {
 
           <View style={styles.timerWrapper}>
             <TimerCard
-              isActive={sessionActive}
-              duration={sessionDuration}
+              isActive={timer.status !== 'idle'}
+              duration={timer.duration}
               selectedBook={selectedBook}
               onStart={handleStartSession}
               onEnd={handleEndSession}
               onSelectBook={() => setBookPickerVisible(true)}
+              onAddTime={() => setAddTimeVisible(true)}
             />
           </View>
 
@@ -347,9 +329,15 @@ export default function MindScreen() {
 
         <EndSessionModal
           visible={endSessionVisible}
-          duration={sessionDuration}
+          duration={timer.duration}
           onSave={handleSaveSession}
           onClose={() => setEndSessionVisible(false)}
+        />
+
+        <AddTimeModal
+          visible={addTimeVisible}
+          onClose={() => setAddTimeVisible(false)}
+          onAdd={handleAddTime}
         />
       </ScreenContainer>
     </PremiumGate>

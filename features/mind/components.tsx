@@ -28,6 +28,7 @@ type TimerCardProps = {
   onStart: () => void;
   onEnd: () => void;
   onSelectBook: () => void;
+  onAddTime?: () => void;
 };
 
 export function TimerCard({
@@ -37,6 +38,7 @@ export function TimerCard({
   onStart,
   onEnd,
   onSelectBook,
+  onAddTime,
 }: TimerCardProps) {
   const minutes = Math.floor(duration / 60);
   const seconds = duration % 60;
@@ -84,15 +86,26 @@ export function TimerCard({
           <Text style={styles.bookChevron}>›</Text>
         </Pressable>
 
-        {/* Action Button */}
-        <Pressable
-          style={[styles.timerButton, isActive && styles.timerButtonActive]}
-          onPress={isActive ? onEnd : onStart}
-        >
-          <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
-            {isActive ? 'End Session' : 'Start Reading'}
-          </Text>
-        </Pressable>
+        {/* Action Buttons */}
+        <View style={styles.timerButtonRow}>
+          {isActive && onAddTime && (
+            <Pressable style={styles.addTimeButton} onPress={onAddTime}>
+              <Text style={styles.addTimeButtonText}>+ Add Time</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={[
+              styles.timerButton,
+              isActive && styles.timerButtonActive,
+              isActive && onAddTime && styles.timerButtonFlex,
+            ]}
+            onPress={isActive ? onEnd : onStart}
+          >
+            <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
+              {isActive ? 'End Session' : 'Start Reading'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -604,11 +617,19 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     marginLeft: tokens.spacing.sm,
   },
+  timerButtonRow: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
   timerButton: {
+    flex: 1,
     backgroundColor: MIND_ACCENT,
     paddingVertical: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     alignItems: 'center',
+  },
+  timerButtonFlex: {
+    flex: 1,
   },
   timerButtonActive: {
     backgroundColor: 'transparent',
@@ -622,6 +643,21 @@ const styles = StyleSheet.create({
   },
   timerButtonTextActive: {
     color: MIND_ACCENT,
+  },
+  addTimeButton: {
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.bg,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTimeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.text,
   },
 
   // Modals

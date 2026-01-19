@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
@@ -7,6 +7,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { PremiumGate } from '@/components/ui/PremiumGate';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { AddTimeModal } from '@/components/ui/AddTimeModal';
 import { tokens } from '@/design/tokens';
 import {
   TrainingStatsSection,
@@ -19,7 +20,6 @@ import {
   InlineLogModal,
   ExerciseLeaderboardModal,
   PRInputModal,
-  type TimerState,
 } from '@/features/body';
 import type { MajorMovement, BodyView } from '@/features/body/types';
 import {
@@ -35,6 +35,7 @@ import { logSession } from '@/lib/repositories/ActivityRepo';
 import { logResult, getLeaderboardForExercise, type LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
 import { useToast } from '@/components/ui/Toast';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
+import { usePersistedTimer } from '@/hooks/usePersistedTimer';
 
 const BODY_BENEFITS = [
   {
@@ -76,66 +77,50 @@ export default function BodyScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
 
-  // Timer state
-  const [timerState, setTimerState] = useState<TimerState>('idle');
-  const [timerDuration, setTimerDuration] = useState(0);
+  // Timer state (persisted across background/foreground)
+  const timer = usePersistedTimer('workout');
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sessionStartRef = useRef<string | null>(null);
-
-  // Timer effect
-  useEffect(() => {
-    if (timerState === 'running') {
-      timerRef.current = setInterval(() => {
-        setTimerDuration((prev) => prev + 1);
-      }, 1000);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [timerState]);
+  const [addTimeVisible, setAddTimeVisible] = useState(false);
 
   // Timer handlers
-  const handleTimerStart = (workoutId: string) => {
+  const handleTimerStart = async (workoutId: string) => {
     setActiveWorkoutId(workoutId);
-    setTimerState('running');
-    setTimerDuration(0);
-    sessionStartRef.current = new Date().toISOString();
+    await timer.start();
   };
 
-  const handleTimerPause = () => {
-    setTimerState('paused');
+  const handleTimerPause = async () => {
+    await timer.pause();
   };
 
-  const handleTimerResume = () => {
-    setTimerState('running');
+  const handleTimerResume = async () => {
+    await timer.resume();
   };
 
   const handleTimerFinish = async () => {
+    const finalDuration = await timer.stop();
+
     // Log the session
-    if (timerDuration > 0) {
-      await logSession('workout', selectedDate, timerDuration, {
-        startedAtISO: sessionStartRef.current || undefined,
+    if (finalDuration > 0) {
+      const startTime = timer.startTime
+        ? new Date(timer.startTime).toISOString()
+        : new Date(Date.now() - finalDuration * 1000).toISOString();
+
+      await logSession('workout', selectedDate, finalDuration, {
+        startedAtISO: startTime,
         endedAtISO: new Date().toISOString(),
       });
       reloadStats();
 
-      const mins = Math.floor(timerDuration / 60);
+      const mins = Math.floor(finalDuration / 60);
       showToast(`Workout complete: ${mins}m logged`);
     }
 
-    // Reset timer
-    setTimerState('idle');
-    setTimerDuration(0);
+    // Reset state
     setActiveWorkoutId(null);
-    sessionStartRef.current = null;
+  };
+
+  const handleAddTime = (seconds: number) => {
+    timer.addManualTime(seconds);
   };
 
   // Get active workout title
@@ -295,8 +280,8 @@ export default function BodyScreen() {
           {/* Session Timer - Always visible above segmented control */}
           <View style={styles.timerWrapper}>
             <SessionTimer
-              state={timerState}
-              duration={timerDuration}
+              state={timer.status}
+              duration={timer.duration}
               workoutTitle={activeWorkout?.title}
               onStart={() => {
                 // Start with first workout if no workout selected
@@ -307,6 +292,7 @@ export default function BodyScreen() {
               onPause={handleTimerPause}
               onResume={handleTimerResume}
               onFinish={handleTimerFinish}
+              onAddTime={() => setAddTimeVisible(true)}
             />
           </View>
 
@@ -348,7 +334,7 @@ export default function BodyScreen() {
                       {/* Workout Header */}
                       <View style={styles.workoutHeaderRow}>
                         <Text style={styles.workoutTitle}>{workout.title}</Text>
-                        {timerState === 'idle' && (
+                        {timer.status === 'idle' && (
                           <Text
                             style={styles.startWorkoutLink}
                             onPress={() => handleTimerStart(workout.id)}
@@ -448,6 +434,12 @@ export default function BodyScreen() {
             setSelectedPRMovement(null);
           }}
           onSubmit={handlePRSubmit}
+        />
+
+        <AddTimeModal
+          visible={addTimeVisible}
+          onClose={() => setAddTimeVisible(false)}
+          onAdd={handleAddTime}
         />
       </ScreenContainer>
     </PremiumGate>

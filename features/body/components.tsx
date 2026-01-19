@@ -261,6 +261,7 @@ type SessionTimerProps = {
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
+  onAddTime?: () => void;
 };
 
 export function SessionTimer({
@@ -271,6 +272,7 @@ export function SessionTimer({
   onPause,
   onResume,
   onFinish,
+  onAddTime,
 }: SessionTimerProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -299,6 +301,11 @@ export function SessionTimer({
           )}
           {state === 'running' && (
             <>
+              {onAddTime && (
+                <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
+                  <Text style={styles.sessionTimerAddTimeText}>+Time</Text>
+                </Pressable>
+              )}
               <Pressable style={styles.sessionTimerButtonSecondary} onPress={onPause}>
                 <Text style={styles.sessionTimerButtonSecondaryText}>Pause</Text>
               </Pressable>
@@ -309,6 +316,11 @@ export function SessionTimer({
           )}
           {state === 'paused' && (
             <>
+              {onAddTime && (
+                <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
+                  <Text style={styles.sessionTimerAddTimeText}>+Time</Text>
+                </Pressable>
+              )}
               <Pressable style={styles.sessionTimerButtonSecondary} onPress={onResume}>
                 <Text style={styles.sessionTimerButtonSecondaryText}>Resume</Text>
               </Pressable>
@@ -1353,6 +1365,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: tokens.colors.text,
+  },
+  sessionTimerAddTime: {
+    backgroundColor: tokens.colors.bg,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  sessionTimerAddTimeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: tokens.colors.muted,
   },
 
   // Movement Card (Expandable)
