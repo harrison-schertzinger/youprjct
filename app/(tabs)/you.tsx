@@ -197,7 +197,7 @@ export default function YouScreen() {
   }, [taskDayOffset]);
 
   const handleAddTask = useCallback(async (title: string, _label?: string, goal?: Goal) => {
-    const newTask = await addDailyTask(title, goal?.id, goal?.title, taskDayOffset);
+    const newTask = await addDailyTask(title, goal?.id, goal?.title, goal?.color, taskDayOffset);
     setDailyTasks(prev => [...prev, newTask]);
   }, [taskDayOffset]);
 
@@ -358,7 +358,7 @@ export default function YouScreen() {
                     title={t.title}
                     checked={t.completed}
                     onToggle={() => handleToggleTask(t.id)}
-                    chipText={t.goalName}
+                    goalColor={t.goalColor}
                     onDelete={() => handleDeleteTask(t.id)}
                   />
                 </Animated.View>

@@ -1,22 +1,41 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { tokens } from '@/design/tokens';
 import { CheckCircle } from './CheckCircle';
-import { Chip } from './Chip';
+import { GOAL_GRADIENTS, type GoalColor } from '@/features/goals/types';
 
 type Props = {
   title: string;
   checked: boolean;
   onToggle: () => void;
   onDelete: () => void;
+  /** @deprecated Use goalColor instead for gradient dot indicator */
   chipText?: string;
+  /** Goal color for gradient dot indicator */
+  goalColor?: GoalColor;
 };
 
-export function RoutineListItem({ title, checked, onToggle, onDelete, chipText }: Props) {
+export function RoutineListItem({ title, checked, onToggle, onDelete, goalColor }: Props) {
+  const gradient = goalColor ? GOAL_GRADIENTS[goalColor] : null;
+
   return (
     <View style={styles.row}>
       <CheckCircle checked={checked} onPress={onToggle} />
-      <View style={styles.content}>
+
+      {/* Goal indicator dot - small gradient circle */}
+      {gradient && (
+        <View style={styles.dotContainer}>
+          <LinearGradient
+            colors={[gradient.start, gradient.end]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.goalDot}
+          />
+        </View>
+      )}
+
+      <View style={[styles.content, !gradient && styles.contentNoGoal]}>
         <Text
           style={[styles.title, checked && styles.titleChecked]}
           numberOfLines={1}
@@ -25,11 +44,7 @@ export function RoutineListItem({ title, checked, onToggle, onDelete, chipText }
           {title}
         </Text>
       </View>
-      {chipText && (
-        <View style={styles.chipContainer}>
-          <Chip label={chipText} />
-        </View>
-      )}
+
       <Pressable style={styles.deleteButton} onPress={onDelete} hitSlop={8}>
         <Text style={styles.deleteText}>×</Text>
       </Pressable>
@@ -45,10 +60,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.border,
   },
+  dotContainer: {
+    marginLeft: 10,
+    // Subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  goalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   content: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: 8,
     marginRight: 8,
+  },
+  contentNoGoal: {
+    marginLeft: 12,
   },
   title: {
     fontSize: 15,
@@ -58,9 +90,6 @@ const styles = StyleSheet.create({
   titleChecked: {
     color: tokens.colors.muted,
     textDecorationLine: 'line-through',
-  },
-  chipContainer: {
-    marginRight: 8,
   },
   deleteButton: {
     width: 26,

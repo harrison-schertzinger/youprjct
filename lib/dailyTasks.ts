@@ -1,10 +1,12 @@
 import { getItem, setItem } from './storage';
+import type { GoalColor } from '@/features/goals/types';
 
 export type DailyTask = {
   id: string;
   title: string;
   goalId?: string;
   goalName?: string;
+  goalColor?: GoalColor;
   completed: boolean;
   createdAt: string;
 };
@@ -40,6 +42,7 @@ export async function addDailyTask(
   title: string,
   goalId?: string,
   goalName?: string,
+  goalColor?: GoalColor,
   dayOffset: number = 0
 ): Promise<DailyTask> {
   const tasks = await loadDailyTasks(dayOffset);
@@ -48,6 +51,7 @@ export async function addDailyTask(
     title,
     goalId,
     goalName,
+    goalColor,
     completed: false,
     createdAt: new Date().toISOString(),
   };
