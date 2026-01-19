@@ -2,6 +2,7 @@
 
 import { getItem, setItem } from '../storage';
 import { StorageKeys } from '../storage/keys';
+import { formatDateKey } from '@/utils/calendar';
 import type { ActivitySession, ActivityType } from '../training/types';
 
 const LOCAL_USER_ID = 'local-user';
@@ -97,9 +98,10 @@ export async function getDailyTotalsForPeriod(
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(today.getDate() - i);
-    const dateISO = date.toISOString().split('T')[0];
+    // Use formatDateKey for consistent local timezone handling
+    const dateISO = formatDateKey(date);
 
-    // Get day label based on period length
+    // Get day label based on period length (local timezone)
     let label: string;
     if (days <= 7) {
       label = date.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
@@ -136,13 +138,13 @@ export async function getTrainingStats(): Promise<TrainingStats> {
   const allSessions = await getAllSessions();
   const workoutSessions = allSessions.filter((s) => s.type === 'workout');
 
-  // Get this week's dates (Monday to Sunday)
+  // Get this week's dates (Monday to Sunday) using local timezone
   const today = new Date();
   const dayOfWeek = today.getDay();
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(today);
   monday.setDate(today.getDate() + mondayOffset);
-  const weekStartISO = monday.toISOString().split('T')[0];
+  const weekStartISO = formatDateKey(monday);
   const weekDates = getWeekDates(weekStartISO);
 
   const sessionsThisWeek = workoutSessions.filter((s) =>
@@ -171,12 +173,14 @@ export async function getTrainingStats(): Promise<TrainingStats> {
 
 function getWeekDates(weekStartISO: string): string[] {
   const dates: string[] = [];
-  const start = new Date(weekStartISO);
+  // Parse the date string and create date at noon to avoid timezone edge cases
+  const [year, month, day] = weekStartISO.split('-').map(Number);
+  const start = new Date(year, month - 1, day, 12, 0, 0);
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(start);
     date.setDate(start.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(formatDateKey(date));
   }
 
   return dates;

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { Card } from '@/components/ui/Card';
 import { tokens } from '@/design/tokens';
 import { PeriodToggle, type Period } from './PeriodToggle';
@@ -84,9 +85,9 @@ export function ConsistencyChart({ onDataLoad }: Props) {
         </View>
       </View>
 
-      {/* Bar chart */}
+      {/* Bar chart with snappy fade-in */}
       {!loading && displayData.length > 0 && (
-        <View style={styles.chartContainer}>
+        <Animated.View entering={FadeIn.duration(150)} style={styles.chartContainer}>
           <View style={[styles.barsContainer, { height: BAR_HEIGHT }]}>
             {displayData.map((item, index) => {
               const barHeight = item.isWin ? BAR_HEIGHT : BAR_HEIGHT * 0.3;
@@ -122,13 +123,28 @@ export function ConsistencyChart({ onDataLoad }: Props) {
               );
             })}
           </View>
+        </Animated.View>
+      )}
+
+      {/* Loading skeleton */}
+      {loading && (
+        <View style={styles.skeleton}>
+          {[...Array(7)].map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.skeletonBar,
+                { height: 30 + Math.random() * 50 },
+              ]}
+            />
+          ))}
         </View>
       )}
 
       {!loading && displayData.length === 0 && (
-        <View style={styles.emptyState}>
+        <Animated.View entering={FadeIn.duration(150)} style={styles.emptyState}>
           <Text style={styles.emptyText}>No consistency data yet</Text>
-        </View>
+        </Animated.View>
       )}
     </Card>
   );
@@ -203,5 +219,19 @@ const styles = StyleSheet.create({
   emptyText: {
     ...tokens.typography.body,
     color: tokens.colors.muted,
+  },
+  skeleton: {
+    height: 80,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: tokens.spacing.xs,
+    marginTop: tokens.spacing.xs,
+  },
+  skeletonBar: {
+    width: 24,
+    backgroundColor: tokens.colors.border,
+    borderRadius: 2,
+    opacity: 0.5,
   },
 });

@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { Card } from '@/components/ui/Card';
 import { tokens } from '@/design/tokens';
 import { LineChart, type DataSeries, type DataPoint } from './LineChart';
@@ -127,20 +128,37 @@ export function TimeInvestmentChart({ onDataLoad }: Props) {
         </View>
       </View>
 
-      {/* Chart */}
+      {/* Chart with snappy fade-in */}
       {!loading && readingSeries.data.length > 0 && (
-        <LineChart
-          series={[readingSeries, trainingSeries]}
-          height={160}
-          showValues={false}
-          valueFormatter={(v) => `${v}m`}
-        />
+        <Animated.View entering={FadeIn.duration(150)}>
+          <LineChart
+            series={[readingSeries, trainingSeries]}
+            height={160}
+            showValues={false}
+            valueFormatter={(v) => `${v}m`}
+          />
+        </Animated.View>
+      )}
+
+      {/* Loading skeleton */}
+      {loading && (
+        <View style={styles.skeleton}>
+          {[...Array(7)].map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.skeletonBar,
+                { height: 40 + Math.random() * 80 },
+              ]}
+            />
+          ))}
+        </View>
       )}
 
       {!loading && readingSeries.data.length === 0 && (
-        <View style={styles.emptyState}>
+        <Animated.View entering={FadeIn.duration(150)} style={styles.emptyState}>
           <Text style={styles.emptyText}>No activity data yet</Text>
-        </View>
+        </Animated.View>
       )}
     </Card>
   );
@@ -194,5 +212,18 @@ const styles = StyleSheet.create({
   emptyText: {
     ...tokens.typography.body,
     color: tokens.colors.muted,
+  },
+  skeleton: {
+    height: 160,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    paddingHorizontal: tokens.spacing.xs,
+  },
+  skeletonBar: {
+    width: 24,
+    backgroundColor: tokens.colors.border,
+    borderRadius: 4,
+    opacity: 0.5,
   },
 });
