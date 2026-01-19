@@ -769,6 +769,8 @@ export function LogResultModal({
       case 'completed':
         score = { type: 'completed', value: completed };
         break;
+      default:
+        score = { type: 'weight', value: 0 };
     }
 
     onSubmit(score);

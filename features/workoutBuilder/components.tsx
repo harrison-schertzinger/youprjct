@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
 import { ColorPicker } from '@/components/ui/ColorPicker';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import type {
   CustomWorkout,
   WorkoutExercise,
@@ -648,9 +649,11 @@ export function EmptyWorkoutsState({ onCreateWorkout }: EmptyWorkoutsStateProps)
       <Text style={styles.emptySubtitle}>
         Create your own workouts with any exercises from the library
       </Text>
-      <Pressable style={styles.emptyButton} onPress={onCreateWorkout}>
-        <Text style={styles.emptyButtonText}>Create Workout</Text>
-      </Pressable>
+      <SignatureButton
+        title="Create Workout"
+        onPress={onCreateWorkout}
+        size="large"
+      />
     </View>
   );
 }
@@ -1121,16 +1124,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: tokens.spacing.lg,
     lineHeight: 22,
-  },
-  emptyButton: {
-    paddingVertical: 14,
-    paddingHorizontal: tokens.spacing.xl,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.tint,
-  },
-  emptyButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 });
