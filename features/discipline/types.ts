@@ -41,7 +41,7 @@ export type DailyRequirementStatus = {
   completedRequirements: string[]; // Array of requirement IDs completed that day
 };
 
-export type DisciplineView = 'challenge' | 'rules';
+export type DisciplineView = 'challenge' | 'rules' | 'community';
 
 // ============================================================
 // Rules Adherence Types
@@ -73,15 +73,25 @@ export const RULES_GRADIENT = {
 };
 
 // Adherence level thresholds for visual feedback
-export type AdherenceLevel = 'perfect' | 'good' | 'partial' | 'low' | 'none';
+// Goal is 90%+ sustained excellence, not perfection
+export type AdherenceLevel = 'excellent' | 'good' | 'needsWork' | 'low' | 'none';
 
 export function getAdherenceLevel(percentage: number): AdherenceLevel {
-  if (percentage === 100) return 'perfect';
-  if (percentage >= 80) return 'good';
-  if (percentage >= 50) return 'partial';
-  if (percentage > 0) return 'low';
+  if (percentage >= 90) return 'excellent';  // Green - target zone
+  if (percentage >= 70) return 'good';       // Yellow - acceptable
+  if (percentage >= 50) return 'needsWork';  // Orange - needs improvement
+  if (percentage > 0) return 'low';          // Red - falling behind
   return 'none';
 }
+
+// Color mapping for adherence levels
+export const ADHERENCE_COLORS: Record<AdherenceLevel, string> = {
+  excellent: '#22C55E',   // Green
+  good: '#EAB308',        // Yellow
+  needsWork: '#F97316',   // Orange
+  low: '#EF4444',         // Red
+  none: '#6B7280',        // Gray
+};
 
 // Challenge color gradients - matches goal gradients for consistency
 export const CHALLENGE_GRADIENTS: Record<ChallengeColor, { start: string; end: string }> = {

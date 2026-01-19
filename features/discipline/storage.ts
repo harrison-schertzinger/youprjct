@@ -416,13 +416,14 @@ export function calculateRulesStreak(history: RulesAdherenceHistory): number {
   for (const date of sortedDates) {
     if (date === checkDate) {
       const adherence = history[date];
-      // Only count as streak if 100% adherence
-      if (adherence.followedRules.length === adherence.totalRules && adherence.totalRules > 0) {
+      // Count ANY submission as part of streak (not just 100%)
+      // This encourages showing up daily even if not perfect
+      if (adherence.totalRules > 0) {
         streak++;
         const prevDate = addDays(new Date(checkDate), -1);
         checkDate = getDateISO(prevDate);
       } else {
-        break; // Streak broken by imperfect day
+        break;
       }
     } else if (date < checkDate) {
       break; // Gap in days
@@ -430,6 +431,30 @@ export function calculateRulesStreak(history: RulesAdherenceHistory): number {
   }
 
   return streak;
+}
+
+/**
+ * Calculate average adherence percentage over last N days (or all history)
+ * This is the key metric - goal is 90%+ average
+ */
+export function calculateAveragePercentage(
+  history: RulesAdherenceHistory,
+  lastNDays?: number
+): number {
+  let entries = Object.values(history).filter(a => a.totalRules > 0);
+
+  if (lastNDays) {
+    const cutoff = getDateISO(addDays(new Date(), -lastNDays));
+    entries = entries.filter(a => a.date >= cutoff);
+  }
+
+  if (entries.length === 0) return 0;
+
+  const totalPercentage = entries.reduce((sum, a) => {
+    return sum + (a.followedRules.length / a.totalRules) * 100;
+  }, 0);
+
+  return Math.round(totalPercentage / entries.length);
 }
 
 export function calculateBestRulesStreak(history: RulesAdherenceHistory): number {
@@ -442,12 +467,13 @@ export function calculateBestRulesStreak(history: RulesAdherenceHistory): number
 
   for (const date of sortedDates) {
     const adherence = history[date];
-    const isPerfect = adherence.followedRules.length === adherence.totalRules && adherence.totalRules > 0;
+    // Count ANY submission (showing up matters)
+    const hasSubmission = adherence.totalRules > 0;
 
-    if (date === expectedDate && isPerfect) {
+    if (date === expectedDate && hasSubmission) {
       currentStreak++;
       bestStreak = Math.max(bestStreak, currentStreak);
-    } else if (isPerfect) {
+    } else if (hasSubmission) {
       currentStreak = 1;
     } else {
       currentStreak = 0;

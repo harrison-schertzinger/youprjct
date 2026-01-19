@@ -283,18 +283,18 @@ export function RulesCheckInCard({
           </View>
 
           <TouchableOpacity
-            style={[styles.checkInButton, !allChecked && styles.checkInButtonDisabled]}
+            style={[styles.checkInButton, checkedCount === 0 && styles.checkInButtonDisabled]}
             onPress={onCompleteCheckIn}
-            disabled={!allChecked}
+            disabled={checkedCount === 0}
           >
             <LinearGradient
-              colors={allChecked ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
+              colors={checkedCount > 0 ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.checkInButtonGradient}
             >
-              <Text style={[styles.checkInButtonText, !allChecked && styles.checkInButtonTextDisabled]}>
-                Complete Check-In
+              <Text style={[styles.checkInButtonText, checkedCount === 0 && styles.checkInButtonTextDisabled]}>
+                Submit Day ({Math.round((checkedCount / rules.length) * 100)}%)
               </Text>
             </LinearGradient>
           </TouchableOpacity>
@@ -304,9 +304,9 @@ export function RulesCheckInCard({
       {hasCheckedIn && (
         <View style={styles.checkInCompleteMessage}>
           <Text style={styles.checkInCompleteText}>
-            {checkedCount === rules.length ? 'Perfect adherence today!' : `${checkedCount}/${rules.length} rules followed`}
+            {checkedCount === rules.length ? 'Perfect day!' : `${Math.round((checkedCount / rules.length) * 100)}% today`}
           </Text>
-          <Text style={styles.checkInCompleteSubtext}>Come back tomorrow</Text>
+          <Text style={styles.checkInCompleteSubtext}>Aim for 90%+ average</Text>
         </View>
       )}
     </Card>
@@ -1096,18 +1096,18 @@ export function RulesCard({
               </View>
 
               <TouchableOpacity
-                style={[rulesCardStyles.completeButton, !allChecked && rulesCardStyles.completeButtonDisabled]}
+                style={[rulesCardStyles.completeButton, checkedCount === 0 && rulesCardStyles.completeButtonDisabled]}
                 onPress={onCompleteCheckIn}
-                disabled={!allChecked}
+                disabled={checkedCount === 0}
               >
                 <LinearGradient
-                  colors={allChecked ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
+                  colors={checkedCount > 0 ? [RULES_GRADIENT.start, RULES_GRADIENT.end] : [tokens.colors.border, tokens.colors.border]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={rulesCardStyles.completeButtonGradient}
                 >
-                  <Text style={[rulesCardStyles.completeButtonText, !allChecked && rulesCardStyles.completeButtonTextDisabled]}>
-                    Complete Check-In
+                  <Text style={[rulesCardStyles.completeButtonText, checkedCount === 0 && rulesCardStyles.completeButtonTextDisabled]}>
+                    Submit Day ({Math.round((checkedCount / rules.length) * 100)}%)
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

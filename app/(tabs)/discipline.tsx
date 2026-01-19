@@ -42,6 +42,25 @@ import {
   calculateRulesStreak,
   calculateBestRulesStreak,
 } from '@/features/discipline';
+import {
+  ChallengeBrowseCard,
+  JoinedChallengeCard,
+  ChallengeDetailsModal,
+  NoChallengesMessage,
+  NoJoinedChallengesMessage,
+  ChallengesTabs,
+  type CommunityChallenge,
+  type ChallengeParticipant,
+  type DailyCheckIn,
+  type ChallengesView,
+  loadChallenges,
+  loadMyParticipations,
+  loadCheckIns,
+  joinChallenge,
+  leaveChallenge,
+  getTodayCheckIn,
+  submitDailyCheckIn,
+} from '@/features/challenges';
 
 const DISCIPLINE_BENEFITS = [
   {
@@ -74,6 +93,14 @@ export default function DisciplineScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
 
+  // Community challenges state
+  const [communityChallenges, setCommunityChallenges] = useState<CommunityChallenge[]>([]);
+  const [myParticipations, setMyParticipations] = useState<ChallengeParticipant[]>([]);
+  const [communityCheckIns, setCommunityCheckIns] = useState<DailyCheckIn[]>([]);
+  const [communityView, setCommunityView] = useState<ChallengesView>('browse');
+  const [selectedChallenge, setSelectedChallenge] = useState<CommunityChallenge | null>(null);
+  const [communityCheckedRules, setCommunityCheckedRules] = useState<string[]>([]);
+
   const loadData = useCallback(async () => {
     try {
       const [
@@ -82,18 +109,27 @@ export default function DisciplineScreen() {
         loadedRules,
         loadedHistory,
         loadedCheckIn,
+        loadedCommunityChallenges,
+        loadedParticipations,
+        loadedCommunityCheckIns,
       ] = await Promise.all([
         loadChallenge(),
         loadDailyStatus(),
         loadRules(),
         loadRulesAdherenceHistory(),
         loadTodayCheckIn(),
+        loadChallenges(),
+        loadMyParticipations(),
+        loadCheckIns(),
       ]);
       setChallenge(loadedChallenge);
       setDailyStatus(loadedDailyStatus);
       setRules(loadedRules);
       setRulesHistory(loadedHistory);
       setTodayCheckIn(loadedCheckIn);
+      setCommunityChallenges(loadedCommunityChallenges);
+      setMyParticipations(loadedParticipations);
+      setCommunityCheckIns(loadedCommunityCheckIns);
     } catch (error) {
       console.error('Failed to load discipline data:', error);
     }
@@ -128,7 +164,9 @@ export default function DisciplineScreen() {
   }, [loadData]);
 
   const handleViewChange = (index: number) => {
-    setView(index === 0 ? 'challenge' : 'rules');
+    if (index === 0) setView('challenge');
+    else if (index === 1) setView('rules');
+    else setView('community');
   };
 
   // ============================================================
@@ -243,6 +281,93 @@ export default function DisciplineScreen() {
     setTodayCheckIn(checkIn);
   };
 
+  // ============================================================
+  // Community Challenge handlers
+  // ============================================================
+
+  const handleSelectChallenge = (challenge: CommunityChallenge) => {
+    setSelectedChallenge(challenge);
+    // Reset checked rules for the selected challenge
+    setCommunityCheckedRules([]);
+  };
+
+  const handleJoinChallenge = async () => {
+    if (!selectedChallenge) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const participant = await joinChallenge(selectedChallenge.id);
+    setMyParticipations(prev => [...prev, participant]);
+  };
+
+  const handleLeaveChallenge = async () => {
+    if (!selectedChallenge) return;
+
+    Alert.alert(
+      'Leave Challenge',
+      'Are you sure you want to leave this challenge? Your progress will be lost.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            await leaveChallenge(selectedChallenge.id);
+            setMyParticipations(prev => prev.filter(p => p.challengeId !== selectedChallenge.id));
+            setCommunityCheckIns(prev => prev.filter(c => c.challengeId !== selectedChallenge.id));
+            setSelectedChallenge(null);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          },
+        },
+      ]
+    );
+  };
+
+  const handleCommunityCheckInToggle = (ruleId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCommunityCheckedRules(prev =>
+      prev.includes(ruleId)
+        ? prev.filter(id => id !== ruleId)
+        : [...prev, ruleId]
+    );
+  };
+
+  const handleSubmitCommunityDay = async () => {
+    if (!selectedChallenge || communityCheckedRules.length === 0) return;
+
+    const participant = myParticipations.find(p => p.challengeId === selectedChallenge.id);
+    if (!participant) return;
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const newCheckIn = await submitDailyCheckIn(
+      participant.id,
+      selectedChallenge.id,
+      communityCheckedRules,
+      selectedChallenge.rules.length
+    );
+
+    setCommunityCheckIns(prev => [...prev.filter(c => c.id !== newCheckIn.id), newCheckIn]);
+
+    // Reload participations to get updated stats
+    const updatedParticipations = await loadMyParticipations();
+    setMyParticipations(updatedParticipations);
+
+    setCommunityCheckedRules([]);
+  };
+
+  // Helper functions for community view
+  const getParticipantForChallenge = (challengeId: string) =>
+    myParticipations.find(p => p.challengeId === challengeId) || null;
+
+  const getTodayCommunityCheckIn = (participantId: string, challengeId: string) => {
+    const today = getTodayISO();
+    return communityCheckIns.find(
+      c => c.participantId === participantId && c.challengeId === challengeId && c.date === today
+    ) || null;
+  };
+
+  const getCheckInsForChallenge = (challengeId: string) =>
+    communityCheckIns.filter(c => c.challengeId === challengeId);
+
   // Calculate rules stats
   const currentStreak = calculateRulesStreak(rulesHistory);
   const bestStreak = calculateBestRulesStreak(rulesHistory);
@@ -300,8 +425,8 @@ export default function DisciplineScreen() {
           </View>
 
           <SegmentedControl
-            segments={['Challenge', 'Rules']}
-            selectedIndex={view === 'challenge' ? 0 : 1}
+            segments={['Challenge', 'Rules', 'Community']}
+            selectedIndex={view === 'challenge' ? 0 : view === 'rules' ? 1 : 2}
             onChange={handleViewChange}
           />
 
@@ -333,6 +458,71 @@ export default function DisciplineScreen() {
                   ))
                 )}
               </View>
+            </View>
+          ) : view === 'community' ? (
+            <View>
+              <ChallengesTabs
+                activeView={communityView}
+                onChangeView={setCommunityView}
+                joinedCount={myParticipations.length}
+              />
+
+              {communityView === 'browse' ? (
+                communityChallenges.length === 0 ? (
+                  <NoChallengesMessage />
+                ) : (
+                  communityChallenges.map(c => (
+                    <ChallengeBrowseCard
+                      key={c.id}
+                      challenge={c}
+                      isJoined={myParticipations.some(p => p.challengeId === c.id)}
+                      onPress={() => handleSelectChallenge(c)}
+                    />
+                  ))
+                )
+              ) : (
+                myParticipations.length === 0 ? (
+                  <NoJoinedChallengesMessage onBrowse={() => setCommunityView('browse')} />
+                ) : (
+                  myParticipations.map(participant => {
+                    const c = communityChallenges.find(ch => ch.id === participant.challengeId);
+                    if (!c) return null;
+                    const checkIns = getCheckInsForChallenge(c.id);
+                    const todayCI = getTodayCommunityCheckIn(participant.id, c.id);
+                    return (
+                      <JoinedChallengeCard
+                        key={c.id}
+                        challenge={c}
+                        participant={participant}
+                        checkIns={checkIns}
+                        todayCheckIn={todayCI}
+                        onPress={() => handleSelectChallenge(c)}
+                      />
+                    );
+                  })
+                )
+              )}
+
+              <ChallengeDetailsModal
+                visible={selectedChallenge !== null}
+                challenge={selectedChallenge}
+                participant={selectedChallenge ? getParticipantForChallenge(selectedChallenge.id) : null}
+                checkIns={selectedChallenge ? getCheckInsForChallenge(selectedChallenge.id) : []}
+                todayCheckIn={
+                  selectedChallenge
+                    ? (() => {
+                        const p = getParticipantForChallenge(selectedChallenge.id);
+                        return p ? getTodayCommunityCheckIn(p.id, selectedChallenge.id) : null;
+                      })()
+                    : null
+                }
+                onClose={() => setSelectedChallenge(null)}
+                onJoin={handleJoinChallenge}
+                onLeave={handleLeaveChallenge}
+                onCheckInToggle={handleCommunityCheckInToggle}
+                onSubmitDay={handleSubmitCommunityDay}
+                checkedRules={communityCheckedRules}
+              />
             </View>
           ) : (
             <View>
