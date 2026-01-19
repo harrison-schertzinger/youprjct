@@ -63,7 +63,7 @@ export default function RootLayout() {
           <Stack.Screen name="workout-session" options={{ headerShown: false, presentation: 'card' }} />
           <Stack.Screen name="premium" options={{ headerShown: false, presentation: 'card' }} />
         </Stack>
-        <StatusBar style="auto" />
+        <StatusBar style="dark" />
       </ToastProvider>
     </ThemeProvider>
   );
