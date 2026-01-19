@@ -1,5 +1,6 @@
-// Community Challenge storage - AsyncStorage persistence (local-first)
+// Community Challenge storage - AsyncStorage persistence (local-first) with Supabase sync
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import type {
   CommunityChallenge,
   ChallengeParticipant,
@@ -37,9 +38,53 @@ export function addDays(date: Date, days: number): Date {
 
 export async function loadChallenges(): Promise<CommunityChallenge[]> {
   try {
+    // Try Supabase first if configured
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabase();
+      if (supabase) {
+        const { data, error } = await supabase
+          .from('community_challenges')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (data && data.length > 0) {
+          // Map Supabase snake_case to app camelCase
+          const challenges: CommunityChallenge[] = data.map((row: Record<string, unknown>) => ({
+            id: row.id as string,
+            title: row.title as string,
+            description: row.description as string,
+            color: row.color as CommunityChallenge['color'],
+            totalDays: row.total_days as number,
+            category: row.category as CommunityChallenge['category'],
+            difficulty: row.difficulty as CommunityChallenge['difficulty'],
+            rules: row.rules as CommunityChallenge['rules'],
+            startDate: row.start_date as string,
+            endDate: row.end_date as string,
+            createdAt: row.created_at as string,
+            isOfficial: row.is_official as boolean,
+            isActive: row.is_active as boolean,
+          }));
+
+          // Cache locally for offline access
+          await AsyncStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
+          return challenges;
+        }
+
+        if (error) {
+          console.warn('Supabase fetch error, falling back to cache:', error.message);
+        }
+      }
+    }
+
+    // Fall back to local cache
     const raw = await AsyncStorage.getItem(CHALLENGES_KEY);
-    if (!raw) return getDefaultChallenges();
-    return JSON.parse(raw);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+
+    // Fall back to seed data
+    return getDefaultChallenges();
   } catch (error) {
     console.error('Failed to load challenges:', error);
     return getDefaultChallenges();

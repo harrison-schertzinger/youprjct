@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/exercises', label: 'Exercises', icon: '🏋️' },
   { href: '/admin/tracks', label: 'Tracks', icon: '📋' },
   { href: '/admin/planner', label: 'Week Planner', icon: '📅' },
+  { href: '/admin/challenges', label: 'Challenges', icon: '🏆' },
 ];
 
 export default function AdminLayout({
