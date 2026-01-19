@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import Animated, { LinearTransition, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -140,6 +141,23 @@ export default function YouScreen() {
     if (taskDayIndex === 1) return "Today's Tasks";
     return "Tomorrow's Tasks";
   }, [taskDayIndex]);
+
+  // Sort tasks: incomplete first, completed last (stable sort preserves creation order within groups)
+  const sortedTasks = useMemo(() => {
+    const incomplete = dailyTasks.filter(t => !t.completed);
+    const completed = dailyTasks.filter(t => t.completed);
+    return [...incomplete, ...completed];
+  }, [dailyTasks]);
+
+  // Check if we need to show a "Done" divider
+  const hasCompletedTasks = useMemo(() => dailyTasks.some(t => t.completed), [dailyTasks]);
+  const hasIncompleteTasks = useMemo(() => dailyTasks.some(t => !t.completed), [dailyTasks]);
+  const showDoneDivider = hasCompletedTasks && hasIncompleteTasks;
+
+  // Find the index where completed tasks start
+  const completedStartIndex = useMemo(() => {
+    return sortedTasks.findIndex(t => t.completed);
+  }, [sortedTasks]);
 
   const handleWinTheDay = async () => {
     if (isSelectedDayWon) {
@@ -316,16 +334,35 @@ export default function YouScreen() {
               {taskDayIndex === 2 ? 'Plan tomorrow\'s tasks' : 'No tasks for this day'}
             </Text>
           ) : (
-            dailyTasks.map((t, index) => (
-              <View key={t.id} style={index === dailyTasks.length - 1 ? styles.lastItem : undefined}>
-                <RoutineListItem
-                  title={t.title}
-                  checked={t.completed}
-                  onToggle={() => handleToggleTask(t.id)}
-                  chipText={t.goalName}
-                  onDelete={() => handleDeleteTask(t.id)}
-                />
-              </View>
+            sortedTasks.map((t, index) => (
+              <Animated.View
+                key={t.id}
+                layout={LinearTransition.springify().damping(18).stiffness(120)}
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(150)}
+                style={index === sortedTasks.length - 1 ? styles.lastItem : undefined}
+              >
+                {/* Done divider - appears before first completed task */}
+                {showDoneDivider && index === completedStartIndex && (
+                  <Animated.View
+                    entering={FadeIn.duration(300)}
+                    style={styles.doneDivider}
+                  >
+                    <View style={styles.doneDividerLine} />
+                    <Text style={styles.doneDividerText}>Done</Text>
+                    <View style={styles.doneDividerLine} />
+                  </Animated.View>
+                )}
+                <Animated.View style={t.completed ? styles.completedItem : undefined}>
+                  <RoutineListItem
+                    title={t.title}
+                    checked={t.completed}
+                    onToggle={() => handleToggleTask(t.id)}
+                    chipText={t.goalName}
+                    onDelete={() => handleDeleteTask(t.id)}
+                  />
+                </Animated.View>
+              </Animated.View>
             ))
           )}
         </GlowCard>
@@ -477,4 +514,27 @@ const styles = StyleSheet.create({
   // Cards
   emptyText: { fontSize: 14, color: tokens.colors.muted, paddingVertical: tokens.spacing.sm },
   lastItem: { borderBottomWidth: 0 },
+
+  // Task reordering styles
+  completedItem: {
+    opacity: 0.6,
+  },
+  doneDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.sm,
+    gap: tokens.spacing.sm,
+  },
+  doneDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: tokens.colors.border,
+  },
+  doneDividerText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
 });
