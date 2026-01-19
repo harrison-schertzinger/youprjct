@@ -8,7 +8,10 @@ import { tokens } from '@/design/tokens';
 const TAB_BAR_CLEARANCE = 100;
 
 // Height of the subtle top edge fade
-const TOP_FADE_HEIGHT = 20;
+const TOP_FADE_HEIGHT = 12;
+
+// Background color with alpha for true transparent gradient
+const BG_TRANSPARENT = 'rgba(247, 247, 245, 0)';
 
 type Props = {
   children: React.ReactNode;
@@ -43,7 +46,7 @@ export function ScreenContainer({ children, style, compact = false }: Props) {
 
       {/* Premium: Subtle top edge fade for smooth status bar transition */}
       <LinearGradient
-        colors={[tokens.colors.bg, 'transparent']}
+        colors={[tokens.colors.bg, BG_TRANSPARENT]}
         style={[styles.topFade, { top: insets.top }]}
         pointerEvents="none"
       />
