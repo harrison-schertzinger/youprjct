@@ -1,5 +1,5 @@
 // Community Challenges components
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,8 @@ import {
   Pressable,
   Modal,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
 import { Card } from '@/components/ui/Card';
 import type {
@@ -30,8 +28,6 @@ import {
   ADHERENCE_COLORS,
 } from './types';
 import { getTodayISO, getChallengeProgress } from './storage';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // ============================================================
 // Challenges View Tabs
@@ -243,8 +239,6 @@ export function ChallengeDetailsModal({
   onSubmitDay,
   checkedRules,
 }: ChallengeDetailsModalProps) {
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-
   if (!challenge) return null;
 
   const gradient = CHALLENGE_GRADIENTS[challenge.color];
@@ -487,7 +481,7 @@ export function Leaderboard({ entries, sortBy, onChangeSortBy }: LeaderboardProp
           <Text style={styles.leaderboardEmptyText}>No participants yet</Text>
         </View>
       ) : (
-        entries.map((entry, index) => (
+        entries.map((entry) => (
           <View
             key={entry.participantId}
             style={[

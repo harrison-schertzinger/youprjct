@@ -58,7 +58,6 @@ import {
   loadCheckIns,
   joinChallenge,
   leaveChallenge,
-  getTodayCheckIn,
   submitDailyCheckIn,
 } from '@/features/challenges';
 
@@ -503,26 +502,27 @@ export default function DisciplineScreen() {
                 )
               )}
 
-              <ChallengeDetailsModal
-                visible={selectedChallenge !== null}
-                challenge={selectedChallenge}
-                participant={selectedChallenge ? getParticipantForChallenge(selectedChallenge.id) : null}
-                checkIns={selectedChallenge ? getCheckInsForChallenge(selectedChallenge.id) : []}
-                todayCheckIn={
-                  selectedChallenge
-                    ? (() => {
-                        const p = getParticipantForChallenge(selectedChallenge.id);
-                        return p ? getTodayCommunityCheckIn(p.id, selectedChallenge.id) : null;
-                      })()
-                    : null
-                }
-                onClose={() => setSelectedChallenge(null)}
-                onJoin={handleJoinChallenge}
-                onLeave={handleLeaveChallenge}
-                onCheckInToggle={handleCommunityCheckInToggle}
-                onSubmitDay={handleSubmitCommunityDay}
-                checkedRules={communityCheckedRules}
-              />
+              {(() => {
+                const participant = selectedChallenge ? getParticipantForChallenge(selectedChallenge.id) : null;
+                const todayCI = participant && selectedChallenge
+                  ? getTodayCommunityCheckIn(participant.id, selectedChallenge.id)
+                  : null;
+                return (
+                  <ChallengeDetailsModal
+                    visible={selectedChallenge !== null}
+                    challenge={selectedChallenge}
+                    participant={participant}
+                    checkIns={selectedChallenge ? getCheckInsForChallenge(selectedChallenge.id) : []}
+                    todayCheckIn={todayCI}
+                    onClose={() => setSelectedChallenge(null)}
+                    onJoin={handleJoinChallenge}
+                    onLeave={handleLeaveChallenge}
+                    onCheckInToggle={handleCommunityCheckInToggle}
+                    onSubmitDay={handleSubmitCommunityDay}
+                    checkedRules={communityCheckedRules}
+                  />
+                );
+              })()}
             </View>
           ) : (
             <View>
