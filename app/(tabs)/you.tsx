@@ -58,10 +58,21 @@ export default function YouScreen() {
     setDailyTasks(tasks);
   }, []);
 
-  // Load tasks when taskDayOffset changes
+  // Load routine completions when day selection changes
+  const loadRoutineCompletionsForDay = useCallback(async (offset: number) => {
+    const [morningDone, eveningDone] = await Promise.all([
+      loadCompletedRoutines('morning', offset),
+      loadCompletedRoutines('evening', offset),
+    ]);
+    setMorningCompleted(morningDone);
+    setEveningCompleted(eveningDone);
+  }, []);
+
+  // Load tasks and routine completions when taskDayOffset changes
   useEffect(() => {
     loadTasksForDay(taskDayOffset);
-  }, [taskDayOffset, loadTasksForDay]);
+    loadRoutineCompletionsForDay(taskDayOffset);
+  }, [taskDayOffset, loadTasksForDay, loadRoutineCompletionsForDay]);
 
   const loadAllData = useCallback(async () => {
     try {
@@ -70,7 +81,7 @@ export default function YouScreen() {
       setFirstOpenedAt(firstOpened);
 
       const [morning, evening, morningDone, eveningDone] = await Promise.all([
-        loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning'), loadCompletedRoutines('evening')
+        loadMorningRoutines(), loadEveningRoutines(), loadCompletedRoutines('morning', taskDayOffset), loadCompletedRoutines('evening', taskDayOffset)
       ]);
       setMorningRoutines(morning);
       setEveningRoutines(evening);
@@ -150,8 +161,8 @@ export default function YouScreen() {
   }, []);
 
   const handleToggleMorning = useCallback(async (id: string) => {
-    setMorningCompleted(await toggleRoutineCompletion('morning', id));
-  }, []);
+    setMorningCompleted(await toggleRoutineCompletion('morning', id, taskDayOffset));
+  }, [taskDayOffset]);
 
   const handleAddEvening = useCallback(async (title: string, label?: string) => {
     const newRoutine = await addEveningRoutine(title, label);
@@ -164,8 +175,8 @@ export default function YouScreen() {
   }, []);
 
   const handleToggleEvening = useCallback(async (id: string) => {
-    setEveningCompleted(await toggleRoutineCompletion('evening', id));
-  }, []);
+    setEveningCompleted(await toggleRoutineCompletion('evening', id, taskDayOffset));
+  }, [taskDayOffset]);
 
   const handleAddTask = useCallback(async (title: string, _label?: string, goal?: Goal) => {
     const newTask = await addDailyTask(title, goal?.id, goal?.title, taskDayOffset);
