@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { View, Text, StyleSheet } from 'react-native';
 import { tokens } from '@/design/tokens';
+import { SignatureButton } from './SignatureButton';
 
 type Props = {
   icon?: string;
@@ -16,11 +16,6 @@ type Props = {
  * Provides visual guidance and optional call-to-action.
  */
 export function EmptyState({ icon, title, message, actionLabel, onAction }: Props) {
-  const handleAction = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onAction?.();
-  };
-
   return (
     <View style={styles.container}>
       {icon && (
@@ -31,12 +26,13 @@ export function EmptyState({ icon, title, message, actionLabel, onAction }: Prop
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
       {actionLabel && onAction && (
-        <Pressable
-          style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]}
-          onPress={handleAction}
-        >
-          <Text style={styles.actionText}>{actionLabel}</Text>
-        </Pressable>
+        <View style={styles.actionWrapper}>
+          <SignatureButton
+            title={actionLabel}
+            onPress={onAction}
+            size="default"
+          />
+        </View>
       )}
     </View>
   );
@@ -73,20 +69,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     maxWidth: 280,
   },
-  actionButton: {
+  actionWrapper: {
     marginTop: tokens.spacing.lg,
-    paddingVertical: tokens.spacing.sm + 2,
-    paddingHorizontal: tokens.spacing.lg,
-    backgroundColor: tokens.colors.tint,
-    borderRadius: tokens.radius.md,
-  },
-  actionPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
   },
 });

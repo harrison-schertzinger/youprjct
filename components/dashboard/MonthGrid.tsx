@@ -21,9 +21,9 @@ const COLORS = {
     shadow: '#059669',
   },
   today: {
-    gradient: ['#6366F1', '#5B6EF5', '#5558E8'] as const,
-    shadow: '#4338CA',
-    glow: 'rgba(99, 102, 241, 0.4)',
+    gradient: ['#3B82F6', '#2563EB', '#1D4ED8'] as const,
+    shadow: '#2563EB',
+    glow: 'rgba(59, 130, 246, 0.4)',
   },
   preSignup: {
     gradient: ['#D1D5DB', '#9CA3AF', '#6B7280'] as const,
@@ -244,9 +244,9 @@ export function MonthGrid({ selectedDay, onSelectDay, wins, firstOpenedAt }: Pro
                   styles.dayBtnOuter,
                   style.shadow && {
                     shadowColor: style.shadow,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3,
                     elevation: 3,
                   },
                   pressed && canSelect && styles.pressed,

@@ -11,7 +11,7 @@ type Props = {
 
 /**
  * Premium "Day Won" button - the central action of the app.
- * Features blue gradient matching calendar "today", subtle pulse animation, and strong haptic feedback.
+ * Features signature blue gradient, subtle pulse animation, and strong haptic feedback.
  */
 export function DayWonButton({ isWon, onPress }: Props) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -57,7 +57,7 @@ export function DayWonButton({ isWon, onPress }: Props) {
         onPress={handlePress}
       >
         <LinearGradient
-          colors={['#E0E7FF', '#DDD6FE', '#D8D5FE']}
+          colors={['#DBEAFE', '#BFDBFE', '#93C5FD']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.wonButton}
@@ -76,7 +76,7 @@ export function DayWonButton({ isWon, onPress }: Props) {
     >
       <Animated.View style={[styles.buttonWrapper, { transform: [{ scale: pulseAnim }] }]}>
         <LinearGradient
-          colors={['#6366F1', '#5B6EF5', '#5558E8']}
+          colors={['#3B82F6', '#2563EB']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.gradient}
@@ -99,19 +99,19 @@ const styles = StyleSheet.create({
   },
   buttonWrapper: {
     alignSelf: 'stretch',
-    borderRadius: tokens.radius.md,
-    // Tight shadow - sun directly above, casting evenly on 3 sides
-    shadowColor: '#3730A3',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.18,
+    borderRadius: 10,
+    // Tight 3-sided shadow - sun directly above
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.20,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 4,
   },
   gradient: {
     paddingVertical: tokens.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: tokens.radius.md,
+    borderRadius: 10,
     overflow: 'hidden',
   },
   buttonText: {
@@ -126,24 +126,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: tokens.spacing.md,
-    borderRadius: tokens.radius.md,
+    borderRadius: 10,
     gap: tokens.spacing.sm,
-    // Tight shadow matching main button
-    shadowColor: '#3730A3',
+    // Tight shadow for won state
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.12,
-    shadowRadius: 4,
+    shadowRadius: 3,
     elevation: 2,
   },
   wonCheckmark: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#4338CA',
+    color: '#1D4ED8',
   },
   wonText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#4338CA',
+    color: '#1D4ED8',
     letterSpacing: 0.5,
   },
 });

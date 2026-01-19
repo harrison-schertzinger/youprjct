@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Pressable, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
@@ -8,6 +8,7 @@ import { PremiumGate } from '@/components/ui/PremiumGate';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { AddTimeModal } from '@/components/ui/AddTimeModal';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
 import {
   TrainingStatsSection,
@@ -29,6 +30,24 @@ import {
   useTrainingStats,
   type EnrichedMovement,
 } from '@/features/body/hooks';
+import {
+  WorkoutCard,
+  ScheduledWorkoutCard,
+  WorkoutBuilderModal,
+  WORKOUT_GRADIENTS,
+  TEMPLATE_LABELS,
+} from '@/features/workoutBuilder';
+import {
+  useCustomWorkouts,
+  useEnrichedScheduledWorkouts,
+  useExerciseLibrary,
+} from '@/features/workoutBuilder/hooks';
+import {
+  createWorkout,
+  updateWorkout,
+  scheduleWorkout,
+} from '@/features/workoutBuilder/storage';
+import type { CustomWorkout } from '@/features/workoutBuilder/types';
 import type { TrainingTrack, Profile } from '@/lib/training/types';
 import { getTodayISO } from '@/lib/repositories/TrainingRepo';
 import { logSession } from '@/lib/repositories/ActivityRepo';
@@ -72,6 +91,14 @@ export default function BodyScreen() {
   const [selectedMovement, setSelectedMovement] = useState<EnrichedMovement | null>(null);
   const [selectedPRMovement, setSelectedPRMovement] = useState<MajorMovement | null>(null);
   const [leaderboardEntries, setLeaderboardEntries] = useState<LeaderboardEntry[]>([]);
+
+  // Workout Builder
+  const [workoutBuilderVisible, setWorkoutBuilderVisible] = useState(false);
+  const [showAddWorkoutOptions, setShowAddWorkoutOptions] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<CustomWorkout | null>(null);
+  const { workouts: customWorkouts, reload: reloadCustomWorkouts, remove: removeCustomWorkout } = useCustomWorkouts();
+  const { scheduledWorkouts, reload: reloadScheduled } = useEnrichedScheduledWorkouts(selectedDate);
+  const { exercises: exerciseLibrary } = useExerciseLibrary();
 
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -132,6 +159,8 @@ export default function BodyScreen() {
     useCallback(() => {
       reloadWorkouts();
       reloadStats();
+      reloadCustomWorkouts();
+      reloadScheduled();
       // Load profile data
       Promise.all([getProfile(), getSupabaseProfile()])
         .then(([localProfile, sbProfile]) => {
@@ -141,7 +170,7 @@ export default function BodyScreen() {
         .catch((error) => {
           console.error('Failed to load profile:', error);
         });
-    }, [reloadWorkouts, reloadStats])
+    }, [reloadWorkouts, reloadStats, reloadCustomWorkouts, reloadScheduled])
   );
 
   // Derived profile values
@@ -217,6 +246,46 @@ export default function BodyScreen() {
     await refresh();
     reloadWorkouts();
     reloadStats();
+    reloadCustomWorkouts();
+    reloadScheduled();
+  };
+
+  // Workout Builder handlers
+  const handleCreateWorkout = () => {
+    setEditingWorkout(null);
+    setWorkoutBuilderVisible(true);
+  };
+
+  const handleEditWorkout = (workout: CustomWorkout) => {
+    setEditingWorkout(workout);
+    setWorkoutBuilderVisible(true);
+  };
+
+  const handleSaveWorkout = async (workoutData: Omit<CustomWorkout, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingWorkout) {
+      await updateWorkout(editingWorkout.id, workoutData);
+    } else {
+      await createWorkout(
+        workoutData.title,
+        workoutData.templateType,
+        workoutData.color,
+        workoutData.exercises,
+        {
+          timeCap: workoutData.timeCap,
+          rounds: workoutData.rounds,
+          notes: workoutData.notes,
+          isTemplate: workoutData.isTemplate,
+        }
+      );
+    }
+    reloadCustomWorkouts();
+    showToast(editingWorkout ? 'Workout updated' : 'Workout created');
+  };
+
+  const handleScheduleWorkout = async (workoutId: string) => {
+    await scheduleWorkout(workoutId, selectedDate);
+    reloadScheduled();
+    showToast('Workout scheduled');
   };
 
   // Format total time for display
@@ -226,6 +295,14 @@ export default function BodyScreen() {
     const mins = Math.floor((seconds % 3600) / 60);
     if (hours > 0) return `${hours}h`;
     return `${mins}m`;
+  };
+
+  // Format date for display
+  const formatDateForDisplay = (dateISO: string): string => {
+    const today = getTodayISO();
+    if (dateISO === today) return 'Today';
+    const date = new Date(dateISO + 'T12:00:00');
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   return (
@@ -304,6 +381,7 @@ export default function BodyScreen() {
 
           {view === 'training' ? (
             <View>
+              {/* Track Picker - Primary */}
               <TrackPickerButton
                 activeTrack={
                   activeTrack
@@ -325,6 +403,27 @@ export default function BodyScreen() {
                 onNextWeek={() => setWeekOffset((prev) => prev + 1)}
               />
 
+              {/* Custom Workouts for This Day - Show First */}
+              {scheduledWorkouts.length > 0 && (
+                <View style={styles.customWorkoutsSection}>
+                  {scheduledWorkouts.map((scheduled) => (
+                    <ScheduledWorkoutCard
+                      key={scheduled.id}
+                      scheduled={scheduled}
+                      onStart={() => {
+                        showToast('Starting workout...');
+                      }}
+                      onDelete={async () => {
+                        const { deleteScheduledWorkout } = await import('@/features/workoutBuilder/storage');
+                        await deleteScheduledWorkout(scheduled.id);
+                        reloadScheduled();
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+
+              {/* Track Workouts */}
               {workoutsLoading ? (
                 <LoadingState message="Loading workouts" />
               ) : enrichedWorkouts.length > 0 ? (
@@ -359,13 +458,22 @@ export default function BodyScreen() {
                     </View>
                   ))}
                 </View>
-              ) : (
+              ) : scheduledWorkouts.length === 0 ? (
                 <EmptyState
                   icon="📋"
                   title="Rest Day"
                   message="No workouts scheduled. Use this time to recover or select a different day."
                 />
-              )}
+              ) : null}
+
+              {/* Add Workout Button */}
+              <SignatureButton
+                title="+ Add Workout"
+                onPress={() => setShowAddWorkoutOptions(true)}
+                fullWidth
+                style={styles.addWorkoutButton}
+              />
+
             </View>
           ) : (
             <View>
@@ -379,6 +487,39 @@ export default function BodyScreen() {
                 movements={majorMovements}
                 onMovementPress={handlePRPress}
               />
+
+              {/* My Workouts Section in Profile */}
+              <View style={styles.myWorkoutsProfileSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>My Workouts</Text>
+                  <Pressable onPress={handleCreateWorkout}>
+                    <Text style={styles.createNewBtn}>+ New</Text>
+                  </Pressable>
+                </View>
+
+                {customWorkouts.filter(w => w.isTemplate).length > 0 ? (
+                  <View style={styles.templatesGrid}>
+                    {customWorkouts.filter(w => w.isTemplate).map((workout) => (
+                      <WorkoutCard
+                        key={workout.id}
+                        workout={workout}
+                        compact
+                        onPress={() => handleEditWorkout(workout)}
+                        onDelete={() => removeCustomWorkout(workout.id)}
+                      />
+                    ))}
+                  </View>
+                ) : (
+                  <View style={styles.emptyTemplates}>
+                    <Text style={styles.emptyTemplatesText}>
+                      Create reusable workout templates
+                    </Text>
+                    <Pressable style={styles.createFirstBtn} onPress={handleCreateWorkout}>
+                      <Text style={styles.createFirstBtnText}>Create Workout</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -441,6 +582,86 @@ export default function BodyScreen() {
           onClose={() => setAddTimeVisible(false)}
           onAdd={handleAddTime}
         />
+
+        <WorkoutBuilderModal
+          visible={workoutBuilderVisible}
+          exercises={exerciseLibrary}
+          editingWorkout={editingWorkout}
+          onSave={handleSaveWorkout}
+          onClose={() => {
+            setWorkoutBuilderVisible(false);
+            setEditingWorkout(null);
+          }}
+        />
+
+        {/* Add Workout Options Modal */}
+        <Modal
+          visible={showAddWorkoutOptions}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowAddWorkoutOptions(false)}
+        >
+          <Pressable
+            style={styles.addOptionsOverlay}
+            onPress={() => setShowAddWorkoutOptions(false)}
+          >
+            <View style={styles.addOptionsSheet}>
+              <View style={styles.addOptionsHandle} />
+              <Text style={styles.addOptionsTitle}>Add to {formatDateForDisplay(selectedDate)}</Text>
+
+              {/* Create New Option */}
+              <Pressable
+                style={styles.addOption}
+                onPress={() => {
+                  setShowAddWorkoutOptions(false);
+                  handleCreateWorkout();
+                }}
+              >
+                <View style={styles.addOptionIcon}>
+                  <Text style={styles.addOptionIconText}>+</Text>
+                </View>
+                <View style={styles.addOptionContent}>
+                  <Text style={styles.addOptionLabel}>Create New</Text>
+                  <Text style={styles.addOptionDesc}>Build a custom workout</Text>
+                </View>
+              </Pressable>
+
+              {/* Templates */}
+              {customWorkouts.filter(w => w.isTemplate).length > 0 && (
+                <>
+                  <Text style={styles.templatesHeader}>From Templates</Text>
+                  {customWorkouts.filter(w => w.isTemplate).map((workout) => (
+                    <Pressable
+                      key={workout.id}
+                      style={styles.addOption}
+                      onPress={() => {
+                        setShowAddWorkoutOptions(false);
+                        handleScheduleWorkout(workout.id);
+                      }}
+                    >
+                      <View style={[styles.addOptionIcon, { backgroundColor: WORKOUT_GRADIENTS[workout.color].start }]}>
+                        <Text style={styles.addOptionIconText}>{workout.title.charAt(0)}</Text>
+                      </View>
+                      <View style={styles.addOptionContent}>
+                        <Text style={styles.addOptionLabel}>{workout.title}</Text>
+                        <Text style={styles.addOptionDesc}>
+                          {TEMPLATE_LABELS[workout.templateType]} • {workout.exercises.length} exercises
+                        </Text>
+                      </View>
+                    </Pressable>
+                  ))}
+                </>
+              )}
+
+              <Pressable
+                style={styles.cancelOption}
+                onPress={() => setShowAddWorkoutOptions(false)}
+              >
+                <Text style={styles.cancelOptionText}>Cancel</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Modal>
       </ScreenContainer>
     </PremiumGate>
   );
@@ -551,5 +772,146 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: tokens.colors.tint,
+  },
+
+  // Custom Workouts Section (now at top)
+  customWorkoutsSection: {
+    marginTop: tokens.spacing.md,
+    marginBottom: tokens.spacing.sm,
+  },
+
+  // Add Workout Button
+  addWorkoutButton: {
+    marginTop: tokens.spacing.lg,
+  },
+
+  // Profile Section - My Workouts
+  myWorkoutsProfileSection: {
+    marginTop: tokens.spacing.xl,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.md,
+  },
+  sectionTitle: {
+    ...tokens.typography.h3,
+    color: tokens.colors.text,
+  },
+  createNewBtn: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: tokens.colors.tint,
+  },
+  templatesGrid: {
+    gap: tokens.spacing.sm,
+  },
+  emptyTemplates: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.xl,
+    backgroundColor: tokens.colors.card,
+    borderRadius: tokens.radius.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  emptyTemplatesText: {
+    fontSize: 15,
+    color: tokens.colors.muted,
+    marginBottom: tokens.spacing.md,
+  },
+  createFirstBtn: {
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.lg,
+    backgroundColor: tokens.colors.tint,
+    borderRadius: tokens.radius.sm,
+  },
+  createFirstBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  // Add Options Modal
+  addOptionsOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  addOptionsSheet: {
+    backgroundColor: tokens.colors.card,
+    borderTopLeftRadius: tokens.radius.lg,
+    borderTopRightRadius: tokens.radius.lg,
+    paddingHorizontal: tokens.spacing.lg,
+    paddingBottom: tokens.spacing.xl + 20,
+    maxHeight: '70%',
+  },
+  addOptionsHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: tokens.colors.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: tokens.spacing.sm,
+    marginBottom: tokens.spacing.md,
+  },
+  addOptionsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.md,
+  },
+  addOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.border,
+  },
+  addOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: tokens.colors.tint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: tokens.spacing.md,
+  },
+  addOptionIconText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  addOptionContent: {
+    flex: 1,
+  },
+  addOptionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: tokens.colors.text,
+  },
+  addOptionDesc: {
+    fontSize: 13,
+    color: tokens.colors.muted,
+    marginTop: 2,
+  },
+  templatesHeader: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: tokens.spacing.md,
+    marginBottom: tokens.spacing.xs,
+  },
+  cancelOption: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+    marginTop: tokens.spacing.sm,
+  },
+  cancelOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: tokens.colors.muted,
   },
 });

@@ -10,6 +10,7 @@ import {
 import { tokens } from '@/design/tokens';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import { Modal } from '@/components/ui/Modal';
 import type {
   MajorMovement,
@@ -281,55 +282,74 @@ export function SessionTimer({
   };
 
   const isActive = state === 'running' || state === 'paused';
+  const ACCENT = '#3B82F6'; // Signature blue
 
   return (
     <View style={[styles.sessionTimer, isActive && styles.sessionTimerActive]}>
-      <View style={styles.sessionTimerContent}>
-        <View style={styles.sessionTimerLeft}>
-          {workoutTitle && state !== 'idle' && (
-            <Text style={styles.sessionTimerWorkout}>{workoutTitle}</Text>
-          )}
-          <Text style={[styles.sessionTimerTime, isActive && styles.sessionTimerTimeActive]}>
-            {formatTime(duration)}
-          </Text>
-        </View>
-        <View style={styles.sessionTimerButtons}>
-          {state === 'idle' && (
-            <Pressable style={styles.sessionTimerButton} onPress={onStart}>
-              <Text style={styles.sessionTimerButtonText}>Start</Text>
+      {/* Header Label */}
+      <View style={styles.sessionTimerHeader}>
+        <Text style={styles.sessionTimerLabel}>WORKOUT TIMER</Text>
+        {isActive && (
+          <View style={styles.sessionTimerActiveIndicator}>
+            <View style={[styles.sessionTimerActiveDot, { backgroundColor: ACCENT }]} />
+            <Text style={[styles.sessionTimerActiveText, { color: ACCENT }]}>
+              {state === 'paused' ? 'Paused' : 'Active'}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* Workout Title (when active) */}
+      {workoutTitle && isActive && (
+        <Text style={styles.sessionTimerWorkout}>{workoutTitle}</Text>
+      )}
+
+      {/* Timer Display */}
+      <View style={styles.sessionTimerDisplay}>
+        <Text style={[styles.sessionTimerTime, isActive && styles.sessionTimerTimeActive]}>
+          {formatTime(duration)}
+        </Text>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.sessionTimerButtons}>
+        {state === 'idle' && (
+          <SignatureButton
+            title="Start Workout"
+            onPress={onStart}
+            fullWidth
+          />
+        )}
+        {state === 'running' && (
+          <View style={styles.sessionTimerButtonRow}>
+            {onAddTime && (
+              <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
+                <Text style={styles.sessionTimerAddTimeText}>+ Add Time</Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.sessionTimerButtonOutline} onPress={onPause}>
+              <Text style={[styles.sessionTimerButtonOutlineText, { color: ACCENT }]}>Pause</Text>
             </Pressable>
-          )}
-          {state === 'running' && (
-            <>
-              {onAddTime && (
-                <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
-                  <Text style={styles.sessionTimerAddTimeText}>+Time</Text>
-                </Pressable>
-              )}
-              <Pressable style={styles.sessionTimerButtonSecondary} onPress={onPause}>
-                <Text style={styles.sessionTimerButtonSecondaryText}>Pause</Text>
+            <Pressable style={styles.sessionTimerButtonOutline} onPress={onFinish}>
+              <Text style={styles.sessionTimerButtonOutlineText}>Finish</Text>
+            </Pressable>
+          </View>
+        )}
+        {state === 'paused' && (
+          <View style={styles.sessionTimerButtonRow}>
+            {onAddTime && (
+              <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
+                <Text style={styles.sessionTimerAddTimeText}>+ Add Time</Text>
               </Pressable>
-              <Pressable style={styles.sessionTimerButton} onPress={onFinish}>
-                <Text style={styles.sessionTimerButtonText}>Finish</Text>
-              </Pressable>
-            </>
-          )}
-          {state === 'paused' && (
-            <>
-              {onAddTime && (
-                <Pressable style={styles.sessionTimerAddTime} onPress={onAddTime}>
-                  <Text style={styles.sessionTimerAddTimeText}>+Time</Text>
-                </Pressable>
-              )}
-              <Pressable style={styles.sessionTimerButtonSecondary} onPress={onResume}>
-                <Text style={styles.sessionTimerButtonSecondaryText}>Resume</Text>
-              </Pressable>
-              <Pressable style={styles.sessionTimerButton} onPress={onFinish}>
-                <Text style={styles.sessionTimerButtonText}>Finish</Text>
-              </Pressable>
-            </>
-          )}
-        </View>
+            )}
+            <Pressable style={styles.sessionTimerButtonOutline} onPress={onResume}>
+              <Text style={[styles.sessionTimerButtonOutlineText, { color: ACCENT }]}>Resume</Text>
+            </Pressable>
+            <Pressable style={styles.sessionTimerButtonOutline} onPress={onFinish}>
+              <Text style={styles.sessionTimerButtonOutlineText}>Finish</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -344,6 +364,8 @@ const SCORE_TYPE_COLORS: Record<string, string> = {
   weight: '#3B82F6', // Blue
   time: '#22C55E', // Green
   reps: '#F59E0B', // Amber
+  calories: '#EF4444', // Red
+  distance: '#8B5CF6', // Violet
 };
 
 type MovementCardProps = {
@@ -1303,81 +1325,109 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.spacing.lg,
   },
 
-  // Session Timer
+  // Session Timer - Clean design matching Reading Timer
   sessionTimer: {
     backgroundColor: tokens.colors.card,
-    borderRadius: tokens.radius.md,
+    borderRadius: 10,
+    marginBottom: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    marginBottom: tokens.spacing.md,
+    // Tight 3-sided shadow - sun directly above
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
   },
   sessionTimerActive: {
-    borderColor: tokens.colors.tint,
+    borderColor: '#3B82F6',
+    borderWidth: 2,
+    shadowOpacity: 0.18,
   },
-  sessionTimerContent: {
+  sessionTimerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: tokens.spacing.md,
+    marginBottom: tokens.spacing.xs,
   },
-  sessionTimerLeft: {
-    flex: 1,
-  },
-  sessionTimerWorkout: {
+  sessionTimerLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: tokens.colors.muted,
-    marginBottom: 2,
-  },
-  sessionTimerTime: {
-    fontSize: 32,
     fontWeight: '700',
     color: tokens.colors.muted,
+    letterSpacing: 1,
+  },
+  sessionTimerActiveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sessionTimerActiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  sessionTimerActiveText: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sessionTimerWorkout: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    marginBottom: tokens.spacing.xs,
+  },
+  sessionTimerDisplay: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+  },
+  sessionTimerTime: {
+    fontSize: 48,
+    fontWeight: '300',
+    color: tokens.colors.text,
     fontVariant: ['tabular-nums'],
   },
   sessionTimerTimeActive: {
-    color: tokens.colors.text,
+    color: '#3B82F6',
   },
   sessionTimerButtons: {
+    marginTop: tokens.spacing.sm,
+  },
+  sessionTimerButtonRow: {
     flexDirection: 'row',
     gap: tokens.spacing.sm,
   },
-  sessionTimerButton: {
-    backgroundColor: tokens.colors.tint,
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
+  sessionTimerButtonOutline: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    paddingVertical: tokens.spacing.md,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    alignItems: 'center',
   },
-  sessionTimerButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  sessionTimerButtonSecondary: {
-    backgroundColor: tokens.colors.bg,
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  sessionTimerButtonSecondaryText: {
-    fontSize: 14,
-    fontWeight: '600',
+  sessionTimerButtonOutlineText: {
+    fontSize: 15,
+    fontWeight: '700',
     color: tokens.colors.text,
   },
   sessionTimerAddTime: {
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: 10,
     backgroundColor: tokens.colors.bg,
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
     borderWidth: 1,
     borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sessionTimerAddTimeText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
-    color: tokens.colors.muted,
+    color: tokens.colors.text,
   },
 
   // Movement Card (Expandable)

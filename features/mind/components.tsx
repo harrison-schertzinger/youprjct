@@ -12,12 +12,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { tokens } from '@/design/tokens';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import { Modal } from '@/components/ui/Modal';
 import type { Book, ReadingSession, InsightStats } from './types';
 
-// ========== Mind Accent Color ==========
-const MIND_ACCENT = '#6366F1'; // Indigo
-const MIND_GRADIENT = ['#6366F1', '#5558E8', '#4F46E5'] as const;
+// ========== Mind Accent Color (Signature Blue) ==========
+const MIND_ACCENT = '#3B82F6'; // Signature blue
 
 // ========== Timer Card ==========
 
@@ -46,66 +46,62 @@ export function TimerCard({
 
   return (
     <View style={[styles.timerCard, isActive && styles.timerCardActive]}>
-      {/* Gradient Header */}
-      <LinearGradient
-        colors={MIND_GRADIENT}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.gradientHeader}
-      >
-        <Text style={styles.gradientHeaderText}>READING</Text>
+      {/* Header Label */}
+      <View style={styles.timerHeader}>
+        <Text style={styles.timerHeaderText}>READING TIMER</Text>
         {isActive && (
-          <View style={styles.activeIndicatorInline}>
-            <View style={styles.activeDotWhite} />
-            <Text style={styles.activeLabelWhite}>Active</Text>
+          <View style={styles.activeIndicator}>
+            <View style={styles.activeDot} />
+            <Text style={styles.activeLabel}>Active</Text>
           </View>
         )}
-      </LinearGradient>
+      </View>
 
-      {/* Card Content */}
-      <View style={styles.timerCardContent}>
-        {/* Timer Display */}
-        <View style={styles.timerDisplay}>
-          <Text style={[styles.timerText, isActive && styles.timerTextActive]}>
-            {formattedTime}
-          </Text>
-        </View>
+      {/* Timer Display */}
+      <View style={styles.timerDisplay}>
+        <Text style={[styles.timerText, isActive && styles.timerTextActive]}>
+          {formattedTime}
+        </Text>
+      </View>
 
-        {/* Book Info */}
-        <Pressable onPress={onSelectBook} style={styles.bookSelector}>
-          {selectedBook ? (
-            <View style={styles.bookInfo}>
-              <Text style={styles.bookTitle}>{selectedBook.title}</Text>
-              {selectedBook.author && (
-                <Text style={styles.bookAuthor}>by {selectedBook.author}</Text>
-              )}
-            </View>
-          ) : (
-            <Text style={styles.bookPlaceholder}>Tap to select a book</Text>
-          )}
-          <Text style={styles.bookChevron}>›</Text>
-        </Pressable>
+      {/* Book Info */}
+      <Pressable onPress={onSelectBook} style={styles.bookSelector}>
+        {selectedBook ? (
+          <View style={styles.bookInfo}>
+            <Text style={styles.bookTitle}>{selectedBook.title}</Text>
+            {selectedBook.author && (
+              <Text style={styles.bookAuthor}>by {selectedBook.author}</Text>
+            )}
+          </View>
+        ) : (
+          <Text style={styles.bookPlaceholder}>Tap to select a book</Text>
+        )}
+        <Text style={styles.bookChevron}>›</Text>
+      </Pressable>
 
-        {/* Action Buttons */}
-        <View style={styles.timerButtonRow}>
-          {isActive && onAddTime && (
-            <Pressable style={styles.addTimeButton} onPress={onAddTime}>
-              <Text style={styles.addTimeButtonText}>+ Add Time</Text>
-            </Pressable>
-          )}
+      {/* Action Buttons */}
+      <View style={styles.timerButtonRow}>
+        {isActive && onAddTime && (
+          <Pressable style={styles.addTimeButton} onPress={onAddTime}>
+            <Text style={styles.addTimeButtonText}>+ Add Time</Text>
+          </Pressable>
+        )}
+        {isActive ? (
           <Pressable
-            style={[
-              styles.timerButton,
-              isActive && styles.timerButtonActive,
-              isActive && onAddTime && styles.timerButtonFlex,
-            ]}
-            onPress={isActive ? onEnd : onStart}
+            style={[styles.timerButton, styles.timerButtonActive, onAddTime && styles.timerButtonFlex]}
+            onPress={onEnd}
           >
-            <Text style={[styles.timerButtonText, isActive && styles.timerButtonTextActive]}>
-              {isActive ? 'End Session' : 'Start Reading'}
+            <Text style={[styles.timerButtonText, styles.timerButtonTextActive]}>
+              End Session
             </Text>
           </Pressable>
-        </View>
+        ) : (
+          <SignatureButton
+            title="Start Reading"
+            onPress={onStart}
+            fullWidth
+          />
+        )}
       </View>
     </View>
   );
@@ -518,66 +514,63 @@ function StatTile({ label, value }: { label: string; value: string }) {
 // ========== Styles ==========
 
 const styles = StyleSheet.create({
-  // Timer Card
+  // Timer Card - Clean design with tight signature shadow
   timerCard: {
     backgroundColor: tokens.colors.card,
-    borderRadius: tokens.radius.md,
+    borderRadius: 10,
     marginBottom: tokens.spacing.lg,
+    padding: tokens.spacing.lg,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    overflow: 'hidden', // Flush gradient header
-    // Soft shadow (matches RulesCard)
-    shadowColor: '#000',
+    // Tight 3-sided shadow - sun directly above
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 4,
   },
   timerCardActive: {
     borderColor: MIND_ACCENT,
     borderWidth: 2,
+    shadowOpacity: 0.18,
   },
-  gradientHeader: {
+  timerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.md,
+    marginBottom: tokens.spacing.sm,
   },
-  gradientHeaderText: {
+  timerHeaderText: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: tokens.colors.muted,
     letterSpacing: 1,
   },
-  activeIndicatorInline: {
+  activeIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  activeDotWhite: {
+  activeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: MIND_ACCENT,
     marginRight: 4,
   },
-  activeLabelWhite: {
+  activeLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: MIND_ACCENT,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  timerCardContent: {
-    padding: tokens.spacing.lg,
-  },
   timerDisplay: {
     alignItems: 'center',
-    paddingVertical: tokens.spacing.xl,
+    paddingVertical: tokens.spacing.md,
   },
   timerText: {
-    fontSize: 56,
-    fontWeight: '400',
+    fontSize: 48,
+    fontWeight: '300',
     color: tokens.colors.text,
     fontVariant: ['tabular-nums'],
   },

@@ -2,7 +2,7 @@
 
 export type BodyView = 'profile' | 'training';
 
-export type ScoreType = 'weight' | 'rounds-reps' | 'time' | 'completed';
+export type ScoreType = 'weight' | 'rounds-reps' | 'time' | 'completed' | 'calories' | 'distance';
 
 export type Track = {
   id: string;

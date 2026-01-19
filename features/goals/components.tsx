@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { tokens } from '@/design/tokens';
 import { ColorPicker } from '@/components/ui/ColorPicker';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import {
   Goal,
   GoalType,
@@ -343,9 +344,11 @@ export function EmptyGoalsState({ onAddGoal }: EmptyGoalsStateProps) {
       <Text style={styles.emptySubtitle}>
         Clarity is power. Set a goal to focus your energy.
       </Text>
-      <Pressable style={styles.emptyBtn} onPress={onAddGoal}>
-        <Text style={styles.emptyBtnText}>Set Your First Goal</Text>
-      </Pressable>
+      <SignatureButton
+        title="Set Your First Goal"
+        onPress={onAddGoal}
+        size="large"
+      />
     </View>
   );
 }

@@ -21,14 +21,21 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
 
   // exercises table only has created_at, no updated_at
-  const { error } = await supabase.from('exercises').insert({
+  const insertData: Record<string, unknown> = {
     id: body.id,
     title: body.title,
     score_type: body.score_type,
     sort_direction: body.sort_direction,
     is_major: body.is_major,
     created_at: body.created_at,
-  });
+  };
+
+  // Add optional fields if provided
+  if (body.category) insertData.category = body.category;
+  if (body.equipment_tags) insertData.equipment_tags = body.equipment_tags;
+  if (body.description) insertData.description = body.description;
+
+  const { error } = await supabase.from('exercises').insert(insertData);
 
   if (error) {
     console.error('Error creating exercise:', error);
@@ -43,14 +50,21 @@ export async function PUT(request: NextRequest) {
   const body = await request.json();
 
   // exercises table has no updated_at column
+  const updateData: Record<string, unknown> = {
+    title: body.title,
+    score_type: body.score_type,
+    sort_direction: body.sort_direction,
+    is_major: body.is_major,
+  };
+
+  // Add optional fields if provided
+  if (body.category !== undefined) updateData.category = body.category || null;
+  if (body.equipment_tags !== undefined) updateData.equipment_tags = body.equipment_tags || null;
+  if (body.description !== undefined) updateData.description = body.description || null;
+
   const { error } = await supabase
     .from('exercises')
-    .update({
-      title: body.title,
-      score_type: body.score_type,
-      sort_direction: body.sort_direction,
-      is_major: body.is_major,
-    })
+    .update(updateData)
     .eq('id', body.id);
 
   if (error) {

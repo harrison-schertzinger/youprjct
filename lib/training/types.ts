@@ -11,8 +11,24 @@ export type TrainingTrack = {
 
 // ========== Exercises (Movement Definitions) ==========
 
-export type ScoreType = 'weight' | 'reps' | 'time';
+export type ScoreType = 'weight' | 'reps' | 'time' | 'calories' | 'distance';
 export type SortDirection = 'desc' | 'asc';
+
+export type ExerciseCategory =
+  | 'strength'
+  | 'olympic'
+  | 'cardio'
+  | 'gymnastics'
+  | 'core'
+  | 'mobility';
+
+export type EquipmentTag =
+  | 'barbell'
+  | 'dumbbell'
+  | 'kettlebell'
+  | 'machine'
+  | 'bodyweight'
+  | 'erg';
 
 export type Exercise = {
   id: string;
@@ -20,6 +36,9 @@ export type Exercise = {
   scoreType: ScoreType;
   sortDirection: SortDirection;
   isMajor?: boolean; // Major movements show on PRs dashboard
+  category?: ExerciseCategory;
+  equipmentTags?: EquipmentTag[];
+  description?: string;
 };
 
 // ========== Scheduled Movements ==========

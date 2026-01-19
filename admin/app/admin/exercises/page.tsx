@@ -1,7 +1,25 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Exercise } from '@/lib/supabase';
+import type { Exercise, ExerciseCategory, EquipmentTag } from '@/lib/supabase';
+
+const CATEGORIES: { value: ExerciseCategory; label: string }[] = [
+  { value: 'strength', label: 'Strength' },
+  { value: 'olympic', label: 'Olympic' },
+  { value: 'cardio', label: 'Cardio' },
+  { value: 'gymnastics', label: 'Gymnastics' },
+  { value: 'core', label: 'Core' },
+  { value: 'mobility', label: 'Mobility' },
+];
+
+const EQUIPMENT_TAGS: { value: EquipmentTag; label: string }[] = [
+  { value: 'barbell', label: 'Barbell' },
+  { value: 'dumbbell', label: 'Dumbbell' },
+  { value: 'kettlebell', label: 'Kettlebell' },
+  { value: 'machine', label: 'Machine' },
+  { value: 'bodyweight', label: 'Bodyweight' },
+  { value: 'erg', label: 'Erg' },
+];
 
 export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -13,6 +31,9 @@ export default function ExercisesPage() {
     score_type: 'weight' as Exercise['score_type'],
     sort_direction: 'desc' as Exercise['sort_direction'],
     is_major: false,
+    category: '' as ExerciseCategory | '',
+    equipment_tags: [] as EquipmentTag[],
+    description: '',
   });
 
   useEffect(() => {
@@ -36,19 +57,22 @@ export default function ExercisesPage() {
     e.preventDefault();
 
     try {
+      const payload = {
+        title: formData.title,
+        score_type: formData.score_type,
+        sort_direction: formData.sort_direction,
+        is_major: formData.is_major,
+        category: formData.category || null,
+        equipment_tags: formData.equipment_tags.length > 0 ? formData.equipment_tags : null,
+        description: formData.description || null,
+      };
+
       if (editingId) {
         // Update existing
         const res = await fetch('/api/exercises', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: editingId,
-            title: formData.title,
-            score_type: formData.score_type,
-            sort_direction: formData.sort_direction,
-            is_major: formData.is_major,
-            updated_at: new Date().toISOString(),
-          }),
+          body: JSON.stringify({ id: editingId, ...payload }),
         });
 
         if (!res.ok) {
@@ -62,12 +86,8 @@ export default function ExercisesPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             id: `exercise-${Date.now()}`,
-            title: formData.title,
-            score_type: formData.score_type,
-            sort_direction: formData.sort_direction,
-            is_major: formData.is_major,
+            ...payload,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
           }),
         });
 
@@ -107,6 +127,9 @@ export default function ExercisesPage() {
       score_type: exercise.score_type,
       sort_direction: exercise.sort_direction,
       is_major: exercise.is_major,
+      category: exercise.category || '',
+      equipment_tags: exercise.equipment_tags || [],
+      description: exercise.description || '',
     });
     setEditingId(exercise.id);
     setShowForm(true);
@@ -118,9 +141,21 @@ export default function ExercisesPage() {
       score_type: 'weight',
       sort_direction: 'desc',
       is_major: false,
+      category: '',
+      equipment_tags: [],
+      description: '',
     });
     setEditingId(null);
     setShowForm(false);
+  }
+
+  function toggleEquipmentTag(tag: EquipmentTag) {
+    setFormData((prev) => ({
+      ...prev,
+      equipment_tags: prev.equipment_tags.includes(tag)
+        ? prev.equipment_tags.filter((t) => t !== tag)
+        : [...prev.equipment_tags, tag],
+    }));
   }
 
   return (
@@ -178,6 +213,8 @@ export default function ExercisesPage() {
                   <option value="weight">Weight (lbs)</option>
                   <option value="reps">Reps</option>
                   <option value="time">Time</option>
+                  <option value="calories">Calories</option>
+                  <option value="distance">Distance (m)</option>
                 </select>
               </div>
 
@@ -199,6 +236,63 @@ export default function ExercisesPage() {
                   <option value="asc">Lower is better</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) =>
+                    setFormData({ ...formData, category: e.target.value as ExerciseCategory | '' })
+                  }
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                >
+                  <option value="">No category</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Equipment
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {EQUIPMENT_TAGS.map((tag) => (
+                    <button
+                      key={tag.value}
+                      type="button"
+                      onClick={() => toggleEquipmentTag(tag.value)}
+                      className={`px-2 py-1 text-xs rounded-full border transition-colors ${
+                        formData.equipment_tags.includes(tag.value)
+                          ? 'bg-blue-600 border-blue-600 text-white'
+                          : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400'
+                      }`}
+                    >
+                      {tag.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Description (optional)
+              </label>
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                placeholder="Brief description or instructions"
+                rows={2}
+              />
             </div>
 
             <div className="flex items-center gap-2">
@@ -252,6 +346,9 @@ export default function ExercisesPage() {
                   Type
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+                  Category
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">
                   Major
                 </th>
                 <th className="text-right px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-300">
@@ -270,6 +367,9 @@ export default function ExercisesPage() {
                   </td>
                   <td className="px-4 py-3 text-slate-600 dark:text-slate-400 capitalize">
                     {exercise.score_type}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400 capitalize">
+                    {exercise.category || '—'}
                   </td>
                   <td className="px-4 py-3">
                     {exercise.is_major && (

@@ -23,14 +23,20 @@ export function createServerClient() {
 }
 
 // Database types (matching your app's schema)
+export type ScoreType = 'weight' | 'reps' | 'time' | 'calories' | 'distance';
+export type ExerciseCategory = 'strength' | 'olympic' | 'cardio' | 'gymnastics' | 'core' | 'mobility';
+export type EquipmentTag = 'barbell' | 'dumbbell' | 'kettlebell' | 'machine' | 'bodyweight' | 'erg';
+
 export type Exercise = {
   id: string;
   title: string;
-  score_type: 'weight' | 'reps' | 'time';
+  score_type: ScoreType;
   sort_direction: 'asc' | 'desc';
   is_major: boolean;
+  category?: ExerciseCategory;
+  equipment_tags?: EquipmentTag[];
+  description?: string;
   created_at?: string;
-  // Note: exercises table has no updated_at column
 };
 
 export type TrainingTrack = {
