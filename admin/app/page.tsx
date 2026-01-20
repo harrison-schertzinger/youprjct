@@ -76,7 +76,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-sm text-brand-muted flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
-                  75-day challenges
+                  Rules & challenges
                 </span>
                 <span className="text-sm text-brand-muted flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
@@ -84,7 +84,7 @@ export default function LandingPage() {
                 </span>
                 <span className="text-sm text-brand-muted flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                  Goals & tasks
+                  Goals & routines
                 </span>
               </div>
 
