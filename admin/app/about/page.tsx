@@ -117,14 +117,8 @@ export default function AboutPage() {
               <blockquote className="border-l-4 border-brand-accent pl-6 py-2 text-brand-text text-lg italic">
                 My friend, please understand what determines the quality of someone&apos;s life and have the courage to pursue your path; have the courage to break away from the crowd, and the discipline to do what it takes; live a great and noble adventure; reject what the world offers; endure the hard times and soak every drop of bliss that comes with the good; empty yourself out in the service of others and find something you&apos;re willing to perish pursuing.
               </blockquote>
-              <p>
-                I was used to spark-noting my school books. <span className="text-brand-text">The Scarlet Letter</span> had nothing for me. <span className="text-brand-text">All Quiet on the Western Front</span> did not capture my competitive nature. <span className="text-brand-text">The Great Gatsby</span> was cool, and makes a great theme for parties, but I was captivated by the thrill of learning new ways to live.
-              </p>
               <p className="text-brand-text text-xl font-medium">
                 It was freedom. Or, a pathway to freedom. A stairway that seemed to climb to the heavens, available to anyone.
-              </p>
-              <p>
-                Because the world tells you &ldquo;this matters.&rdquo; But then there&apos;s what <span className="text-brand-text">actually</span> matters—which is how to be in the world; how to act in the face of adversity; how to step into the unknown with faith; how to conceptualize life, God, and yourself, and the relationship between them; your purpose… all of it.
               </p>
             </div>
           </div>
