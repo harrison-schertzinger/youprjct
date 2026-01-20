@@ -40,16 +40,22 @@ export default function AboutPage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 pt-24 pb-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-display-lg md:text-display-xl font-bold tracking-tight mb-6">
-            8 Billion people<span className="text-brand-accent">.</span>
-            <br />
-            <span className="text-brand-muted">One of You.</span>
+      <section className="relative z-10 pt-32 pb-24 px-6 overflow-hidden">
+        {/* Hero-specific glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-gradient-radial from-brand-accent/30 via-brand-accent/10 to-transparent blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto text-center">
+          <h1 className="text-display-lg md:text-display-xl font-bold tracking-tight mb-4">
+            <span className="bg-gradient-to-r from-white via-white to-brand-accent bg-clip-text text-transparent">8 Billion people</span><span className="text-brand-accent">.</span>
           </h1>
-          <p className="text-xl text-brand-muted">
-            Work in Progress. Masterpiece.
+          <p className="text-display-sm md:text-display-md text-brand-muted mb-8">
+            One of <span className="text-brand-text font-bold">You</span><span className="text-brand-accent font-bold">.</span>
           </p>
+          <div className="max-w-xl mx-auto">
+            <p className="text-xl text-brand-muted leading-relaxed">
+              A system for those who refuse to settle. For the ones building something with their lives—day by day, habit by habit.
+            </p>
+          </div>
         </div>
       </section>
 
