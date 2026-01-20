@@ -51,54 +51,15 @@ export default function AboutPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 pt-24 pb-12 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-display-lg md:text-display-xl font-bold tracking-tight mb-6">
-            <span className="bg-gradient-to-r from-white via-white to-brand-accent bg-clip-text text-transparent">
-              Two brothers
-            </span>
-            <span className="text-brand-accent">.</span>
-            <br />
-            <span className="text-brand-muted">One mission.</span>
-          </h1>
-          <p className="text-xl text-brand-muted max-w-2xl mx-auto">
-            &ldquo;Hang around us long enough, and we&apos;ll get you to believe in yourself.&rdquo;
-          </p>
-        </div>
-      </section>
-
-      {/* Brothers Hero Image */}
-      <section className="relative z-10 px-6 pb-16">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative aspect-[16/10] rounded-3xl overflow-hidden border border-brand-border">
-            <Image
-              src="/images/about/brothers.jpg"
-              alt="Harrison and Henry Schertzinger"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-brand-bg via-transparent to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6">
-              <p className="text-sm text-brand-muted">Harrison & Henry Schertzinger — Co-Founders</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
-
-      {/* The Origin Story */}
+      {/* The Origin Story - Hero */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <span className="text-sm font-semibold text-brand-accent uppercase tracking-widest">The Origin</span>
-              <h2 className="text-display-sm mt-4 mb-8">
+              <h1 className="text-display-sm mt-4 mb-8">
                 It started with an injury<span className="text-brand-accent">.</span>
-              </h2>
+              </h1>
               <div className="space-y-6 text-brand-muted leading-relaxed">
                 <p>
                   When I was 16, my brother tore his ACL. As serious athletes—both committed to play lacrosse at The University of North Carolina—this was the injury you don&apos;t talk about. Season-ending. Sometimes career-altering.
@@ -112,7 +73,7 @@ export default function AboutPage() {
               </div>
               <div className="mt-8 pt-8 border-t border-brand-border">
                 <p className="text-sm text-brand-muted italic">
-                  — From <span className="text-brand-text">The Angel in the Marble</span> by Harrison Schertzinger
+                  — Harrison Schertzinger
                 </p>
               </div>
             </div>
@@ -123,75 +84,9 @@ export default function AboutPage() {
                   alt="Harrison with books"
                   fill
                   className="object-cover"
+                  priority
                 />
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
-
-      {/* Photo Gallery - The Journey */}
-      <section className="relative z-10 py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Journey</span>
-            <h2 className="text-display-sm mt-4">
-              Before it was an app<span className="text-brand-emerald">.</span>
-            </h2>
-            <p className="text-xl text-brand-muted mt-4 max-w-2xl mx-auto">
-              Handwritten journals. Custom systems. Years of obsession with high performance. The dream that became You. First.
-            </p>
-          </div>
-
-          {/* Photo Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-border">
-              <Image
-                src="/images/about/harrison-coaching.jpg"
-                alt="Harrison coaching players"
-                width={400}
-                height={400}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-border">
-              <Image
-                src="/images/about/brothers-players.jpg"
-                alt="Harrison and Henry with players"
-                width={400}
-                height={400}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-border">
-              <Image
-                src="/images/about/dsc04959.jpg"
-                alt="Training and development"
-                width={400}
-                height={400}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-border md:col-span-2">
-              <Image
-                src="/images/about/harrison-coaching-2.jpg"
-                alt="Harrison coaching"
-                width={800}
-                height={400}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden border border-brand-border">
-              <Image
-                src="/images/about/henry-action.jpg"
-                alt="Henry in action"
-                width={400}
-                height={400}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-              />
             </div>
           </div>
         </div>
@@ -397,6 +292,82 @@ export default function AboutPage() {
                   Because the only opinion that can truly change your life is the one staring back at you. Not what others think. Not what the world expects. <span className="text-brand-text">You.</span>
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
+
+      {/* Photo Gallery - The Journey (moved to bottom) */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Journey</span>
+            <h2 className="text-display-sm mt-4">
+              Before it was an app<span className="text-brand-emerald">.</span>
+            </h2>
+            <p className="text-xl text-brand-muted mt-4 max-w-2xl mx-auto">
+              Handwritten journals. Custom systems. Years of obsession with high performance. The dream that became You. First.
+            </p>
+          </div>
+
+          {/* Photo Collage - Proportional */}
+          <div className="columns-2 md:columns-3 gap-4 space-y-4">
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/harrison-coaching.jpg"
+                alt="Harrison coaching players"
+                width={600}
+                height={800}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/brothers-players.jpg"
+                alt="Harrison and Henry with players"
+                width={600}
+                height={400}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/dsc04959.jpg"
+                alt="Training and development"
+                width={600}
+                height={600}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/harrison-coaching-2.jpg"
+                alt="Harrison coaching"
+                width={600}
+                height={400}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/henry-action.jpg"
+                alt="Henry in action"
+                width={600}
+                height={800}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
+            </div>
+            <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
+              <Image
+                src="/images/about/brothers.jpg"
+                alt="Harrison and Henry"
+                width={600}
+                height={400}
+                className="w-full h-auto hover:scale-105 transition-transform duration-500"
+              />
             </div>
           </div>
         </div>
