@@ -261,7 +261,7 @@ export default function LandingPage() {
             <div className="group relative rounded-3xl bg-brand-surface border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
               <div className="aspect-[4/5] relative">
                 <Image
-                  src="/images/founders/Harrison.JPEG"
+                  src="/images/founders/Harrison.Co-F.jpg"
                   alt="Harrison Schertzinger - Co-Founder"
                   fill
                   className="object-cover object-top"
@@ -282,8 +282,8 @@ export default function LandingPage() {
             <div className="group relative rounded-3xl bg-brand-surface border border-brand-border overflow-hidden hover:border-brand-accent/50 transition-all duration-300">
               <div className="aspect-[4/5] relative">
                 <Image
-                  src="/images/founders/henry.jpg"
-                  alt="Henry - Co-Founder"
+                  src="/images/founders/Henry.Co-F.jpg"
+                  alt="Henry Schertzinger - Co-Founder"
                   fill
                   className="object-cover object-top"
                 />

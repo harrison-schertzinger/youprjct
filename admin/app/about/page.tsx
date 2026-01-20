@@ -194,7 +194,7 @@ export default function AboutPage() {
             <div className="group">
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
-                  src="/images/founders/Harrison.JPEG"
+                  src="/images/founders/Harrison.Co-F.jpg"
                   alt="Harrison Schertzinger"
                   fill
                   className="object-cover object-top"
@@ -211,7 +211,7 @@ export default function AboutPage() {
             <div className="group">
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
-                  src="/images/founders/henry.jpg"
+                  src="/images/founders/Henry.Co-F.jpg"
                   alt="Henry Schertzinger"
                   fill
                   className="object-cover object-top"
