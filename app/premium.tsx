@@ -21,9 +21,9 @@ import {
 } from '@/lib/revenuecat';
 
 const BENEFITS = [
-  { title: 'Full Access', desc: 'Unlock all training tracks and features' },
-  { title: 'Progress Tracking', desc: 'Detailed analytics and insights' },
-  { title: 'Priority Support', desc: 'Get help when you need it' },
+  { title: 'Complete System', desc: 'Mind, body, and discipline training unified' },
+  { title: 'Train Smarter', desc: 'Structured S&C programs for real results' },
+  { title: 'Track Your Progress', desc: 'Analytics and insights across every area' },
 ];
 
 export default function PremiumScreen() {
