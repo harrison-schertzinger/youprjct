@@ -11,6 +11,7 @@ import { RoutineListItem } from '@/components/ui/RoutineListItem';
 import { DayWonButton } from '@/components/ui/DayWonButton';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { AddItemModal } from '@/components/ui/AddItemModal';
+import { BadgeUnlockModal } from '@/components/ui/BadgeUnlockModal';
 import { tokens } from '@/design/tokens';
 import { MonthGrid } from '@/components/dashboard/MonthGrid';
 import { loadWins, markDayAsWin, removeDayWin, getDaysWonSinceFirstOpen, getDayOutcome } from '@/lib/dailyOutcomes';
@@ -19,6 +20,7 @@ import { Routine, loadMorningRoutines, addMorningRoutine, deleteMorningRoutine, 
 import { DailyTask, loadDailyTasks, addDailyTask, deleteDailyTask, toggleDailyTaskCompletion } from '@/lib/dailyTasks';
 import { Goal, loadGoals } from '@/lib/goals';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
+import { checkAndAwardBadges, getBadgeById, type Badge } from '@/lib/badges';
 import type { Profile } from '@/lib/training/types';
 import { TimeInvestmentChart, ConsistencyChart } from '@/components/charts';
 
@@ -49,6 +51,10 @@ export default function YouScreen() {
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
+
+  // Badge unlock modal state
+  const [unlockedBadge, setUnlockedBadge] = useState<Badge | null>(null);
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -100,6 +106,19 @@ export default function YouScreen() {
       ]);
       setProfile(localProfile);
       setSupabaseProfile(sbProfile);
+
+      // Check for newly earned badges based on current streak
+      if (localProfile?.onAppStreakDays) {
+        const newlyEarned = await checkAndAwardBadges(localProfile.onAppStreakDays);
+        if (newlyEarned.length > 0) {
+          // Show the first newly earned badge (most users earn one at a time)
+          const badge = getBadgeById(newlyEarned[0]);
+          if (badge) {
+            setUnlockedBadge(badge);
+            setShowBadgeModal(true);
+          }
+        }
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -407,6 +426,15 @@ export default function YouScreen() {
       <AddItemModal visible={modalType === 'morning'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title="Add Morning Routine" placeholder="e.g., Meditation, Exercise..." showLabelInput labelPlaceholder="Duration or note (optional)" />
       <AddItemModal visible={modalType === 'evening'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title="Add Evening Routine" placeholder="e.g., Journal, Read..." showLabelInput labelPlaceholder="Duration or note (optional)" />
       <AddItemModal visible={modalType === 'task'} onClose={() => setModalType(null)} onSubmit={handleModalSubmit} title={taskDayIndex === 2 ? "Plan Tomorrow's Task" : "Add Task"} placeholder="e.g., Complete project..." goals={goals} />
+
+      <BadgeUnlockModal
+        visible={showBadgeModal}
+        badge={unlockedBadge}
+        onClose={() => {
+          setShowBadgeModal(false);
+          setUnlockedBadge(null);
+        }}
+      />
     </ScreenContainer>
   );
 }

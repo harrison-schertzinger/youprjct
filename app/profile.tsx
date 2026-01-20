@@ -13,6 +13,7 @@ import { Stack, router } from 'expo-router';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { Card } from '@/components/ui/Card';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { StreakBadge } from '@/components/ui/StreakBadge';
 import { tokens } from '@/design/tokens';
 import {
   getSupabaseProfile,
@@ -24,7 +25,10 @@ import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { useMembership } from '@/hooks/useMembership';
 import { clearAllAppData, clearTrainingCache } from '@/lib/storage';
 import { useToast } from '@/components/ui/Toast';
+import { getAllBadgesWithStatus, type Badge } from '@/lib/badges';
 import type { Profile } from '@/lib/training/types';
+
+type BadgeWithStatus = Badge & { earned: boolean; earnedAt?: string };
 
 export default function ProfileScreen() {
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
@@ -34,6 +38,7 @@ export default function ProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [badges, setBadges] = useState<BadgeWithStatus[]>([]);
 
   const { isPremium, isLoading: membershipLoading } = useMembership();
   const { showToast } = useToast();
@@ -41,12 +46,14 @@ export default function ProfileScreen() {
   const loadProfiles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [sbProfile, localProf] = await Promise.all([
+      const [sbProfile, localProf, badgeStatus] = await Promise.all([
         getSupabaseProfile(),
         getProfile(),
+        getAllBadgesWithStatus(),
       ]);
       setSupabaseProfile(sbProfile);
       setLocalProfile(localProf);
+      setBadges(badgeStatus);
       if (sbProfile) {
         setDisplayNameInput(sbProfile.display_name);
       }
@@ -139,6 +146,22 @@ export default function ProfileScreen() {
             <Text style={styles.streakText}>
               {localProfile.onAppStreakDays} day streak
             </Text>
+          )}
+
+          {/* Streak Badges */}
+          {badges.length > 0 && (
+            <View style={styles.badgesSection}>
+              <Text style={styles.badgesSectionTitle}>Streak Badges</Text>
+              <View style={styles.badgesRow}>
+                {badges.map((badge) => (
+                  <StreakBadge
+                    key={badge.id}
+                    badge={badge}
+                    earned={badge.earned}
+                  />
+                ))}
+              </View>
+            </View>
           )}
 
           {/* Pro Membership Card */}
@@ -305,7 +328,25 @@ const styles = StyleSheet.create({
   streakText: {
     ...tokens.typography.body,
     color: tokens.colors.action,
+    marginBottom: tokens.spacing.lg,
+  },
+  badgesSection: {
+    width: '100%',
+    alignItems: 'center',
     marginBottom: tokens.spacing.xl,
+  },
+  badgesSectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: tokens.colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: tokens.spacing.md,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: tokens.spacing.lg,
   },
   membershipCard: {
     width: '100%',

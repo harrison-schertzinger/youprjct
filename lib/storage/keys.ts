@@ -20,6 +20,9 @@ export const StorageKeys = {
   // Profile
   PROFILE: '@profile:current',
 
+  // Badges
+  BADGES: '@badges:earned',
+
   // Workout session timer (persisted per workout+date)
   WORKOUT_SESSION_TIMER: '@workout:session:timer',
 } as const;
