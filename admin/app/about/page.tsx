@@ -19,16 +19,22 @@ export default function AboutPage() {
           </Link>
           <div className="flex items-center gap-8">
             <Link
+              href="/system"
+              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+            >
+              The System
+            </Link>
+            <Link
               href="/about"
               className="text-sm text-brand-text font-medium"
             >
               About
             </Link>
             <Link
-              href="/privacy"
+              href="/support"
               className="text-sm text-brand-muted hover:text-brand-text transition-colors"
             >
-              Privacy
+              Support
             </Link>
             <Link
               href="/#download"
