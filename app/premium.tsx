@@ -3,17 +3,15 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   Alert,
-  Linking,
-  Platform,
   ScrollView,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
-import { Card } from '@/components/ui/Card';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
 import { useMembership } from '@/hooks/useMembership';
 import {
@@ -23,16 +21,13 @@ import {
 } from '@/lib/revenuecat';
 
 const BENEFITS = [
-  'Unlock all training tracks',
-  'Detailed performance analytics',
-  'Priority support',
-  'Early access to new features',
-  'Support continued development',
+  { title: 'Full Access', desc: 'Unlock all training tracks and features' },
+  { title: 'Progress Tracking', desc: 'Detailed analytics and insights' },
+  { title: 'Priority Support', desc: 'Get help when you need it' },
 ];
 
 export default function PremiumScreen() {
   const { isPremium, isLoading: membershipLoading, restore, refreshCustomerInfo } = useMembership();
-  const [offerCode, setOfferCode] = useState('');
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [availablePackage, setAvailablePackage] = useState<PurchasesPackage | null>(null);
@@ -56,28 +51,32 @@ export default function PremiumScreen() {
     loadOfferings();
   }, [loadOfferings]);
 
-  const handleContinue = async () => {
-    if (!availablePackage) {
-      Alert.alert(
-        'Coming Soon',
-        'Subscriptions are coming online soon. Check back shortly!',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
+  const handleSubscribe = async () => {
+    if (isPurchasing) return;
 
     setIsPurchasing(true);
     try {
-      const customerInfo = await purchasePackage(availablePackage);
-      if (customerInfo) {
-        await refreshCustomerInfo();
-        Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+      if (availablePackage) {
+        // Use dynamically loaded package
+        const customerInfo = await purchasePackage(availablePackage);
+        if (customerInfo) {
+          await refreshCustomerInfo();
+          Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
+            { text: 'OK', onPress: () => router.back() },
+          ]);
+        }
+      } else {
+        // No package loaded - this happens when subscription hasn't been approved yet
+        // Show helpful message instead of "Coming Soon"
+        Alert.alert(
+          'Almost There',
+          'Subscriptions are being finalized with Apple. Please try again shortly or restore if you already subscribed.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
       console.error('Purchase error:', error);
-      Alert.alert('Purchase Failed', 'Please try again later.');
+      Alert.alert('Unable to Complete', 'Please check your connection and try again.');
     } finally {
       setIsPurchasing(false);
     }
@@ -105,32 +104,7 @@ export default function PremiumScreen() {
     }
   };
 
-  const handleRedeemOfferCode = async () => {
-    // Build the App Store offer code redemption URL
-    const appleAppId = process.env.EXPO_PUBLIC_APPLE_APP_ID;
-    let redeemUrl: string;
-
-    if (appleAppId) {
-      redeemUrl = `https://apps.apple.com/redeem?ctx=offercodes&id=${appleAppId}`;
-    } else {
-      // Fallback to generic redemption page
-      redeemUrl = 'https://apps.apple.com/redeem';
-    }
-
-    try {
-      const supported = await Linking.canOpenURL(redeemUrl);
-      if (supported) {
-        await Linking.openURL(redeemUrl);
-      } else {
-        Alert.alert('Cannot Open', 'Unable to open the App Store redemption page.');
-      }
-    } catch (error) {
-      console.error('Error opening redeem URL:', error);
-      Alert.alert('Error', 'Failed to open the redemption page.');
-    }
-  };
-
-  // If already premium, show confirmation state
+  // Already premium - show confirmation
   if (isPremium && !membershipLoading) {
     return (
       <>
@@ -142,16 +116,16 @@ export default function PremiumScreen() {
           }}
         />
         <ScreenContainer>
-          <View style={styles.container}>
-            <View style={styles.iconContainer}>
-              <Text style={styles.icon}>★</Text>
+          <View style={styles.successContainer}>
+            <View style={styles.successBadge}>
+              <Text style={styles.successIcon}>★</Text>
             </View>
-            <Text style={styles.title}>You&apos;re a Pro!</Text>
-            <Text style={styles.subtitle}>
+            <Text style={styles.successTitle}>You're Pro</Text>
+            <Text style={styles.successSubtitle}>
               Thank you for supporting You. First
             </Text>
-            <PrimaryButton
-              label="Back to Profile"
+            <SignatureButton
+              title="Back to App"
               onPress={() => router.back()}
               style={styles.backButton}
             />
@@ -168,8 +142,9 @@ export default function PremiumScreen() {
       <Stack.Screen
         options={{
           headerShown: true,
-          title: 'Upgrade',
+          title: '',
           headerBackTitle: 'Back',
+          headerTransparent: true,
         }}
       />
       <ScreenContainer>
@@ -179,72 +154,74 @@ export default function PremiumScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <View style={styles.headerSection}>
-            <View style={styles.iconContainer}>
+          <View style={styles.header}>
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              style={styles.iconContainer}
+            >
               <Text style={styles.icon}>★</Text>
-            </View>
-            <Text style={styles.title}>Upgrade to Pro</Text>
-            <Text style={styles.subtitle}>
-              Unlock the full You. First experience
-            </Text>
+            </LinearGradient>
+            <Text style={styles.title}>You. Pro</Text>
+            <Text style={styles.tagline}>Unlock your full potential</Text>
           </View>
 
-          {/* Benefits Card */}
-          <Card style={styles.benefitsCard}>
+          {/* Pricing Card */}
+          <View style={styles.pricingCard}>
+            <Text style={styles.cardTagline}>Your personal excellence system</Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>$4.99</Text>
+              <Text style={styles.period}>/month</Text>
+            </View>
+            <View style={styles.trialBadge}>
+              <Text style={styles.trialText}>First month free</Text>
+            </View>
+          </View>
+
+          {/* Benefits */}
+          <View style={styles.benefits}>
             {BENEFITS.map((benefit, index) => (
               <View key={index} style={styles.benefitRow}>
-                <Text style={styles.checkmark}>✓</Text>
-                <Text style={styles.benefitText}>{benefit}</Text>
+                <View style={styles.benefitCheck}>
+                  <Text style={styles.checkmark}>✓</Text>
+                </View>
+                <View style={styles.benefitContent}>
+                  <Text style={styles.benefitTitle}>{benefit.title}</Text>
+                  <Text style={styles.benefitDesc}>{benefit.desc}</Text>
+                </View>
               </View>
             ))}
-          </Card>
+          </View>
 
-          {/* Action Buttons */}
+          {/* CTA */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={tokens.colors.tint} />
             </View>
           ) : (
-            <>
-              <PrimaryButton
-                label={isPurchasing ? 'Processing...' : 'Continue'}
-                onPress={handleContinue}
-                style={styles.continueButton}
+            <View style={styles.ctaContainer}>
+              <SignatureButton
+                title={isPurchasing ? 'Processing...' : 'Get Started'}
+                onPress={handleSubscribe}
+                disabled={isPurchasing}
+                size="large"
+                fullWidth
               />
-              <PrimaryButton
-                label={isRestoring ? 'Restoring...' : 'Restore Purchases'}
-                onPress={handleRestore}
+              <Pressable
                 style={styles.restoreButton}
-              />
-            </>
+                onPress={handleRestore}
+                disabled={isRestoring}
+              >
+                <Text style={styles.restoreText}>
+                  {isRestoring ? 'Restoring...' : 'Restore Purchases'}
+                </Text>
+              </Pressable>
+            </View>
           )}
 
-          {/* Offer Code Section */}
-          {Platform.OS === 'ios' && (
-            <Card style={styles.offerCard}>
-              <Text style={styles.offerTitle}>Have a code?</Text>
-              <Text style={styles.offerSubtitle}>
-                Redeem your offer code in the App Store
-              </Text>
-              <TextInput
-                style={styles.input}
-                value={offerCode}
-                onChangeText={setOfferCode}
-                placeholder="Enter offer code"
-                placeholderTextColor={tokens.colors.muted}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              <PrimaryButton
-                label="Redeem Offer Code"
-                onPress={handleRedeemOfferCode}
-                style={styles.redeemButton}
-              />
-              <Text style={styles.redeemHint}>
-                After redeeming, tap &quot;Restore Purchases&quot; to sync your membership.
-              </Text>
-            </Card>
-          )}
+          {/* Terms */}
+          <Text style={styles.terms}>
+            Cancel anytime. Subscription auto-renews monthly.
+          </Text>
         </ScrollView>
       </ScreenContainer>
     </>
@@ -252,114 +229,200 @@ export default function PremiumScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: tokens.spacing.xl * 3,
+    paddingBottom: tokens.spacing.xl * 2,
+  },
+  // Header
+  header: {
+    alignItems: 'center',
+    marginBottom: tokens.spacing.xl,
+  },
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: tokens.spacing.lg,
+    // Signature shadow
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.20,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  icon: {
+    fontSize: 32,
+    color: '#FFFFFF',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: tokens.colors.text,
+    letterSpacing: -0.5,
+    marginBottom: tokens.spacing.xs,
+  },
+  tagline: {
+    fontSize: 16,
+    color: tokens.colors.muted,
+  },
+  // Pricing Card
+  pricingCard: {
+    alignItems: 'center',
+    backgroundColor: tokens.colors.card,
+    marginHorizontal: tokens.spacing.lg,
+    marginBottom: tokens.spacing.xl,
+    paddingVertical: tokens.spacing.xl + 16,
+    paddingHorizontal: tokens.spacing.lg,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+    // Signature shadow
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cardTagline: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    marginBottom: tokens.spacing.md,
+    letterSpacing: 0.2,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  price: {
+    fontSize: 48,
+    fontWeight: '800',
+    color: tokens.colors.text,
+    letterSpacing: -1,
+  },
+  period: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+    marginLeft: 4,
+  },
+  trialBadge: {
+    marginTop: tokens.spacing.md,
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.md,
+    backgroundColor: '#DBEAFE',
+    borderRadius: tokens.radius.pill,
+  },
+  trialText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1D4ED8',
+    letterSpacing: 0.3,
+  },
+  // Benefits
+  benefits: {
+    marginHorizontal: tokens.spacing.lg,
+    marginBottom: tokens.spacing.xl,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: tokens.spacing.md,
+  },
+  benefitCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: tokens.spacing.md,
+    marginTop: 2,
+  },
+  checkmark: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  benefitContent: {
+    flex: 1,
+  },
+  benefitTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: tokens.colors.text,
+    marginBottom: 2,
+  },
+  benefitDesc: {
+    fontSize: 14,
+    color: tokens.colors.muted,
+    lineHeight: 20,
+  },
+  // CTA
+  loadingContainer: {
+    height: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaContainer: {
+    marginHorizontal: tokens.spacing.lg,
+    marginBottom: tokens.spacing.lg,
+  },
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: tokens.spacing.md,
+    marginTop: tokens.spacing.sm,
+  },
+  restoreText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: tokens.colors.muted,
+  },
+  // Terms
+  terms: {
+    fontSize: 12,
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    marginHorizontal: tokens.spacing.xl,
+  },
+  // Success State
+  successContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: tokens.spacing.lg,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: tokens.spacing.xl * 2,
-  },
-  headerSection: {
-    alignItems: 'center',
-    marginBottom: tokens.spacing.xl,
-    marginTop: tokens.spacing.lg,
-  },
-  iconContainer: {
+  successBadge: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: tokens.colors.tint,
+    borderRadius: 24,
+    backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: tokens.spacing.lg,
   },
-  icon: {
+  successIcon: {
     fontSize: 36,
     color: '#FFFFFF',
   },
-  title: {
-    ...tokens.typography.h1,
+  successTitle: {
+    fontSize: 28,
+    fontWeight: '800',
     color: tokens.colors.text,
-    textAlign: 'center',
     marginBottom: tokens.spacing.xs,
   },
-  subtitle: {
-    ...tokens.typography.body,
+  successSubtitle: {
+    fontSize: 16,
     color: tokens.colors.muted,
     textAlign: 'center',
-  },
-  benefitsCard: {
-    marginBottom: tokens.spacing.xl,
-  },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.sm,
-  },
-  checkmark: {
-    fontSize: 18,
-    color: tokens.colors.action,
-    fontWeight: '700',
-    marginRight: tokens.spacing.sm,
-    width: 24,
-  },
-  benefitText: {
-    ...tokens.typography.body,
-    color: tokens.colors.text,
-    flex: 1,
-  },
-  loadingContainer: {
-    height: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  continueButton: {
-    marginBottom: tokens.spacing.sm,
-  },
-  restoreButton: {
-    backgroundColor: tokens.colors.muted,
-    marginBottom: tokens.spacing.xl,
   },
   backButton: {
-    width: '100%',
     marginTop: tokens.spacing.xl,
-  },
-  offerCard: {
-    marginTop: tokens.spacing.md,
-  },
-  offerTitle: {
-    ...tokens.typography.h2,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.xs,
-  },
-  offerSubtitle: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-    marginBottom: tokens.spacing.md,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.sm,
-    paddingHorizontal: tokens.spacing.md,
-    ...tokens.typography.body,
-    color: tokens.colors.text,
-    backgroundColor: tokens.colors.bg,
-    marginBottom: tokens.spacing.md,
-  },
-  redeemButton: {
-    backgroundColor: tokens.colors.action,
-  },
-  redeemHint: {
-    ...tokens.typography.small,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    marginTop: tokens.spacing.md,
   },
 });
