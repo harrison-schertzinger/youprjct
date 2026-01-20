@@ -22,7 +22,8 @@ import { Goal, loadGoals } from '@/lib/goals';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
 import { checkAndAwardBadges, getBadgeById, type Badge } from '@/lib/badges';
 import type { Profile } from '@/lib/training/types';
-import { TimeInvestmentChart, ConsistencyChart } from '@/components/charts';
+import { TimeInvestmentChart, DailyExcellenceChart } from '@/components/charts';
+import { useMembership } from '@/hooks/useMembership';
 
 type ModalType = 'morning' | 'evening' | 'task' | null;
 
@@ -55,6 +56,11 @@ export default function YouScreen() {
   // Badge unlock modal state
   const [unlockedBadge, setUnlockedBadge] = useState<Badge | null>(null);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
+
+  // Membership status for gating Personal Mastery Dashboard
+  const { isPremium } = useMembership();
+  // Dev bypass for testing (matches PremiumGate behavior)
+  const showPremiumFeatures = isPremium || __DEV__ || process.env.EXPO_PUBLIC_INTERNAL_TESTING === 'true';
 
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -412,13 +418,19 @@ export default function YouScreen() {
           )}
         </GlowCard>
 
-        {/* Personal Mastery Dashboard */}
-        <SectionHeader title="Personal Mastery Dashboard" />
+        {/* Personal Mastery Dashboard - Pro only */}
+        {showPremiumFeatures && (
+          <>
+            <SectionHeader title="Personal Mastery Dashboard" />
 
-        {/* Charts */}
-        <TimeInvestmentChart />
-        <View style={{ height: tokens.spacing.md }} />
-        <ConsistencyChart />
+            {/* Charts */}
+            <TimeInvestmentChart />
+            <View style={{ height: tokens.spacing.md }} />
+            <DailyExcellenceChart />
+
+            <View style={{ height: tokens.spacing.xl }} />
+          </>
+        )}
 
         <View style={{ height: tokens.spacing.xl }} />
       </ScrollView>
