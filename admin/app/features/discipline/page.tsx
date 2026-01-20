@@ -223,11 +223,11 @@ export default function DisciplineFeaturePage() {
               <h3 className="font-semibold">Challenge Progress</h3>
               <span className="text-brand-accent">Day 25 of 75</span>
             </div>
-            <div className="grid grid-cols-15 gap-1">
+            <div className="flex flex-wrap gap-1">
               {[...Array(75)].map((_, i) => (
                 <div
                   key={i}
-                  className={`aspect-square rounded-sm ${
+                  className={`w-5 h-5 rounded-sm ${
                     i < 25
                       ? 'bg-brand-accent'
                       : i === 25
