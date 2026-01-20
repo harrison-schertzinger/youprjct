@@ -25,23 +25,23 @@ export default function AboutPage() {
               The System
             </Link>
             <Link
+              href="/features"
+              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+            >
+              Features
+            </Link>
+            <Link
               href="/about"
               className="text-sm text-brand-text font-medium"
             >
               About
             </Link>
-            <Link
-              href="/support"
-              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-            >
-              Support
-            </Link>
-            <Link
+            <a
               href="/#download"
               className="text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
             >
               Download
-            </Link>
+            </a>
           </div>
         </div>
       </nav>

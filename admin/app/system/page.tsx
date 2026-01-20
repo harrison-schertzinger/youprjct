@@ -29,16 +29,16 @@ export default function SystemPage() {
               The System
             </Link>
             <Link
+              href="/features"
+              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
+            >
+              Features
+            </Link>
+            <Link
               href="/about"
               className="text-sm text-brand-muted hover:text-brand-text transition-colors"
             >
               About
-            </Link>
-            <Link
-              href="/support"
-              className="text-sm text-brand-muted hover:text-brand-text transition-colors"
-            >
-              Support
             </Link>
             <a
               href="/#download"
