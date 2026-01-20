@@ -28,10 +28,10 @@ export default function LandingPage() {
               About
             </Link>
             <Link
-              href="/privacy"
+              href="/support"
               className="text-sm text-brand-muted hover:text-brand-text transition-colors"
             >
-              Privacy
+              Support
             </Link>
             <a
               href="#download"
