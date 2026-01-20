@@ -383,6 +383,9 @@ export default function LandingPage() {
               <Link href="/terms" className="hover:text-brand-text transition-colors">
                 Terms of Service
               </Link>
+              <Link href="/support" className="hover:text-brand-text transition-colors">
+                Support
+              </Link>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-brand-border/30 text-center">
