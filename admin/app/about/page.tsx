@@ -295,7 +295,7 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Founders</span>
             <h2 className="text-display-sm mt-4">
-              Built by athletes<span className="text-purple-500">.</span>
+              The mission continues<span className="text-purple-500">.</span>
             </h2>
           </div>
 
@@ -303,7 +303,7 @@ export default function AboutPage() {
             <div>
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
-                  src="/images/founders/Harrison.Co-F.jpg"
+                  src="/images/founders/Harrison-thefounders.jpg"
                   alt="Harrison Schertzinger"
                   fill
                   className="object-cover object-top"
@@ -319,7 +319,7 @@ export default function AboutPage() {
             <div>
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
-                  src="/images/founders/Henry.Co-F.jpg"
+                  src="/images/founders/Henry-thefounders.jpg"
                   alt="Henry Schertzinger"
                   fill
                   className="object-cover object-top"
