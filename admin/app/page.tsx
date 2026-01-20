@@ -64,9 +64,29 @@ export default function LandingPage() {
               </h1>
 
               {/* Sub-headline */}
-              <p className="text-xl md:text-2xl text-brand-muted max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed animate-fade-in-up delay-100">
-                A premium system for those who refuse to leave their potential on the table.
+              <p className="text-xl md:text-2xl text-brand-muted max-w-xl mx-auto lg:mx-0 mb-8 leading-relaxed animate-fade-in-up delay-100">
+                The complete system to build discipline, track progress, and become who you&apos;re meant to be.
               </p>
+
+              {/* Value Props */}
+              <div className="flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 mb-10 animate-fade-in-up delay-150">
+                <span className="text-sm text-brand-muted flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-emerald" />
+                  Daily wins & streaks
+                </span>
+                <span className="text-sm text-brand-muted flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
+                  75-day challenges
+                </span>
+                <span className="text-sm text-brand-muted flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  Training & PRs
+                </span>
+                <span className="text-sm text-brand-muted flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  Goals & tasks
+                </span>
+              </div>
 
               {/* CTA */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 animate-fade-in-up delay-200">
@@ -114,6 +134,67 @@ export default function LandingPage() {
 
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
+
+      {/* How It Works Section */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-brand-accent uppercase tracking-widest">How It Works</span>
+            <h2 className="text-display-md mt-4">
+              Three steps to excellence<span className="text-brand-accent">.</span>
+            </h2>
+          </div>
+
+          {/* Steps */}
+          <div className="grid md:grid-cols-3 gap-8 md:gap-4">
+            {/* Step 1 */}
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-accent to-brand-accent/50 flex items-center justify-center mb-6 shadow-lg shadow-brand-accent/20">
+                  <span className="text-2xl font-bold text-white">1</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Define Your Standards</h3>
+                <p className="text-brand-muted leading-relaxed">
+                  Set your goals. Choose your routines. Pick a challenge. Decide who you want to become.
+                </p>
+              </div>
+              {/* Connector line (hidden on mobile) */}
+              <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-gradient-to-r from-brand-accent/50 to-brand-emerald/50" />
+            </div>
+
+            {/* Step 2 */}
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-emerald to-brand-emerald/50 flex items-center justify-center mb-6 shadow-lg shadow-brand-emerald/20">
+                  <span className="text-2xl font-bold text-white">2</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Execute Daily</h3>
+                <p className="text-brand-muted leading-relaxed">
+                  Complete your routines. Finish your tasks. Honor your rules. Win or lose the day—honestly.
+                </p>
+              </div>
+              {/* Connector line (hidden on mobile) */}
+              <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-px bg-gradient-to-r from-brand-emerald/50 to-purple-500/50" />
+            </div>
+
+            {/* Step 3 */}
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-500/50 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+                  <span className="text-2xl font-bold text-white">3</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Watch Yourself Transform</h3>
+                <p className="text-brand-muted leading-relaxed">
+                  Track your streaks. See your consistency. Earn badges. Consistency compounds into excellence.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
 
       {/* Philosophy Section */}
       <section className="relative z-10 py-32 px-6">
