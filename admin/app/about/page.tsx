@@ -51,34 +51,52 @@ export default function AboutPage() {
         </div>
       </nav>
 
-      {/* The Origin Story - Hero */}
+      {/* Hero Section */}
+      <section className="relative z-10 pt-24 pb-16 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-display-lg md:text-display-xl font-bold tracking-tight mb-6">
+            8 Billion people<span className="text-brand-accent">.</span>
+            <br />
+            <span className="text-brand-muted">One of You.</span>
+          </h1>
+          <p className="text-xl text-brand-muted max-w-2xl mx-auto">
+            Work in Progress. Masterpiece.
+          </p>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
+
+      {/* The Origin Story - Full */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-12 items-start">
             <div>
               <span className="text-sm font-semibold text-brand-accent uppercase tracking-widest">The Origin</span>
-              <h1 className="text-display-sm mt-4 mb-8">
-                It started with an injury<span className="text-brand-accent">.</span>
-              </h1>
+              <h2 className="text-display-sm mt-4 mb-8">
+                How&apos;d this start<span className="text-brand-accent">?</span>
+              </h2>
               <div className="space-y-6 text-brand-muted leading-relaxed">
-                <p>
-                  When I was 16, my brother tore his ACL. As serious athletes—both committed to play lacrosse at The University of North Carolina—this was the injury you don&apos;t talk about. Season-ending. Sometimes career-altering.
+                <p className="text-brand-text text-lg font-medium">
+                  The same way the majority of adventures do: a crisis.
                 </p>
                 <p>
-                  My brother was down bad, and I needed something to say to him. So I picked up a book: <span className="text-brand-text font-medium italic">Chop Wood Carry Water</span>.
+                  When I was 16 years old, my brother tore his ACL. As serious athletes—both committed to play lacrosse at The University of North Carolina—this was a taboo-type injury. ACL surgeries were season ending and sometimes career altering depending upon how the recovery went.
                 </p>
                 <p>
-                  That book changed the course of my life. From then on, I read like my life depended on it—and now I believe it does.
+                  Said simply, my brother was down bad, and I needed something to say to him.
                 </p>
-              </div>
-              <div className="mt-8 pt-8 border-t border-brand-border">
-                <p className="text-sm text-brand-muted italic">
-                  — Harrison Schertzinger
+                <p>
+                  So, I picked up a book—<span className="text-brand-text font-medium italic">Chop Wood Carry Water</span>—and that book changed the course of my life. From then on I read like my life depended upon it, and now believe… well, that it does.
+                </p>
+                <p>
+                  Because that book was the first time I interacted with ideas that were <span className="text-brand-text">alive</span>; ideas that were an invitation to live in a new way.
                 </p>
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-[4/5] rounded-3xl overflow-hidden border border-brand-border">
+              <div className="aspect-[4/5] rounded-3xl overflow-hidden border border-brand-border sticky top-24">
                 <Image
                   src="/images/about/harrison-books.jpg"
                   alt="Harrison with books"
@@ -89,19 +107,123 @@ export default function AboutPage() {
               </div>
             </div>
           </div>
+
+          {/* Continued story */}
+          <div className="mt-16 max-w-3xl">
+            <div className="space-y-6 text-brand-muted leading-relaxed">
+              <p>
+                Every book said different things, every author had his own take, but each one seemed to scream the same things:
+              </p>
+              <blockquote className="border-l-4 border-brand-accent pl-6 py-2 text-brand-text text-lg italic">
+                My friend, please understand what determines the quality of someone&apos;s life and have the courage to pursue your path; have the courage to break away from the crowd, and the discipline to do what it takes; live a great and noble adventure; reject what the world offers; endure the hard times and soak every drop of bliss that comes with the good; empty yourself out in the service of others and find something you&apos;re willing to perish pursuing.
+              </blockquote>
+              <p>
+                I was used to spark-noting my school books. <span className="text-brand-text">The Scarlet Letter</span> had nothing for me. <span className="text-brand-text">All Quiet on the Western Front</span> did not capture my competitive nature. <span className="text-brand-text">The Great Gatsby</span> was cool, and makes a great theme for parties, but I was captivated by the thrill of learning new ways to live.
+              </p>
+              <p className="text-brand-text text-xl font-medium">
+                It was freedom. Or, a pathway to freedom. A stairway that seemed to climb to the heavens, available to anyone.
+              </p>
+              <p>
+                Because the world tells you &ldquo;this matters.&rdquo; But then there&apos;s what <span className="text-brand-text">actually</span> matters—which is how to be in the world; how to act in the face of adversity; how to step into the unknown with faith; how to conceptualize life, God, and yourself, and the relationship between them; your purpose… all of it.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
+
+      {/* The Vision Section */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative p-12 md:p-16 rounded-[2.5rem] bg-gradient-to-br from-brand-surface via-brand-card to-brand-surface border border-brand-border overflow-hidden">
+            <div className="absolute -top-20 -right-20 w-40 h-40 bg-brand-emerald/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-brand-accent/20 rounded-full blur-3xl" />
+
+            <div className="relative">
+              <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Vision</span>
+              <div className="mt-6 space-y-6 text-brand-muted leading-relaxed">
+                <p className="text-xl text-brand-text">
+                  My goal is for you to feel this passion, desire, and encouragement. For these ideas to poke and prod you to no longer waste moments, to wake up and act with intention, to care deeply, and aspire to be an ideal that&apos;s alive and fighting in the world.
+                </p>
+                <p>
+                  And most of all… to inspire you to make the type of memory that forever marks your soul.
+                </p>
+                <p className="text-brand-text italic">
+                  Maybe it&apos;s you standing alone in the snow after a run… before the birds have woken up, before lights are on in your neighbor&apos;s house… maybe every word I write leads to that moment… when you know that you&apos;re different.
+                </p>
+                <p>
+                  In that moment, and successive moments, when you have firmly set yourself apart from the mediocrity of the world, it will have all been worth it.
+                </p>
+                <p className="text-2xl text-brand-text font-bold mt-8">
+                  The hero must be born.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
 
+      {/* The Realization */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Realization</span>
+              <h2 className="text-display-sm mt-4 mb-8">
+                Systems create freedom<span className="text-purple-500">.</span>
+              </h2>
+              <div className="space-y-6 text-brand-muted leading-relaxed">
+                <p>
+                  Genuinely, the greatest investment you can ever make is in yourself. But there has to be a system. <span className="text-brand-text font-medium">We fall to the level of our systems.</span>
+                </p>
+                <p>
+                  The discipline really does create freedom. The order really does keep and protect you.
+                </p>
+                <p>
+                  As someone who owns a training facility and youth lacrosse club, I see how vital—but also how impactful—discipline, structure, order, and consistency is. Simple, foundational systems take people from okay to great.
+                </p>
+                <p>
+                  One of my favorite sayings is <span className="text-brand-text italic">&ldquo;the greatest gift you can give to someone is a pattern of action and perception.&rdquo;</span>
+                </p>
+                <p>
+                  What You. First is, is exactly that: a system of perception and action. It makes clear what to prioritize and how to properly perceive the world to thrive.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-6">
+              <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border">
+                <p className="text-brand-accent font-semibold mb-2">The Book</p>
+                <p className="text-brand-text font-medium">The Angel in the Marble</p>
+                <p className="text-brand-muted text-sm mt-1">Where Vision Meets Relentless Action</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border">
+                <p className="text-brand-emerald font-semibold mb-2">The Thesis</p>
+                <p className="text-brand-muted">A vision, with a structured system, brings the dream to reality.</p>
+              </div>
+              <div className="p-6 rounded-2xl bg-brand-surface border border-brand-border">
+                <p className="text-purple-500 font-semibold mb-2">The Dream</p>
+                <p className="text-brand-muted">This app has been a dream since college.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Gradient divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
+
       {/* The Work We Do */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Work</span>
+            <span className="text-sm font-semibold text-brand-accent uppercase tracking-widest">The Work</span>
             <h2 className="text-display-sm mt-4">
-              In the trenches<span className="text-purple-500">.</span>
+              In the trenches<span className="text-brand-accent">.</span>
             </h2>
             <p className="text-xl text-brand-muted mt-4 max-w-2xl mx-auto">
               We don&apos;t just build apps. We coach athletes. We run businesses. We live this every day.
@@ -109,16 +231,15 @@ export default function AboutPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Cincinnati Lacrosse Academy */}
             <a
               href="https://www.cincinnatilacrosseacademy.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-purple-500/50 transition-all duration-300"
+              className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-accent/50 transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-4">
-                <h3 className="text-xl font-bold group-hover:text-purple-500 transition-colors">Cincinnati Lacrosse Academy</h3>
-                <svg className="w-5 h-5 text-brand-muted group-hover:text-purple-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h3 className="text-xl font-bold group-hover:text-brand-accent transition-colors">Cincinnati Lacrosse Academy</h3>
+                <svg className="w-5 h-5 text-brand-muted group-hover:text-brand-accent group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </div>
@@ -127,16 +248,15 @@ export default function AboutPage() {
               </p>
             </a>
 
-            {/* You First Elite Lacrosse */}
             <a
               href="https://www.youfirstelitelacrosseclub.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-purple-500/50 transition-all duration-300"
+              className="group p-8 rounded-3xl bg-brand-surface border border-brand-border hover:border-brand-accent/50 transition-all duration-300"
             >
               <div className="flex items-start justify-between mb-4">
-                <h3 className="text-xl font-bold group-hover:text-purple-500 transition-colors">You. First Elite Lacrosse</h3>
-                <svg className="w-5 h-5 text-brand-muted group-hover:text-purple-500 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <h3 className="text-xl font-bold group-hover:text-brand-accent transition-colors">You. First Elite Lacrosse</h3>
+                <svg className="w-5 h-5 text-brand-muted group-hover:text-brand-accent group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
               </div>
@@ -149,7 +269,7 @@ export default function AboutPage() {
       </section>
 
       {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
 
       {/* The Podcast */}
       <section className="relative z-10 py-24 px-6">
@@ -160,7 +280,7 @@ export default function AboutPage() {
                 href="https://podcasts.apple.com/us/podcast/the-infinite-game-podcast/id1657820186"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block aspect-square max-w-sm mx-auto rounded-3xl overflow-hidden border border-brand-border hover:border-brand-accent/50 transition-colors shadow-2xl shadow-brand-accent/10"
+                className="block aspect-square max-w-sm mx-auto rounded-3xl overflow-hidden border border-brand-border hover:border-brand-emerald/50 transition-colors shadow-2xl shadow-brand-emerald/10"
               >
                 <Image
                   src="/images/about/podcast-cover.png"
@@ -172,9 +292,9 @@ export default function AboutPage() {
               </a>
             </div>
             <div className="order-1 md:order-2">
-              <span className="text-sm font-semibold text-brand-accent uppercase tracking-widest">The Podcast</span>
+              <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Podcast</span>
               <h2 className="text-display-sm mt-4 mb-6">
-                The Infinite Game<span className="text-brand-accent">.</span>
+                The Infinite Game<span className="text-brand-emerald">.</span>
               </h2>
               <div className="space-y-4 text-brand-muted leading-relaxed">
                 <p>
@@ -189,7 +309,7 @@ export default function AboutPage() {
                   href="https://podcasts.apple.com/us/podcast/the-infinite-game-podcast/id1657820186"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-surface border border-brand-border hover:border-brand-accent/50 transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-brand-surface border border-brand-border hover:border-brand-emerald/50 transition-colors"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
@@ -214,20 +334,19 @@ export default function AboutPage() {
       </section>
 
       {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
 
-      {/* The Founders - Expanded */}
+      {/* The Founders */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-16">
-            <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Founders</span>
+            <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Founders</span>
             <h2 className="text-display-sm mt-4">
-              Built by athletes<span className="text-brand-emerald">.</span>
+              Built by athletes<span className="text-purple-500">.</span>
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12">
-            {/* Harrison */}
             <div>
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
@@ -240,13 +359,11 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold mb-2">Harrison Schertzinger</h3>
               <p className="text-brand-accent text-sm font-medium mb-4">Co-Founder • App Development • Business Development</p>
               <div className="space-y-3 text-brand-muted">
-                <p>UNC Lacrosse. Author of <span className="text-brand-text italic">The Angel in the Marble: Where Vision Meets Relentless Action</span>.</p>
+                <p>UNC Lacrosse. Author of <span className="text-brand-text italic">The Angel in the Marble</span>.</p>
                 <p>Co-founder of The Cincinnati Lacrosse Academy and You. First Elite Lacrosse. Host of The Infinite Game podcast.</p>
-                <p>Obsessed with systems, strategy, and helping athletes reach their full potential through disciplined daily habits.</p>
               </div>
             </div>
 
-            {/* Henry */}
             <div>
               <div className="aspect-[4/5] rounded-3xl bg-brand-surface border border-brand-border overflow-hidden mb-6 relative">
                 <Image
@@ -257,11 +374,10 @@ export default function AboutPage() {
                 />
               </div>
               <h3 className="text-2xl font-bold mb-2">Henry Schertzinger</h3>
-              <p className="text-brand-emerald text-sm font-medium mb-4">Co-Founder • Marketing</p>
+              <p className="text-purple-500 text-sm font-medium mb-4">Co-Founder • Marketing</p>
               <div className="space-y-3 text-brand-muted">
                 <p>UNC Lacrosse. The ACL injury that started it all—and the comeback that proved the system works.</p>
                 <p>Co-founder of The Cincinnati Lacrosse Academy and You. First Elite Lacrosse. Host of The Infinite Game podcast.</p>
-                <p>Believes in the power of structure and accountability to unlock excellence in anyone willing to put in the work.</p>
               </div>
             </div>
           </div>
@@ -269,13 +385,12 @@ export default function AboutPage() {
       </section>
 
       {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
 
       {/* The .uoY Concept */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="relative p-12 md:p-16 rounded-[2.5rem] bg-gradient-to-br from-brand-surface via-brand-card to-brand-surface border border-brand-border overflow-hidden">
-            {/* Decorative gradient orbs */}
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-brand-accent/20 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl" />
 
@@ -284,12 +399,18 @@ export default function AboutPage() {
                 <span className="text-brand-muted">.uoY</span>
               </h2>
 
-              <div className="space-y-6 max-w-2xl mx-auto">
-                <p className="text-xl md:text-2xl text-brand-text leading-relaxed">
-                  Only readable in the mirror.
+              <div className="space-y-6 max-w-2xl mx-auto text-left">
+                <p className="text-lg text-brand-muted leading-relaxed">
+                  There&apos;s a moment when you look in the mirror, and you see the same eyes looking back at you that did when you were 12 years old. You realize the past and present are all here.
                 </p>
                 <p className="text-lg text-brand-muted leading-relaxed">
-                  Because the only opinion that can truly change your life is the one staring back at you. Not what others think. Not what the world expects. <span className="text-brand-text">You.</span>
+                  The past you is hoping that you make his sacrifice and pain worth it. The future you is begging you to act in alignment with your dreams.
+                </p>
+                <p className="text-xl text-brand-text leading-relaxed font-medium">
+                  Everything… depends on You. Who you see in the mirror.
+                </p>
+                <p className="text-lg text-brand-muted leading-relaxed">
+                  The teacher, master, leader, guru—they all can point the way, but you must walk the way.
                 </p>
               </div>
             </div>
@@ -300,7 +421,7 @@ export default function AboutPage() {
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-brand-emerald/50 to-transparent" />
 
-      {/* Photo Gallery - The Journey (moved to bottom) */}
+      {/* Photo Gallery */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -308,12 +429,8 @@ export default function AboutPage() {
             <h2 className="text-display-sm mt-4">
               Before it was an app<span className="text-brand-emerald">.</span>
             </h2>
-            <p className="text-xl text-brand-muted mt-4 max-w-2xl mx-auto">
-              Handwritten journals. Custom systems. Years of obsession with high performance. The dream that became You. First.
-            </p>
           </div>
 
-          {/* Photo Collage - Proportional */}
           <div className="columns-2 md:columns-3 gap-4 space-y-4">
             <div className="break-inside-avoid rounded-2xl overflow-hidden border border-brand-border">
               <Image
