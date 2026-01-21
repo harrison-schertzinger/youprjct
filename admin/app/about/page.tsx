@@ -145,7 +145,7 @@ export default function AboutPage() {
       {/* The Origin - Full height image */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-5 gap-12">
+          <div className="grid lg:grid-cols-5 gap-12 items-stretch">
             {/* Left - Text (3 cols) */}
             <div className="lg:col-span-3">
               <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Origin</span>
@@ -180,25 +180,26 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Right - Stacked Images (2 cols) */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="rounded-2xl overflow-hidden border border-brand-border">
+            {/* Right - Single image spanning full height */}
+            <div className="lg:col-span-2">
+              {/* Desktop - full height */}
+              <div className="hidden lg:block h-full rounded-2xl overflow-hidden border border-brand-border relative">
                 <Image
                   src="/images/about/harrison-books.jpg"
                   alt="Harrison with books"
-                  width={500}
-                  height={600}
-                  className="w-full h-auto"
+                  fill
+                  className="object-cover object-top"
                   priority
                 />
               </div>
-              <div className="rounded-2xl overflow-hidden border border-brand-border">
+              {/* Mobile - aspect ratio */}
+              <div className="lg:hidden aspect-[4/5] rounded-2xl overflow-hidden border border-brand-border relative">
                 <Image
-                  src="/images/about/dsc04959.jpg"
-                  alt="Training"
-                  width={500}
-                  height={400}
-                  className="w-full h-auto"
+                  src="/images/about/harrison-books.jpg"
+                  alt="Harrison with books"
+                  fill
+                  className="object-cover object-top"
+                  priority
                 />
               </div>
             </div>
