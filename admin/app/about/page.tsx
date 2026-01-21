@@ -65,74 +65,71 @@ export default function AboutPage() {
       {/* Systems Create Freedom - With Visual Tiles */}
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left - Statement */}
-            <div>
-              <h2 className="text-display-md md:text-display-lg font-bold tracking-tight mb-8">
-                Systems create freedom<span className="text-brand-accent">.</span>
-              </h2>
-              <div className="space-y-6 text-lg text-brand-muted leading-relaxed">
-                <p>
-                  The greatest investment you can ever make is in yourself. But there has to be a system.
-                </p>
-                <p className="text-2xl text-brand-text font-medium">
-                  We fall to the level of our systems.
-                </p>
-                <p>
-                  The discipline really does create freedom. The order really does keep and protect you.
-                </p>
-              </div>
-              <div className="mt-10 pt-10 border-t border-brand-border/30">
-                <p className="text-brand-muted italic text-lg">
+          {/* Headline */}
+          <h2 className="text-display-md md:text-display-lg font-bold tracking-tight mb-16">
+            Systems create freedom<span className="text-brand-accent">.</span>
+          </h2>
+
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
+            {/* Left - Compact Copy */}
+            <div className="space-y-6">
+              <p className="text-2xl text-brand-text font-medium leading-snug">
+                We fall to the level of our systems.
+              </p>
+              <p className="text-lg text-brand-muted leading-relaxed">
+                The greatest investment you can ever make is in yourself—but there has to be a system. The discipline really does create freedom. The order really does keep and protect you.
+              </p>
+              <div className="pt-6 border-t border-brand-border/30">
+                <p className="text-brand-muted italic">
                   &ldquo;The greatest gift you can give to someone is a pattern of action and perception.&rdquo;
                 </p>
-                <p className="text-brand-text mt-4 font-medium">
+                <p className="text-brand-text mt-3 font-medium">
                   That&apos;s what You. First is.
                 </p>
               </div>
             </div>
 
-            {/* Right - Visual Tiles */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-brand-accent/20 to-brand-accent/5 border border-brand-accent/20">
-                <div className="w-12 h-12 rounded-xl bg-brand-accent/20 flex items-center justify-center mb-4">
-                  <svg className="w-6 h-6 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {/* Right - Compact Tiles */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-5 rounded-xl bg-gradient-to-br from-brand-accent/20 to-brand-accent/5 border border-brand-accent/20">
+                <div className="w-10 h-10 rounded-lg bg-brand-accent/20 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-brand-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="font-bold text-brand-text mb-2">Discipline</h3>
-                <p className="text-sm text-brand-muted">Structure that sets you free</p>
+                <h3 className="font-bold text-brand-text text-sm mb-1">Discipline</h3>
+                <p className="text-xs text-brand-muted">Structure that sets you free</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-brand-emerald/20 to-brand-emerald/5 border border-brand-emerald/20">
-                <div className="w-12 h-12 rounded-xl bg-brand-emerald/20 flex items-center justify-center mb-4">
-                  <svg className="w-6 h-6 text-brand-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-5 rounded-xl bg-gradient-to-br from-brand-emerald/20 to-brand-emerald/5 border border-brand-emerald/20">
+                <div className="w-10 h-10 rounded-lg bg-brand-emerald/20 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-brand-emerald" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h3 className="font-bold text-brand-text mb-2">Action</h3>
-                <p className="text-sm text-brand-muted">Daily habits compound</p>
+                <h3 className="font-bold text-brand-text text-sm mb-1">Action</h3>
+                <p className="text-xs text-brand-muted">Daily habits compound</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/20">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-                  <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-5 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/20">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 </div>
-                <h3 className="font-bold text-brand-text mb-2">Perception</h3>
-                <p className="text-sm text-brand-muted">See what matters</p>
+                <h3 className="font-bold text-brand-text text-sm mb-1">Perception</h3>
+                <p className="text-xs text-brand-muted">See what matters</p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center mb-4">
-                  <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-5 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20">
+                <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center mb-3">
+                  <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                   </svg>
                 </div>
-                <h3 className="font-bold text-brand-text mb-2">Consistency</h3>
-                <p className="text-sm text-brand-muted">Show up every day</p>
+                <h3 className="font-bold text-brand-text text-sm mb-1">Consistency</h3>
+                <p className="text-xs text-brand-muted">Show up every day</p>
               </div>
             </div>
           </div>
