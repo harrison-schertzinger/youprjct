@@ -20,9 +20,9 @@ export default function AboutPage() {
       <nav className="relative z-50 border-b border-brand-border/50">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <Link href="/" className="text-xl font-bold tracking-tight">
-            You<span className="text-brand-accent">.</span> First
+            You<span className="text-brand-accent">.</span>Prjct
           </Link>
-          <div className="flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8">
             <Link href="/system" className="text-sm text-brand-muted hover:text-brand-text transition-colors">
               The System
             </Link>
@@ -36,6 +36,9 @@ export default function AboutPage() {
               Download
             </a>
           </div>
+          <a href="/#download" className="md:hidden text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors">
+            Download
+          </a>
         </div>
       </nav>
 
@@ -453,7 +456,7 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <Link href="/" className="text-xl font-bold tracking-tight">
-              You<span className="text-brand-accent">.</span> First
+              You<span className="text-brand-accent">.</span>Prjct
             </Link>
             <div className="flex items-center gap-8 text-sm text-brand-muted">
               <Link href="/premium" className="text-brand-gold hover:text-brand-gold/80 transition-colors">Pro</Link>

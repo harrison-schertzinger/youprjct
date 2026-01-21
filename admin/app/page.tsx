@@ -18,9 +18,9 @@ export default function LandingPage() {
       <nav className="relative z-50 border-b border-brand-border/50">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="text-xl font-bold tracking-tight">
-            You<span className="text-brand-accent">.</span> First
+            You<span className="text-brand-accent">.</span>Prjct
           </div>
-          <div className="flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8">
             <Link
               href="/system"
               className="text-sm text-brand-muted hover:text-brand-text transition-colors"
@@ -46,6 +46,13 @@ export default function LandingPage() {
               Download
             </a>
           </div>
+          {/* Mobile - just Download */}
+          <a
+            href="#download"
+            className="md:hidden text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
+          >
+            Download
+          </a>
         </div>
       </nav>
 
