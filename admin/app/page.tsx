@@ -258,7 +258,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <span className="text-sm font-semibold text-brand-emerald uppercase tracking-widest">The Founders</span>
             <h2 className="text-display-lg mt-4">
-              Built by athletes, for athletes<span className="text-brand-accent">.</span>
+              Built by people who live this<span className="text-brand-accent">.</span>
             </h2>
           </div>
 
@@ -280,7 +280,7 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold mb-1">Harrison Schertzinger</h3>
                 <p className="text-brand-accent font-medium mb-3">Co-Founder</p>
                 <p className="text-brand-muted text-sm leading-relaxed">
-                  Former UNC Lacrosse player. Passionate about helping athletes reach their full potential through disciplined daily habits and intentional living.
+                  Former UNC Lacrosse player. Passionate about helping people reach their full potential through disciplined daily habits and intentional living.
                 </p>
               </div>
             </div>
@@ -301,11 +301,15 @@ export default function LandingPage() {
                 <h3 className="text-2xl font-bold mb-1">Henry</h3>
                 <p className="text-brand-accent font-medium mb-3">Co-Founder</p>
                 <p className="text-brand-muted text-sm leading-relaxed">
-                  Coach and mentor dedicated to developing the next generation of athletes. Believes in the power of structure and accountability to unlock excellence.
+                  Coach and mentor dedicated to developing the next generation of leaders. Believes in the power of structure and accountability to unlock excellence.
                 </p>
               </div>
             </div>
           </div>
+
+          <p className="text-center text-xl text-brand-muted mt-12">
+            Born from discipline. Built for you.
+          </p>
         </div>
       </section>
 
