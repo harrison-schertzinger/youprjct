@@ -207,27 +207,6 @@ export default function AboutPage() {
       </section>
 
       {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-
-      {/* The Vision */}
-      <section className="relative z-10 py-24 px-6">
-        <div className="max-w-3xl mx-auto">
-          <span className="text-sm font-semibold text-purple-500 uppercase tracking-widest">The Vision</span>
-          <div className="mt-6 space-y-6 text-brand-muted leading-relaxed">
-            <p className="text-xl text-brand-text">
-              My goal is for you to feel this passion, desire, and encouragement. For these ideas to poke and prod you to no longer waste moments, to wake up and act with intention, to care deeply.
-            </p>
-            <p className="text-brand-text italic">
-              Maybe it&apos;s you standing alone in the snow after a run… before the birds have woken up, before lights are on in your neighbor&apos;s house… when you know that you&apos;re different.
-            </p>
-            <p className="text-2xl text-brand-text font-bold pt-4">
-              The hero must be born.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
 
       {/* In the Trenches */}
