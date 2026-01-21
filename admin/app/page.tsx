@@ -2,10 +2,40 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+
+const APP_SCREENSHOTS = [
+  { src: '/images/App screenshots/1.png', alt: 'You Dashboard' },
+  { src: '/images/App screenshots/2.png', alt: 'Discipline Tab' },
+  { src: '/images/App screenshots/3.png', alt: 'Goals Tab' },
+  { src: '/images/App screenshots/4.png', alt: 'Mind Tab' },
+  { src: '/images/App screenshots/5.png', alt: 'Body Tab' },
+  { src: '/images/App screenshots/6.png', alt: 'Challenges' },
+  { src: '/images/App screenshots/7.png', alt: 'Training' },
+];
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSlide = (index: number) => {
+    if (carouselRef.current) {
+      const slideWidth = carouselRef.current.offsetWidth;
+      carouselRef.current.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
+    }
+  };
+
+  const handleScroll = () => {
+    if (carouselRef.current) {
+      const slideWidth = carouselRef.current.offsetWidth;
+      const scrollLeft = carouselRef.current.scrollLeft;
+      const newIndex = Math.round(scrollLeft / slideWidth);
+      if (newIndex !== currentSlide) {
+        setCurrentSlide(newIndex);
+      }
+    }
+  };
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text overflow-x-hidden">
       {/* Ambient background elements */}
@@ -162,29 +192,97 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Phone Mockup */}
-            <div className="flex-shrink-0 animate-fade-in-up delay-300">
+            {/* Phone Carousel */}
+            <div className="flex-shrink-0 animate-fade-in-up delay-300 w-full lg:w-auto max-w-[320px] mx-auto lg:mx-0">
               <div className="relative">
                 {/* Glow effect behind phone */}
-                <div className="absolute inset-0 bg-gradient-radial from-brand-accent/30 via-brand-accent/10 to-transparent blur-3xl scale-150" />
+                <div className="absolute inset-0 bg-gradient-radial from-brand-accent/30 via-brand-accent/10 to-transparent blur-3xl scale-150 pointer-events-none" />
 
-                {/* Phone frame */}
-                <div className="relative w-[280px] h-[580px] md:w-[300px] md:h-[620px] rounded-[3rem] border-[6px] border-brand-border bg-brand-surface p-2 shadow-2xl shadow-black/50">
-                  {/* Screen notch */}
-                  <div className="absolute top-4 left-1/2 -translate-x-1/2 w-24 h-6 bg-brand-bg rounded-full z-10" />
+                {/* Carousel container */}
+                <div
+                  ref={carouselRef}
+                  onScroll={handleScroll}
+                  className="relative flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {APP_SCREENSHOTS.map((screenshot, index) => (
+                    <div key={index} className="flex-shrink-0 w-full snap-center flex justify-center">
+                      {/* Phone frame */}
+                      <div className="relative w-[260px] h-[540px] md:w-[280px] md:h-[580px] rounded-[3rem] border-[6px] border-brand-border bg-brand-surface p-2 shadow-2xl shadow-black/50 transition-transform duration-300">
+                        {/* Screen notch */}
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-brand-bg rounded-full z-10" />
 
-                  {/* Screen content */}
-                  <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-brand-bg">
-                    <Image
-                      src="/images/App screenshots/you-page.PNG"
-                      alt="You. First App Dashboard"
-                      width={300}
-                      height={650}
-                      className="w-full h-full object-cover object-top"
-                      priority
-                    />
-                  </div>
+                        {/* Screen content */}
+                        <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-brand-bg">
+                          <Image
+                            src={screenshot.src}
+                            alt={screenshot.alt}
+                            width={280}
+                            height={580}
+                            className="w-full h-full object-cover object-top"
+                            priority={index === 0}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
+
+                {/* Navigation & Indicators */}
+                <div className="flex items-center justify-center gap-4 mt-6">
+                  {/* Left arrow */}
+                  <button
+                    onClick={() => scrollToSlide(Math.max(0, currentSlide - 1))}
+                    className={`p-2 rounded-full transition-all ${
+                      currentSlide === 0
+                        ? 'text-brand-border cursor-not-allowed'
+                        : 'text-brand-muted hover:text-brand-text hover:bg-brand-surface'
+                    }`}
+                    disabled={currentSlide === 0}
+                    aria-label="Previous"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dot indicators */}
+                  <div className="flex gap-1.5">
+                    {APP_SCREENSHOTS.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => scrollToSlide(index)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          currentSlide === index
+                            ? 'bg-brand-accent w-6'
+                            : 'bg-brand-border hover:bg-brand-muted w-1.5'
+                        }`}
+                        aria-label={`Go to slide ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Right arrow */}
+                  <button
+                    onClick={() => scrollToSlide(Math.min(APP_SCREENSHOTS.length - 1, currentSlide + 1))}
+                    className={`p-2 rounded-full transition-all ${
+                      currentSlide === APP_SCREENSHOTS.length - 1
+                        ? 'text-brand-border cursor-not-allowed'
+                        : 'text-brand-muted hover:text-brand-text hover:bg-brand-surface'
+                    }`}
+                    disabled={currentSlide === APP_SCREENSHOTS.length - 1}
+                    aria-label="Next"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Current screen label */}
+                <p className="text-center text-sm text-brand-muted mt-2">
+                  {APP_SCREENSHOTS[currentSlide]?.alt}
+                </p>
               </div>
             </div>
           </div>
