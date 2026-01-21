@@ -347,7 +347,7 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold mb-2">Harrison Schertzinger</h3>
               <p className="text-brand-accent text-sm font-medium mb-4">Co-Founder</p>
               <p className="text-brand-muted">
-                Former UNC Lacrosse. Built Cincinnati Lacrosse Academy from scratch. Hosts <span className="text-brand-text">The Infinite Game</span> podcast. Spent years studying what separates people who achieve from those who don&apos;t—then built a system to close the gap.
+                Former UNC Lacrosse player. Passionate about helping people reach their full potential through disciplined daily habits and intentional living.
               </p>
             </div>
 
@@ -363,7 +363,7 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold mb-2">Henry Schertzinger</h3>
               <p className="text-purple-500 text-sm font-medium mb-4">Co-Founder</p>
               <p className="text-brand-muted">
-                Former UNC Lacrosse. Tore his ACL, found <span className="text-brand-text italic">Chop Wood Carry Water</span>, and rebuilt himself one day at a time. The system that brought him back became the foundation for everything we build. Living proof that small disciplines compound.
+                Coach and mentor dedicated to developing the next generation of leaders. Believes in the power of structure and accountability to unlock excellence.
               </p>
             </div>
           </div>
