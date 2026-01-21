@@ -577,33 +577,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Gradient divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-
-      {/* Newsletter Section */}
-      <section className="relative z-10 py-24 px-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="p-10 rounded-3xl bg-gradient-to-br from-brand-surface via-brand-card to-brand-surface border border-brand-border text-center">
-            <h3 className="text-2xl font-bold mb-3">Get the philosophy</h3>
-            <p className="text-brand-muted mb-8">
-              Weekly insights on discipline, excellence, and becoming who you&apos;re meant to be. No spam. Unsubscribe anytime.
-            </p>
-            <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-5 py-4 rounded-xl bg-brand-bg border border-brand-border text-brand-text placeholder:text-brand-muted focus:outline-none focus:border-brand-accent transition-colors"
-              />
-              <button
-                type="submit"
-                className="px-8 py-4 rounded-xl bg-brand-accent text-white font-semibold hover:bg-brand-accent/90 transition-colors whitespace-nowrap"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
 
       {/* Gradient divider */}
       <div className="h-px bg-gradient-to-r from-transparent via-brand-accent/50 to-transparent" />
