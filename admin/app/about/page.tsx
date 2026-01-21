@@ -347,7 +347,7 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold mb-2">Harrison Schertzinger</h3>
               <p className="text-brand-accent text-sm font-medium mb-4">Co-Founder</p>
               <p className="text-brand-muted">
-                UNC Lacrosse. Author of <span className="text-brand-text italic">The Angel in the Marble</span>. Co-founder of The Cincinnati Lacrosse Academy and You. First Elite Lacrosse.
+                Former UNC Lacrosse. Built Cincinnati Lacrosse Academy from scratch. Hosts <span className="text-brand-text">The Infinite Game</span> podcast. Spent years studying what separates people who achieve from those who don&apos;t—then built a system to close the gap.
               </p>
             </div>
 
@@ -363,7 +363,7 @@ export default function AboutPage() {
               <h3 className="text-2xl font-bold mb-2">Henry Schertzinger</h3>
               <p className="text-purple-500 text-sm font-medium mb-4">Co-Founder</p>
               <p className="text-brand-muted">
-                UNC Lacrosse. The ACL injury that started it all—and the comeback that proved the system works. Co-founder of The Cincinnati Lacrosse Academy and You. First Elite Lacrosse.
+                Former UNC Lacrosse. Tore his ACL, found <span className="text-brand-text italic">Chop Wood Carry Water</span>, and rebuilt himself one day at a time. The system that brought him back became the foundation for everything we build. Living proof that small disciplines compound.
               </p>
             </div>
           </div>
