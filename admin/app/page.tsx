@@ -1,7 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useState } from 'react';
 
 export default function LandingPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text overflow-x-hidden">
       {/* Ambient background elements */}
@@ -46,14 +50,56 @@ export default function LandingPage() {
               Download
             </a>
           </div>
-          {/* Mobile - just Download */}
-          <a
-            href="#download"
-            className="md:hidden text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors"
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-brand-muted hover:text-brand-text transition-colors"
+            aria-label="Toggle menu"
           >
-            Download
-          </a>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-brand-border/50 bg-brand-bg/95 backdrop-blur-sm">
+            <div className="px-6 py-4 space-y-3">
+              <Link
+                href="/system"
+                className="block text-sm text-brand-muted hover:text-brand-text transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                The System
+              </Link>
+              <Link
+                href="/features"
+                className="block text-sm text-brand-muted hover:text-brand-text transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Features
+              </Link>
+              <Link
+                href="/about"
+                className="block text-sm text-brand-muted hover:text-brand-text transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
+              </Link>
+              <a
+                href="#download"
+                className="block text-sm font-medium text-brand-accent hover:text-brand-accent/80 transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Download
+              </a>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section - Enhanced with Phone Mockup */}
@@ -110,7 +156,7 @@ export default function LandingPage() {
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                   </svg>
-                  Download on App Store
+                  Coming Soon
                   <span className="text-brand-muted group-hover:translate-x-1 transition-transform">→</span>
                 </a>
               </div>
@@ -486,7 +532,7 @@ export default function LandingPage() {
               <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
               </svg>
-              Download Free
+              Coming Soon
               <span className="text-brand-muted group-hover:translate-x-1 transition-transform">→</span>
             </a>
             <Link
@@ -499,7 +545,7 @@ export default function LandingPage() {
           </div>
 
           <p className="mt-8 text-sm text-brand-muted">
-            Free to start • Pro: $4.99/month • iOS
+            Coming soon to iOS • Free to start • Pro features available
           </p>
         </div>
       </section>
@@ -509,7 +555,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="text-xl font-bold tracking-tight">
-              You<span className="text-brand-accent">.</span> First
+              You<span className="text-brand-accent">.</span>Prjct
             </div>
             <div className="flex items-center gap-8 text-sm text-brand-muted">
               <Link href="/premium" className="text-brand-gold hover:text-brand-gold/80 transition-colors">
