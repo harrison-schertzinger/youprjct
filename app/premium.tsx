@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  Linking,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +26,9 @@ const BENEFITS = [
   { title: 'Train Smarter', desc: 'Structured S&C programs for real results' },
   { title: 'Track Your Progress', desc: 'Analytics and insights across every area' },
 ];
+
+const PRIVACY_POLICY_URL = 'https://youprjct.com/privacy';
+const TERMS_OF_USE_URL = 'https://youprjct.com/terms';
 
 export default function PremiumScreen() {
   const { isPremium, isLoading: membershipLoading, restore, refreshCustomerInfo } = useMembership();
@@ -218,10 +222,21 @@ export default function PremiumScreen() {
             </View>
           )}
 
-          {/* Terms */}
-          <Text style={styles.terms}>
-            Cancel anytime. Subscription auto-renews monthly.
-          </Text>
+          {/* Subscription Terms */}
+          <View style={styles.legalSection}>
+            <Text style={styles.terms}>
+              Cancel anytime. Subscription auto-renews monthly at $4.99/month after the 1-month free trial.
+            </Text>
+            <View style={styles.legalLinks}>
+              <Pressable onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
+                <Text style={styles.legalLink}>Terms of Use</Text>
+              </Pressable>
+              <Text style={styles.legalSeparator}>•</Text>
+              <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+                <Text style={styles.legalLink}>Privacy Policy</Text>
+              </Pressable>
+            </View>
+          </View>
         </ScrollView>
       </ScreenContainer>
     </>
@@ -384,12 +399,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: tokens.colors.muted,
   },
-  // Terms
+  // Terms & Legal
+  legalSection: {
+    alignItems: 'center',
+    marginHorizontal: tokens.spacing.lg,
+  },
   terms: {
     fontSize: 12,
     color: tokens.colors.muted,
     textAlign: 'center',
-    marginHorizontal: tokens.spacing.xl,
+    lineHeight: 18,
+    marginBottom: tokens.spacing.sm,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  legalLink: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: tokens.colors.tint,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: tokens.colors.muted,
+    marginHorizontal: tokens.spacing.sm,
   },
   // Success State
   successContainer: {

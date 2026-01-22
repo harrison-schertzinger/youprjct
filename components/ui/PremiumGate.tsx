@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SignatureButton } from './SignatureButton';
 import { tokens } from '@/design/tokens';
 import { useMembership } from '@/hooks/useMembership';
+
+const PRIVACY_POLICY_URL = 'https://youprjct.com/privacy';
+const TERMS_OF_USE_URL = 'https://youprjct.com/terms';
 
 type Benefit = {
   title: string;
@@ -110,6 +113,17 @@ export function PremiumGate({ feature, tagline, benefits, children }: Props) {
           >
             <Text style={styles.restoreText}>Restore Purchases</Text>
           </Pressable>
+
+          {/* Legal Links */}
+          <View style={styles.legalLinks}>
+            <Pressable onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
+              <Text style={styles.legalLink}>Terms</Text>
+            </Pressable>
+            <Text style={styles.legalSeparator}>•</Text>
+            <Pressable onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+              <Text style={styles.legalLink}>Privacy</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -235,5 +249,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: tokens.colors.muted,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: tokens.spacing.sm,
+  },
+  legalLink: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: tokens.colors.tint,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 11,
+    color: tokens.colors.muted,
+    marginHorizontal: tokens.spacing.xs,
   },
 });
