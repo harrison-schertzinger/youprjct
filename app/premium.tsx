@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Pressable,
   Linking,
+  Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
@@ -89,9 +89,11 @@ export default function PremiumScreen() {
         />
         <ScreenContainer>
           <View style={styles.successContainer}>
-            <View style={styles.successBadge}>
-              <Text style={styles.successIcon}>★</Text>
-            </View>
+            <Image
+              source={require('@/assets/images/PRO.png')}
+              style={styles.successLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.successTitle}>You're Pro</Text>
             <Text style={styles.successSubtitle}>
               Thank you for supporting You. First
@@ -125,13 +127,11 @@ export default function PremiumScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
-              style={styles.iconContainer}
-            >
-              <Text style={styles.icon}>★</Text>
-            </LinearGradient>
-            <Text style={styles.title}>You. Pro</Text>
+            <Image
+              source={require('@/assets/images/PRO.png')}
+              style={styles.proLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.tagline}>Unlock your full potential</Text>
           </View>
 
@@ -222,30 +222,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: tokens.spacing.xl,
   },
-  iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: tokens.spacing.lg,
-    // Signature shadow
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.20,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  icon: {
-    fontSize: 32,
-    color: '#FFFFFF',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: tokens.colors.text,
-    letterSpacing: -0.5,
-    marginBottom: tokens.spacing.xs,
+  proLogo: {
+    width: 180,
+    height: 120,
+    marginBottom: tokens.spacing.md,
   },
   tagline: {
     fontSize: 16,
@@ -400,18 +380,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: tokens.spacing.lg,
   },
-  successBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: '#3B82F6',
-    alignItems: 'center',
-    justifyContent: 'center',
+  successLogo: {
+    width: 160,
+    height: 110,
     marginBottom: tokens.spacing.lg,
-  },
-  successIcon: {
-    fontSize: 36,
-    color: '#FFFFFF',
   },
   successTitle: {
     fontSize: 28,
