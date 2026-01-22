@@ -8,7 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initializeTraining } from '@/lib/repositories/TrainingRepo';
 import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 import { ensureSession } from '@/lib/supabase/AuthRepo';
-import { configureRevenueCat } from '@/lib/revenuecat';
+import { initializeIAP } from '@/lib/iap';
 import { formatDateKey } from '@/utils/calendar';
 import { ToastProvider } from '@/components/ui/Toast';
 import { cleanupOldDateKeys } from '@/lib/storage';
@@ -22,15 +22,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Fire-and-forget async init
-    // Sequential: ensureSession completes before configureRevenueCat
-    // so RevenueCat can use Supabase user ID
     (async () => {
       try {
         // Bootstrap anonymous auth session first
         await ensureSession();
 
-        // Configure RevenueCat with Supabase user ID (if available)
-        await configureRevenueCat();
+        // Initialize StoreKit IAP connection
+        await initializeIAP();
       } catch (error) {
         // Non-blocking, fail silently
         console.error('App init error:', error);

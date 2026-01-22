@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,7 @@ import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
 import { useMembership } from '@/hooks/useMembership';
-import {
-  getOfferings,
-  purchasePackage,
-  type PurchasesPackage,
-} from '@/lib/revenuecat';
+import { PRODUCT_IDS } from '@/lib/iap';
 
 const BENEFITS = [
   { title: 'Complete System', desc: 'Mind, body, and discipline training unified' },
@@ -31,52 +27,24 @@ const PRIVACY_POLICY_URL = 'https://youprjct.com/privacy';
 const TERMS_OF_USE_URL = 'https://youprjct.com/terms';
 
 export default function PremiumScreen() {
-  const { isPremium, isLoading: membershipLoading, restore, refreshCustomerInfo } = useMembership();
+  const { isPremium, isLoading, products, restore, purchase } = useMembership();
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [availablePackage, setAvailablePackage] = useState<PurchasesPackage | null>(null);
-  const [loadingOfferings, setLoadingOfferings] = useState(true);
 
-  const loadOfferings = useCallback(async () => {
-    setLoadingOfferings(true);
-    try {
-      const offerings = await getOfferings();
-      if (offerings?.current?.availablePackages?.length) {
-        setAvailablePackage(offerings.current.availablePackages[0]);
-      }
-    } catch (error) {
-      console.error('Error loading offerings:', error);
-    } finally {
-      setLoadingOfferings(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadOfferings();
-  }, [loadOfferings]);
+  // Get the monthly product (or use fallback display values)
+  const monthlyProduct = products.find(p => p.productId === PRODUCT_IDS.PRO_MONTHLY);
+  const displayPrice = monthlyProduct?.localizedPrice || '$4.99';
 
   const handleSubscribe = async () => {
     if (isPurchasing) return;
 
     setIsPurchasing(true);
     try {
-      if (availablePackage) {
-        // Use dynamically loaded package
-        const customerInfo = await purchasePackage(availablePackage);
-        if (customerInfo) {
-          await refreshCustomerInfo();
-          Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
-            { text: 'OK', onPress: () => router.back() },
-          ]);
-        }
-      } else {
-        // No package loaded - this happens when subscription hasn't been approved yet
-        // Show helpful message instead of "Coming Soon"
-        Alert.alert(
-          'Almost There',
-          'Subscriptions are being finalized with Apple. Please try again shortly or restore if you already subscribed.',
-          [{ text: 'OK' }]
-        );
+      const success = await purchase(PRODUCT_IDS.PRO_MONTHLY);
+      if (success) {
+        Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
+          { text: 'OK', onPress: () => router.back() },
+        ]);
       }
     } catch (error) {
       console.error('Purchase error:', error);
@@ -109,7 +77,7 @@ export default function PremiumScreen() {
   };
 
   // Already premium - show confirmation
-  if (isPremium && !membershipLoading) {
+  if (isPremium && !isLoading) {
     return (
       <>
         <Stack.Screen
@@ -138,8 +106,6 @@ export default function PremiumScreen() {
       </>
     );
   }
-
-  const isLoading = membershipLoading || loadingOfferings;
 
   return (
     <>
@@ -173,7 +139,7 @@ export default function PremiumScreen() {
           <View style={styles.pricingCard}>
             <Text style={styles.cardTagline}>Your personal excellence system</Text>
             <View style={styles.priceRow}>
-              <Text style={styles.price}>$4.99</Text>
+              <Text style={styles.price}>{displayPrice}</Text>
               <Text style={styles.period}>/month</Text>
             </View>
             <View style={styles.trialBadge}>
@@ -225,7 +191,7 @@ export default function PremiumScreen() {
           {/* Subscription Terms */}
           <View style={styles.legalSection}>
             <Text style={styles.terms}>
-              Cancel anytime. Subscription auto-renews monthly at $4.99/month after the 1-month free trial.
+              Cancel anytime. Subscription auto-renews monthly at {displayPrice}/month after the 1-month free trial.
             </Text>
             <View style={styles.legalLinks}>
               <Pressable onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
