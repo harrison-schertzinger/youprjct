@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Linking } from 'react-native';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SignatureButton } from './SignatureButton';
 import { tokens } from '@/design/tokens';
@@ -35,7 +36,15 @@ const DEV_BYPASS_PREMIUM = __DEV__ || process.env.EXPO_PUBLIC_INTERNAL_TESTING =
  * When the user is premium, the children are rendered normally.
  */
 export function PremiumGate({ feature, tagline, benefits, children }: Props) {
-  const { isPremium, isLoading } = useMembership();
+  const { isPremium, isLoading, refreshCustomerInfo } = useMembership();
+
+  // Refresh membership state when screen comes into focus
+  // This ensures we detect purchases made on the premium screen
+  useFocusEffect(
+    useCallback(() => {
+      refreshCustomerInfo();
+    }, [refreshCustomerInfo])
+  );
 
   // Bypass in development mode
   if (DEV_BYPASS_PREMIUM) {

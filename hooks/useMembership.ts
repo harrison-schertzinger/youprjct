@@ -1,74 +1,60 @@
 // useMembership: Hook for accessing subscription/membership state
-// Uses direct StoreKit 2 integration via react-native-iap
+// Gracefully handles offline and error states
 
 import { useState, useEffect, useCallback } from 'react';
 import {
-  checkPremiumStatus,
-  restorePurchases as iapRestorePurchases,
-  getProducts,
-  purchaseSubscription,
-  type Product,
-} from '@/lib/iap';
+  getCustomerInfo,
+  isPremium as checkIsPremium,
+  restorePurchases,
+  type CustomerInfo,
+} from '@/lib/revenuecat';
 
 type MembershipState = {
   isPremium: boolean;
   isLoading: boolean;
-  products: Product[];
+  customerInfo: CustomerInfo | null;
   restore: () => Promise<boolean>;
-  purchase: (productId: string) => Promise<boolean>;
-  refreshStatus: () => Promise<void>;
+  refreshCustomerInfo: () => Promise<void>;
 };
+
+const ENTITLEMENT_ID = 'premium';
 
 /**
  * Hook for accessing membership/subscription state.
  *
  * Features:
- * - Checks premium status on mount
+ * - Loads customer info on mount
  * - Provides isPremium boolean for gating features
  * - Exposes restore() for restoring purchases
- * - Exposes purchase() for buying subscriptions
- * - Exposes refreshStatus() for manual refresh
- * - Fails gracefully offline (returns cached status)
+ * - Exposes refreshCustomerInfo() for manual refresh
+ * - Fails gracefully offline (returns isPremium: false)
  */
 export function useMembership(): MembershipState {
-  const [isPremium, setIsPremium] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [products, setProducts] = useState<Product[]>([]);
 
-  // Load premium status and products on mount
-  useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      try {
-        // Check premium status (uses cache first, then verifies with store)
-        const status = await checkPremiumStatus();
-        if (mounted) setIsPremium(status);
-
-        // Load available products for purchase UI
-        const availableProducts = await getProducts();
-        if (mounted) setProducts(availableProducts);
-      } catch (error) {
-        console.error('useMembership: Error loading status:', error);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-
-    init();
-
-    return () => {
-      mounted = false;
-    };
+  const loadCustomerInfo = useCallback(async () => {
+    try {
+      const info = await getCustomerInfo();
+      setCustomerInfo(info);
+    } catch (error) {
+      console.error('useMembership: Error loading customer info:', error);
+      setCustomerInfo(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Restore purchases
+  useEffect(() => {
+    loadCustomerInfo();
+  }, [loadCustomerInfo]);
+
   const restore = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const restored = await iapRestorePurchases();
-      setIsPremium(restored);
-      return restored;
+      const info = await restorePurchases();
+      setCustomerInfo(info);
+      return info ? checkIsPremium(info, ENTITLEMENT_ID) : false;
     } catch (error) {
       console.error('useMembership: Error restoring purchases:', error);
       return false;
@@ -77,39 +63,18 @@ export function useMembership(): MembershipState {
     }
   }, []);
 
-  // Purchase subscription
-  const purchase = useCallback(async (productId: string): Promise<boolean> => {
-    try {
-      const success = await purchaseSubscription(productId);
-      if (success) {
-        setIsPremium(true);
-      }
-      return success;
-    } catch (error) {
-      console.error('useMembership: Error purchasing:', error);
-      throw error; // Re-throw so UI can show error
-    }
-  }, []);
-
-  // Manual refresh
-  const refreshStatus = useCallback(async (): Promise<void> => {
+  const refreshCustomerInfo = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    try {
-      const status = await checkPremiumStatus();
-      setIsPremium(status);
-    } catch (error) {
-      console.error('useMembership: Error refreshing status:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    await loadCustomerInfo();
+  }, [loadCustomerInfo]);
+
+  const isPremium = checkIsPremium(customerInfo, ENTITLEMENT_ID);
 
   return {
     isPremium,
     isLoading,
-    products,
+    customerInfo,
     restore,
-    purchase,
-    refreshStatus,
+    refreshCustomerInfo,
   };
 }

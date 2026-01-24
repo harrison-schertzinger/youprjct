@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,18 @@ import {
   ActivityIndicator,
   Pressable,
   Linking,
-  Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
 import { useMembership } from '@/hooks/useMembership';
-import { PRODUCT_IDS } from '@/lib/iap';
+import {
+  getOfferings,
+  purchasePackage,
+  type PurchasesPackage,
+} from '@/lib/revenuecat';
 
 const BENEFITS = [
   { title: 'Complete System', desc: 'Mind, body, and discipline training unified' },
@@ -27,24 +31,52 @@ const PRIVACY_POLICY_URL = 'https://youprjct.com/privacy';
 const TERMS_OF_USE_URL = 'https://youprjct.com/terms';
 
 export default function PremiumScreen() {
-  const { isPremium, isLoading, products, restore, purchase } = useMembership();
+  const { isPremium, isLoading: membershipLoading, restore, refreshCustomerInfo } = useMembership();
   const [isRestoring, setIsRestoring] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [availablePackage, setAvailablePackage] = useState<PurchasesPackage | null>(null);
+  const [loadingOfferings, setLoadingOfferings] = useState(true);
 
-  // Get the monthly product (or use fallback display values)
-  const monthlyProduct = products.find(p => p.productId === PRODUCT_IDS.PRO_MONTHLY);
-  const displayPrice = monthlyProduct?.localizedPrice || '$4.99';
+  const loadOfferings = useCallback(async () => {
+    setLoadingOfferings(true);
+    try {
+      const offerings = await getOfferings();
+      if (offerings?.current?.availablePackages?.length) {
+        setAvailablePackage(offerings.current.availablePackages[0]);
+      }
+    } catch (error) {
+      console.error('Error loading offerings:', error);
+    } finally {
+      setLoadingOfferings(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOfferings();
+  }, [loadOfferings]);
 
   const handleSubscribe = async () => {
     if (isPurchasing) return;
 
     setIsPurchasing(true);
     try {
-      const success = await purchase(PRODUCT_IDS.PRO_MONTHLY);
-      if (success) {
-        Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+      if (availablePackage) {
+        // Use dynamically loaded package
+        const customerInfo = await purchasePackage(availablePackage);
+        if (customerInfo) {
+          await refreshCustomerInfo();
+          Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
+            { text: 'OK', onPress: () => router.back() },
+          ]);
+        }
+      } else {
+        // No package loaded - this happens when subscription hasn't been approved yet
+        // Show helpful message instead of "Coming Soon"
+        Alert.alert(
+          'Almost There',
+          'Subscriptions are being finalized with Apple. Please try again shortly or restore if you already subscribed.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
       console.error('Purchase error:', error);
@@ -77,7 +109,7 @@ export default function PremiumScreen() {
   };
 
   // Already premium - show confirmation
-  if (isPremium && !isLoading) {
+  if (isPremium && !membershipLoading) {
     return (
       <>
         <Stack.Screen
@@ -89,11 +121,9 @@ export default function PremiumScreen() {
         />
         <ScreenContainer>
           <View style={styles.successContainer}>
-            <Image
-              source={require('@/assets/images/PRO.png')}
-              style={styles.successLogo}
-              resizeMode="contain"
-            />
+            <View style={styles.successBadge}>
+              <Text style={styles.successIcon}>★</Text>
+            </View>
             <Text style={styles.successTitle}>You're Pro</Text>
             <Text style={styles.successSubtitle}>
               Thank you for supporting You. First
@@ -108,6 +138,8 @@ export default function PremiumScreen() {
       </>
     );
   }
+
+  const isLoading = membershipLoading || loadingOfferings;
 
   return (
     <>
@@ -127,11 +159,13 @@ export default function PremiumScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Image
-              source={require('@/assets/images/PRO.png')}
-              style={styles.proLogo}
-              resizeMode="contain"
-            />
+            <LinearGradient
+              colors={['#3B82F6', '#2563EB']}
+              style={styles.iconContainer}
+            >
+              <Text style={styles.icon}>★</Text>
+            </LinearGradient>
+            <Text style={styles.title}>You. Pro</Text>
             <Text style={styles.tagline}>Unlock your full potential</Text>
           </View>
 
@@ -139,7 +173,7 @@ export default function PremiumScreen() {
           <View style={styles.pricingCard}>
             <Text style={styles.cardTagline}>Your personal excellence system</Text>
             <View style={styles.priceRow}>
-              <Text style={styles.price}>{displayPrice}</Text>
+              <Text style={styles.price}>$4.99</Text>
               <Text style={styles.period}>/month</Text>
             </View>
             <View style={styles.trialBadge}>
@@ -191,7 +225,7 @@ export default function PremiumScreen() {
           {/* Subscription Terms */}
           <View style={styles.legalSection}>
             <Text style={styles.terms}>
-              Cancel anytime. Subscription auto-renews monthly at {displayPrice}/month after the 1-month free trial.
+              Cancel anytime. Subscription auto-renews monthly at $4.99/month after the 1-month free trial.
             </Text>
             <View style={styles.legalLinks}>
               <Pressable onPress={() => Linking.openURL(TERMS_OF_USE_URL)}>
@@ -222,10 +256,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: tokens.spacing.xl,
   },
-  proLogo: {
-    width: 180,
-    height: 120,
-    marginBottom: tokens.spacing.md,
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: tokens.spacing.lg,
+    // Signature shadow
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.20,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  icon: {
+    fontSize: 32,
+    color: '#FFFFFF',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: tokens.colors.text,
+    letterSpacing: -0.5,
+    marginBottom: tokens.spacing.xs,
   },
   tagline: {
     fontSize: 16,
@@ -380,10 +434,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: tokens.spacing.lg,
   },
-  successLogo: {
-    width: 160,
-    height: 110,
+  successBadge: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: tokens.spacing.lg,
+  },
+  successIcon: {
+    fontSize: 36,
+    color: '#FFFFFF',
   },
   successTitle: {
     fontSize: 28,
