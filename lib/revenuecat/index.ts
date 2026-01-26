@@ -7,6 +7,7 @@ export {
   restorePurchases,
   getOfferings,
   purchasePackage,
+  PurchaseErrorCode,
 } from './RevenueCatRepo';
 
 export type {
@@ -14,4 +15,5 @@ export type {
   PurchasesPackage,
   PurchasesOffering,
   PurchasesOfferings,
+  PurchaseResult,
 } from './RevenueCatRepo';

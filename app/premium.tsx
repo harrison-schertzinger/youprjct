@@ -8,9 +8,9 @@ import {
   ActivityIndicator,
   Pressable,
   Linking,
+  Image,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenContainer } from '@/components/ui/ScreenContainer';
 import { SignatureButton } from '@/components/ui/SignatureButton';
 import { tokens } from '@/design/tokens';
@@ -18,6 +18,7 @@ import { useMembership } from '@/hooks/useMembership';
 import {
   getOfferings,
   purchasePackage,
+  PurchaseErrorCode,
   type PurchasesPackage,
 } from '@/lib/revenuecat';
 
@@ -61,26 +62,79 @@ export default function PremiumScreen() {
     setIsPurchasing(true);
     try {
       if (availablePackage) {
-        // Use dynamically loaded package
-        const customerInfo = await purchasePackage(availablePackage);
-        if (customerInfo) {
+        const result = await purchasePackage(availablePackage);
+
+        if (result.success && result.customerInfo) {
+          // Purchase successful
           await refreshCustomerInfo();
           Alert.alert('Welcome to Pro!', 'Thank you for your support.', [
             { text: 'OK', onPress: () => router.back() },
           ]);
+        } else if (result.errorCode) {
+          // Handle different error types appropriately
+          switch (result.errorCode) {
+            case PurchaseErrorCode.USER_CANCELLED:
+              // User cancelled - do nothing, just return silently
+              break;
+
+            case PurchaseErrorCode.STORE_PROBLEM:
+              // CRITICAL: StoreKit already showed an error alert to the user
+              // (e.g., "Your account is temporarily unavailable")
+              // Do NOT show another alert - it would be redundant and confusing
+              console.log('Store problem - StoreKit already showed alert');
+              break;
+
+            case PurchaseErrorCode.NETWORK_ERROR:
+              // Network error - show a helpful message
+              Alert.alert(
+                'Connection Issue',
+                'Please check your internet connection and try again.'
+              );
+              break;
+
+            case PurchaseErrorCode.PURCHASE_NOT_ALLOWED:
+              // Purchases not allowed on this device/account
+              Alert.alert(
+                'Purchase Not Available',
+                'Purchases are not allowed on this device. Please check your device settings.'
+              );
+              break;
+
+            case PurchaseErrorCode.PRODUCT_NOT_AVAILABLE:
+              // Product not available in this region or not configured
+              Alert.alert(
+                'Subscription Unavailable',
+                'This subscription is not available at the moment. Please try again later.'
+              );
+              break;
+
+            default:
+              // Unknown error - show generic message only if we haven't shown one already
+              Alert.alert(
+                'Unable to Complete',
+                'Something went wrong. Please try again later.'
+              );
+          }
         }
       } else {
-        // No package loaded - this happens when subscription hasn't been approved yet
-        // Show helpful message instead of "Coming Soon"
+        // No package loaded - offerings not available from RevenueCat
+        // This can happen if:
+        // 1. Subscriptions aren't configured in RevenueCat dashboard
+        // 2. Products aren't approved in App Store Connect
+        // 3. Network issue fetching offerings
         Alert.alert(
-          'Almost There',
-          'Subscriptions are being finalized with Apple. Please try again shortly or restore if you already subscribed.',
+          'Subscription Unavailable',
+          'Unable to load subscription options. Please try again later or contact support if this persists.',
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
-      console.error('Purchase error:', error);
-      Alert.alert('Unable to Complete', 'Please check your connection and try again.');
+      // This catch should rarely be hit now since purchasePackage handles its own errors
+      console.error('Unexpected purchase error:', error);
+      Alert.alert(
+        'Unable to Complete',
+        'An unexpected error occurred. Please try again.'
+      );
     } finally {
       setIsPurchasing(false);
     }
@@ -159,12 +213,11 @@ export default function PremiumScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <LinearGradient
-              colors={['#3B82F6', '#2563EB']}
-              style={styles.iconContainer}
-            >
-              <Text style={styles.icon}>★</Text>
-            </LinearGradient>
+            <Image
+              source={require('@/assets/images/PRO.png')}
+              style={styles.proIcon}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>You. Pro</Text>
             <Text style={styles.tagline}>Unlock your full potential</Text>
           </View>
@@ -256,23 +309,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: tokens.spacing.xl,
   },
-  iconContainer: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  proIcon: {
+    width: 120,
+    height: 90,
     marginBottom: tokens.spacing.lg,
-    // Signature shadow
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.20,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  icon: {
-    fontSize: 32,
-    color: '#FFFFFF',
   },
   title: {
     fontSize: 32,
