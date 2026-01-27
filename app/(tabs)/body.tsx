@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Pressable, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Link } from 'expo-router';
@@ -21,6 +21,7 @@ import {
   InlineLogModal,
   ExerciseLeaderboardModal,
   PRInputModal,
+  type TimerState,
 } from '@/features/body';
 import type { MajorMovement, BodyView } from '@/features/body/types';
 import {
@@ -54,7 +55,6 @@ import { logSession } from '@/lib/repositories/ActivityRepo';
 import { logResult, getLeaderboardForExercise, type LeaderboardEntry } from '@/lib/repositories/ResultsRepo';
 import { useToast } from '@/components/ui/Toast';
 import { getProfile, getSupabaseProfile, type SupabaseProfile } from '@/lib/repositories/ProfileRepo';
-import { usePersistedTimer } from '@/hooks/usePersistedTimer';
 
 const BODY_BENEFITS = [
   {
@@ -104,50 +104,73 @@ export default function BodyScreen() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [supabaseProfile, setSupabaseProfile] = useState<SupabaseProfile | null>(null);
 
-  // Timer state (persisted across background/foreground)
-  const timer = usePersistedTimer('workout');
+  // Timer state (synchronous - works reliably)
+  const [timerState, setTimerState] = useState<TimerState>('idle');
+  const [timerDuration, setTimerDuration] = useState(0);
   const [activeWorkoutId, setActiveWorkoutId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sessionStartRef = useRef<string | null>(null);
   const [addTimeVisible, setAddTimeVisible] = useState(false);
 
+  // Timer tick effect
+  useEffect(() => {
+    if (timerState === 'running') {
+      timerRef.current = setInterval(() => {
+        setTimerDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timerState]);
+
   // Timer handlers
-  const handleTimerStart = async (workoutId: string) => {
-    setActiveWorkoutId(workoutId);
-    await timer.start();
+  const handleTimerStart = (workoutId?: string) => {
+    if (workoutId) {
+      setActiveWorkoutId(workoutId);
+    }
+    setTimerState('running');
+    setTimerDuration(0);
+    sessionStartRef.current = new Date().toISOString();
   };
 
-  const handleTimerPause = async () => {
-    await timer.pause();
+  const handleTimerPause = () => {
+    setTimerState('paused');
   };
 
-  const handleTimerResume = async () => {
-    await timer.resume();
+  const handleTimerResume = () => {
+    setTimerState('running');
   };
 
   const handleTimerFinish = async () => {
-    const finalDuration = await timer.stop();
-
     // Log the session
-    if (finalDuration > 0) {
-      const startTime = timer.startTime
-        ? new Date(timer.startTime).toISOString()
-        : new Date(Date.now() - finalDuration * 1000).toISOString();
-
-      await logSession('workout', selectedDate, finalDuration, {
-        startedAtISO: startTime,
+    if (timerDuration > 0) {
+      await logSession('workout', selectedDate, timerDuration, {
+        startedAtISO: sessionStartRef.current || undefined,
         endedAtISO: new Date().toISOString(),
       });
       reloadStats();
 
-      const mins = Math.floor(finalDuration / 60);
+      const mins = Math.floor(timerDuration / 60);
       showToast(`Workout complete: ${mins}m logged`);
     }
 
-    // Reset state
+    // Reset timer
+    setTimerState('idle');
+    setTimerDuration(0);
     setActiveWorkoutId(null);
+    sessionStartRef.current = null;
   };
 
   const handleAddTime = (seconds: number) => {
-    timer.addManualTime(seconds);
+    setTimerDuration((prev) => prev + seconds);
   };
 
   // Get active workout title
@@ -357,19 +380,18 @@ export default function BodyScreen() {
           {/* Session Timer - Always visible above segmented control */}
           <View style={styles.timerWrapper}>
             <SessionTimer
-              state={timer.status}
-              duration={timer.duration}
+              state={timerState}
+              duration={timerDuration}
               workoutTitle={activeWorkout?.title}
-              onStart={async () => {
-                // Start timer - associate with a workout if available, otherwise standalone
+              onStart={() => {
+                // Start timer - associate with a workout if available
                 if (enrichedWorkouts.length > 0) {
                   handleTimerStart(enrichedWorkouts[0].id);
                 } else if (scheduledWorkouts.length > 0) {
                   handleTimerStart(scheduledWorkouts[0].workoutId);
                 } else {
                   // Start standalone timer without workout association
-                  setActiveWorkoutId(null);
-                  await timer.start();
+                  handleTimerStart();
                 }
               }}
               onPause={handleTimerPause}
@@ -439,7 +461,7 @@ export default function BodyScreen() {
                       {/* Workout Header */}
                       <View style={styles.workoutHeaderRow}>
                         <Text style={styles.workoutTitle}>{workout.title}</Text>
-                        {timer.status === 'idle' && (
+                        {timerState === 'idle' && (
                           <Text
                             style={styles.startWorkoutLink}
                             onPress={() => handleTimerStart(workout.id)}
