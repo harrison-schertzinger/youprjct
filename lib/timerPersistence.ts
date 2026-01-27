@@ -19,29 +19,40 @@ const TIMER_KEYS: Record<TimerType, string> = {
 };
 
 /**
+ * Get the storage key for a timer.
+ * Supports optional keySuffix for scoped timers (e.g., workout-specific keys).
+ */
+function getTimerKey(type: TimerType, keySuffix?: string): string {
+  const baseKey = TIMER_KEYS[type];
+  return keySuffix ? `${baseKey}:${keySuffix}` : baseKey;
+}
+
+/**
  * Save timer state when starting or pausing
  */
 export async function saveTimerState(
   type: TimerType,
-  state: PersistedTimerState
+  state: PersistedTimerState,
+  keySuffix?: string
 ): Promise<void> {
-  await setItem(TIMER_KEYS[type], state);
+  await setItem(getTimerKey(type, keySuffix), state);
 }
 
 /**
  * Load persisted timer state
  */
 export async function loadTimerState(
-  type: TimerType
+  type: TimerType,
+  keySuffix?: string
 ): Promise<PersistedTimerState | null> {
-  return await getItem<PersistedTimerState>(TIMER_KEYS[type]);
+  return await getItem<PersistedTimerState>(getTimerKey(type, keySuffix));
 }
 
 /**
  * Clear timer state when session ends
  */
-export async function clearTimerState(type: TimerType): Promise<void> {
-  await removeItem(TIMER_KEYS[type]);
+export async function clearTimerState(type: TimerType, keySuffix?: string): Promise<void> {
+  await removeItem(getTimerKey(type, keySuffix));
 }
 
 /**
@@ -63,21 +74,21 @@ export function calculateElapsedSeconds(state: PersistedTimerState): number {
 /**
  * Start a new timer session
  */
-export async function startTimer(type: TimerType): Promise<PersistedTimerState> {
+export async function startTimer(type: TimerType, keySuffix?: string): Promise<PersistedTimerState> {
   const state: PersistedTimerState = {
     startTime: Date.now(),
     pausedDuration: 0,
     isPaused: false,
   };
-  await saveTimerState(type, state);
+  await saveTimerState(type, state, keySuffix);
   return state;
 }
 
 /**
  * Pause the timer
  */
-export async function pauseTimer(type: TimerType): Promise<PersistedTimerState | null> {
-  const state = await loadTimerState(type);
+export async function pauseTimer(type: TimerType, keySuffix?: string): Promise<PersistedTimerState | null> {
+  const state = await loadTimerState(type, keySuffix);
   if (!state || state.isPaused) return state;
 
   const updatedState: PersistedTimerState = {
@@ -85,25 +96,24 @@ export async function pauseTimer(type: TimerType): Promise<PersistedTimerState |
     isPaused: true,
     pausedAt: Date.now(),
   };
-  await saveTimerState(type, updatedState);
+  await saveTimerState(type, updatedState, keySuffix);
   return updatedState;
 }
 
 /**
  * Resume a paused timer
  */
-export async function resumeTimer(type: TimerType): Promise<PersistedTimerState | null> {
-  const state = await loadTimerState(type);
+export async function resumeTimer(type: TimerType, keySuffix?: string): Promise<PersistedTimerState | null> {
+  const state = await loadTimerState(type, keySuffix);
   if (!state || !state.isPaused || !state.pausedAt) return state;
 
   // Add paused duration to accumulated time and reset
-  const pausedTime = Math.floor((Date.now() - state.pausedAt) / 1000);
   const updatedState: PersistedTimerState = {
     startTime: Date.now(),
     pausedDuration: calculateElapsedSeconds(state),
     isPaused: false,
     pausedAt: undefined,
   };
-  await saveTimerState(type, updatedState);
+  await saveTimerState(type, updatedState, keySuffix);
   return updatedState;
 }

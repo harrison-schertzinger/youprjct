@@ -58,9 +58,17 @@ export default function YouScreen() {
   const [showBadgeModal, setShowBadgeModal] = useState(false);
 
   // Membership status for gating Personal Mastery Dashboard
-  const { isPremium } = useMembership();
+  const { isPremium, refreshCustomerInfo } = useMembership();
   // Dev bypass for testing (matches PremiumGate behavior)
   const showPremiumFeatures = isPremium || __DEV__ || process.env.EXPO_PUBLIC_INTERNAL_TESTING === 'true';
+
+  // Refresh membership status when screen comes into focus
+  // This ensures we detect purchases made on the premium screen
+  useFocusEffect(
+    useCallback(() => {
+      refreshCustomerInfo();
+    }, [refreshCustomerInfo])
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);

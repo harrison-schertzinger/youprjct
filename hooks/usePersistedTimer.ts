@@ -15,6 +15,11 @@ import {
 
 export type TimerStatus = 'idle' | 'running' | 'paused';
 
+type UsePersistedTimerOptions = {
+  /** Optional key suffix for scoped timers (e.g., workoutId for workout-specific timers) */
+  keySuffix?: string;
+};
+
 type UsePersistedTimerReturn = {
   status: TimerStatus;
   duration: number; // elapsed seconds
@@ -26,7 +31,12 @@ type UsePersistedTimerReturn = {
   addManualTime: (seconds: number) => void;
 };
 
-export function usePersistedTimer(type: TimerType): UsePersistedTimerReturn {
+export function usePersistedTimer(
+  type: TimerType,
+  options?: UsePersistedTimerOptions
+): UsePersistedTimerReturn {
+  const keySuffix = options?.keySuffix;
+
   const [status, setStatus] = useState<TimerStatus>('idle');
   const [duration, setDuration] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -36,7 +46,7 @@ export function usePersistedTimer(type: TimerType): UsePersistedTimerReturn {
 
   // Recalculate duration from persisted state
   const syncFromPersistedState = useCallback(async () => {
-    const state = await loadTimerState(type);
+    const state = await loadTimerState(type, keySuffix);
     if (!state) {
       setStatus('idle');
       setDuration(0);
@@ -47,7 +57,7 @@ export function usePersistedTimer(type: TimerType): UsePersistedTimerReturn {
     setStartTime(state.startTime);
     setStatus(state.isPaused ? 'paused' : 'running');
     setDuration(calculateElapsedSeconds(state) + manualAddedTime);
-  }, [type, manualAddedTime]);
+  }, [type, keySuffix, manualAddedTime]);
 
   // Handle app state changes (background/foreground)
   useEffect(() => {
@@ -76,7 +86,7 @@ export function usePersistedTimer(type: TimerType): UsePersistedTimerReturn {
   useEffect(() => {
     if (status === 'running') {
       timerRef.current = setInterval(async () => {
-        const state = await loadTimerState(type);
+        const state = await loadTimerState(type, keySuffix);
         if (state && !state.isPaused) {
           setDuration(calculateElapsedSeconds(state) + manualAddedTime);
         }
@@ -93,43 +103,43 @@ export function usePersistedTimer(type: TimerType): UsePersistedTimerReturn {
         clearInterval(timerRef.current);
       }
     };
-  }, [status, type, manualAddedTime]);
+  }, [status, type, keySuffix, manualAddedTime]);
 
   const start = useCallback(async () => {
-    const state = await startTimer(type);
+    const state = await startTimer(type, keySuffix);
     setStartTime(state.startTime);
     setDuration(0);
     setManualAddedTime(0);
     setStatus('running');
-  }, [type]);
+  }, [type, keySuffix]);
 
   const pause = useCallback(async () => {
-    const state = await pauseTimer(type);
+    const state = await pauseTimer(type, keySuffix);
     if (state) {
       setDuration(calculateElapsedSeconds(state) + manualAddedTime);
       setStatus('paused');
     }
-  }, [type, manualAddedTime]);
+  }, [type, keySuffix, manualAddedTime]);
 
   const resume = useCallback(async () => {
-    await resumeTimer(type);
+    await resumeTimer(type, keySuffix);
     setStatus('running');
-  }, [type]);
+  }, [type, keySuffix]);
 
   const stop = useCallback(async (): Promise<number> => {
-    const state = await loadTimerState(type);
+    const state = await loadTimerState(type, keySuffix);
     const finalDuration = state
       ? calculateElapsedSeconds(state) + manualAddedTime
       : duration;
 
-    await clearTimerState(type);
+    await clearTimerState(type, keySuffix);
     setStatus('idle');
     setDuration(0);
     setStartTime(null);
     setManualAddedTime(0);
 
     return finalDuration;
-  }, [type, duration, manualAddedTime]);
+  }, [type, keySuffix, duration, manualAddedTime]);
 
   const addManualTime = useCallback((seconds: number) => {
     setManualAddedTime((prev) => prev + seconds);

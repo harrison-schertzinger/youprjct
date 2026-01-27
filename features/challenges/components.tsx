@@ -547,8 +547,13 @@ export function Leaderboard({ entries, sortBy, onChangeSortBy }: LeaderboardProp
 export function NoChallengesMessage() {
   return (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateTitle}>No challenges available</Text>
-      <Text style={styles.emptyStateText}>Check back soon for new challenges</Text>
+      <View style={styles.emptyStateIcon}>
+        <Text style={styles.emptyStateIconText}>🎯</Text>
+      </View>
+      <Text style={styles.emptyStateTitle}>No Active Challenges</Text>
+      <Text style={styles.emptyStateText}>
+        Stay tuned for upcoming community challenges designed to push your limits and build lasting discipline.
+      </Text>
     </View>
   );
 }
@@ -556,8 +561,13 @@ export function NoChallengesMessage() {
 export function NoJoinedChallengesMessage({ onBrowse }: { onBrowse: () => void }) {
   return (
     <View style={styles.emptyState}>
-      <Text style={styles.emptyStateTitle}>No challenges joined</Text>
-      <Text style={styles.emptyStateText}>Browse available challenges to get started</Text>
+      <View style={styles.emptyStateIcon}>
+        <Text style={styles.emptyStateIconText}>💪</Text>
+      </View>
+      <Text style={styles.emptyStateTitle}>No Challenges Joined</Text>
+      <Text style={styles.emptyStateText}>
+        Browse available challenges and commit to one that aligns with your goals.
+      </Text>
       <TouchableOpacity style={styles.emptyStateButton} onPress={onBrowse}>
         <Text style={styles.emptyStateButtonText}>Browse Challenges</Text>
       </TouchableOpacity>
@@ -1093,16 +1103,32 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.spacing.xl * 2,
     paddingHorizontal: tokens.spacing.lg,
   },
+  emptyStateIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: tokens.colors.card,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: tokens.spacing.lg,
+  },
+  emptyStateIconText: {
+    fontSize: 28,
+  },
   emptyStateTitle: {
     ...tokens.typography.h2,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.sm,
+    textAlign: 'center',
   },
   emptyStateText: {
     ...tokens.typography.body,
     color: tokens.colors.muted,
     textAlign: 'center',
     marginBottom: tokens.spacing.lg,
+    lineHeight: 22,
   },
   emptyStateButton: {
     backgroundColor: tokens.colors.text,

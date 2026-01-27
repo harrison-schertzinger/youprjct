@@ -48,7 +48,7 @@ export async function loadChallenges(): Promise<CommunityChallenge[]> {
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
-        if (data && data.length > 0) {
+        if (!error && data) {
           // Map Supabase snake_case to app camelCase
           const challenges: CommunityChallenge[] = data.map((row: Record<string, unknown>) => ({
             id: row.id as string,
@@ -66,7 +66,7 @@ export async function loadChallenges(): Promise<CommunityChallenge[]> {
             isActive: row.is_active as boolean,
           }));
 
-          // Cache locally for offline access
+          // Cache locally for offline access (even if empty)
           await AsyncStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
           return challenges;
         }
@@ -77,17 +77,18 @@ export async function loadChallenges(): Promise<CommunityChallenge[]> {
       }
     }
 
-    // Fall back to local cache
+    // Fall back to local cache (only if Supabase failed or not configured)
     const raw = await AsyncStorage.getItem(CHALLENGES_KEY);
     if (raw) {
       return JSON.parse(raw);
     }
 
-    // Fall back to seed data
-    return getDefaultChallenges();
+    // No Supabase, no cache — return empty array
+    // (Seed data removed to prevent hardcoded challenges appearing)
+    return [];
   } catch (error) {
     console.error('Failed to load challenges:', error);
-    return getDefaultChallenges();
+    return [];
   }
 }
 
@@ -320,76 +321,6 @@ export async function getLeaderboard(
   return [entry];
 }
 
-// ============================================================
-// Default Challenges (seed data)
-// ============================================================
-
-function getDefaultChallenges(): CommunityChallenge[] {
-  const today = getTodayISO();
-  const endDate40 = getDateISO(addDays(new Date(), 40));
-
-  return [
-    {
-      id: 'challenge-iron-mind-40',
-      title: 'Iron Mind 40',
-      description: 'Build unshakeable discipline through 40 days of consistent action. No excuses, no shortcuts.',
-      color: 'ember',
-      totalDays: 40,
-      category: 'fitness',
-      difficulty: 'advanced',
-      rules: [
-        { id: 'rule-1', text: 'Complete two workouts (at least 45 min each)' },
-        { id: 'rule-2', text: 'Follow your nutrition plan strictly' },
-        { id: 'rule-3', text: 'Drink 3+ liters of water' },
-        { id: 'rule-4', text: 'Read or learn for 20+ minutes' },
-        { id: 'rule-5', text: 'No alcohol or processed junk food' },
-      ],
-      startDate: today,
-      endDate: endDate40,
-      createdAt: new Date().toISOString(),
-      isOfficial: true,
-      isActive: true,
-    },
-    {
-      id: 'challenge-reading-40',
-      title: '40-Day Reading Sprint',
-      description: 'Build a daily reading habit. Read for at least 30 minutes every day.',
-      color: 'ocean',
-      totalDays: 40,
-      category: 'learning',
-      difficulty: 'beginner',
-      rules: [
-        { id: 'rule-1', text: 'Read for 30+ minutes' },
-        { id: 'rule-2', text: 'No screens while reading' },
-        { id: 'rule-3', text: 'Write one insight from today\'s reading' },
-      ],
-      startDate: today,
-      endDate: endDate40,
-      createdAt: new Date().toISOString(),
-      isOfficial: true,
-      isActive: true,
-    },
-    {
-      id: 'challenge-mindfulness-40',
-      title: '40-Day Mindfulness',
-      description: 'Develop a consistent meditation and mindfulness practice.',
-      color: 'violet',
-      totalDays: 40,
-      category: 'health',
-      difficulty: 'beginner',
-      rules: [
-        { id: 'rule-1', text: 'Meditate for 10+ minutes' },
-        { id: 'rule-2', text: 'Practice gratitude (write 3 things)' },
-        { id: 'rule-3', text: 'No phone for first hour after waking' },
-      ],
-      startDate: today,
-      endDate: endDate40,
-      createdAt: new Date().toISOString(),
-      isOfficial: true,
-      isActive: true,
-    },
-  ];
-}
 
 // ============================================================
 // Challenge progress helpers
