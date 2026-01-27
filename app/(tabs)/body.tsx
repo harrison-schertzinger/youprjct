@@ -360,10 +360,16 @@ export default function BodyScreen() {
               state={timer.status}
               duration={timer.duration}
               workoutTitle={activeWorkout?.title}
-              onStart={() => {
-                // Start with first workout if no workout selected
+              onStart={async () => {
+                // Start timer - associate with a workout if available, otherwise standalone
                 if (enrichedWorkouts.length > 0) {
                   handleTimerStart(enrichedWorkouts[0].id);
+                } else if (scheduledWorkouts.length > 0) {
+                  handleTimerStart(scheduledWorkouts[0].workoutId);
+                } else {
+                  // Start standalone timer without workout association
+                  setActiveWorkoutId(null);
+                  await timer.start();
                 }
               }}
               onPause={handleTimerPause}
