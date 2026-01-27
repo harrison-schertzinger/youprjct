@@ -8,7 +8,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initializeTraining } from '@/lib/repositories/TrainingRepo';
 import { bumpOnAppStreakIfNeeded } from '@/lib/repositories/ProfileRepo';
 import { ensureSession } from '@/lib/supabase/AuthRepo';
-import { initializeIAP } from '@/lib/iap';
+import { configureRevenueCat } from '@/lib/revenuecat';
 import { formatDateKey } from '@/utils/calendar';
 import { ToastProvider } from '@/components/ui/Toast';
 import { cleanupOldDateKeys } from '@/lib/storage';
@@ -27,8 +27,8 @@ export default function RootLayout() {
         // Bootstrap anonymous auth session first
         await ensureSession();
 
-        // Initialize StoreKit IAP connection
-        await initializeIAP();
+        // Initialize RevenueCat
+        await configureRevenueCat();
       } catch (error) {
         // Non-blocking, fail silently
         console.error('App init error:', error);
